@@ -3,6 +3,37 @@ from typing import List, Union
 from pandas import DataFrame, Series
 
 
+class MetricHandler:
+    def __init__(self, *args, named_metrics: dict = {}, **kwargs):
+        self.metrics = {}
+        for metric in args:
+            self.metrics[metric.__name__] = metric
+        self.metrics.update(named_metrics)
+        self.metrics.update(kwargs)
+
+    def __call__(
+        self,
+        *,
+        data: DataFrame,
+        protected_attributes: Union[List[str], str],
+        target_attribute: str,
+        target_predictions: Series,
+        positive_target,
+        return_probs=False,
+    ):
+        return {
+            key: metric(
+                data=data,
+                protected_attributes=protected_attributes,
+                target_attribute=target_attribute,
+                target_predictions=target_predictions,
+                positive_target=positive_target,
+                return_probs=return_probs,
+            )
+            for key, metric in self.metrics.items()
+        }
+
+
 def statistical_parity(
     *,
     data: DataFrame,
@@ -14,7 +45,7 @@ def statistical_parity(
 ):
     if target_predictions is None:
         target_predictions = data[target_attribute]
-    
+
     positives = target_predictions == positive_target
 
     probs = {

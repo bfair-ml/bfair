@@ -4,7 +4,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.tree import DecisionTreeClassifier
 
 from src.datasets.adult import load_dataset as load_adult
-from src.metrics import equal_opportunity, statistical_parity
+from src.metrics import MetricHandler, equal_opportunity, statistical_parity
 
 
 @st.cache
@@ -80,21 +80,11 @@ protected_attributes = st.sidebar.selectbox(
 if protected_attributes:
     "## Disparity Metrics"
 
+    metrics = MetricHandler(statistical_parity, equal_opportunity)
+
     "### Gold"
 
-    "#### Statistical Parity"
-    parity, probs = statistical_parity(
-        data=df,
-        protected_attributes=protected_attributes,
-        target_attribute=target_name,
-        positive_target=">50K",
-        return_probs=True,
-    )
-    parity
-    probs
-
-    "#### Equal Opportunity"
-    parity, probs = equal_opportunity(
+    measure = metrics(
         data=df,
         protected_attributes=protected_attributes,
         target_attribute=target_name,
@@ -102,16 +92,14 @@ if protected_attributes:
         positive_target=">50K",
         return_probs=True,
     )
-    parity
-    probs
+    measure
 
     "### Only one"
     winner = st.sidebar.selectbox("Winner", df[protected_attributes].unique())
     predictor = lambda x: (">50K" if x[protected_attributes] == winner else "<=50K")
     predicted = df.apply(predictor, axis=1)
 
-    "#### Statistical Parity"
-    parity, probs = statistical_parity(
+    measure = metrics(
         data=df,
         protected_attributes=protected_attributes,
         target_attribute=target_name,
@@ -119,28 +107,14 @@ if protected_attributes:
         positive_target=">50K",
         return_probs=True,
     )
-    parity
-    probs
-
-    "#### Equal Opportunity"
-    parity, probs = equal_opportunity(
-        data=df,
-        protected_attributes=protected_attributes,
-        target_attribute=target_name,
-        target_predictions=predicted,
-        positive_target=">50K",
-        return_probs=True,
-    )
-    parity
-    probs
+    measure
 
     "### Classifier"
     predicted = classifier.predict(X)
     predicted = encoder.inverse_transform(predicted)
     predicted = pd.Series(predicted, df.index)
 
-    "#### Statistical Parity"
-    parity, probs = statistical_parity(
+    measure = metrics(
         data=df,
         protected_attributes=protected_attributes,
         target_attribute=target_name,
@@ -148,20 +122,7 @@ if protected_attributes:
         positive_target=">50K",
         return_probs=True,
     )
-    parity
-    probs
-
-    "#### Equal Opportunity"
-    parity, probs = equal_opportunity(
-        data=df,
-        protected_attributes=protected_attributes,
-        target_attribute=target_name,
-        target_predictions=predicted,
-        positive_target=">50K",
-        return_probs=True,
-    )
-    parity
-    probs
+    measure
 
     "#### Score"
     score
