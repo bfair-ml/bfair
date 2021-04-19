@@ -1,5 +1,6 @@
 from typing import List, Union
 
+import pandas as pd
 from pandas import DataFrame, Series
 
 
@@ -34,6 +35,41 @@ class MetricHandler:
         }
 
 
+def accuracy(
+    *, data: DataFrame, target_attribute: str, target_predictions: Series, **kwargs,
+):
+    gold_target = data[target_attribute]
+    equals = gold_target == target_predictions
+    return sum(equals) / len(equals)
+
+
+def accuracy_disparity(
+    *,
+    data: DataFrame,
+    protected_attributes: Union[List[str], str],
+    target_attribute: str,
+    target_predictions: Series,
+    return_probs=False,
+    **kwargs,
+):
+    all_data = pd.concat(
+        (data, Series(target_predictions, name="__prediction__")), axis=1
+    )
+
+    scores = {
+        key: sum(equals) / len(equals)
+        for key, group in all_data.groupby(protected_attributes)
+        for equals in (group[target_attribute] == group["__prediction__"],)
+    }
+
+    min_group = min(scores.values())
+    max_group = max(scores.values())
+    if return_probs:
+        return max_group - min_group, scores
+    else:
+        return max_group - min_group
+
+
 def statistical_parity(
     *,
     data: DataFrame,
@@ -42,6 +78,7 @@ def statistical_parity(
     positive_target,
     target_predictions: Series = None,
     return_probs=False,
+    **kwargs,
 ):
     if target_predictions is None:
         target_predictions = data[target_attribute]
@@ -69,6 +106,7 @@ def equal_opportunity(
     target_predictions: Series,
     positive_target,
     return_probs=False,
+    **kwargs,
 ):
     positives = target_predictions == positive_target
     true_positives = data[data[target_attribute] == positive_target]

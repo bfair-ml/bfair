@@ -4,7 +4,13 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.tree import DecisionTreeClassifier
 
 from src.datasets.adult import load_dataset as load_adult
-from src.metrics import MetricHandler, equal_opportunity, statistical_parity
+from src.metrics import (
+    MetricHandler,
+    accuracy,
+    accuracy_disparity,
+    equal_opportunity,
+    statistical_parity,
+)
 
 
 @st.cache
@@ -80,7 +86,9 @@ protected_attributes = st.sidebar.selectbox(
 if protected_attributes:
     "## Disparity Metrics"
 
-    metrics = MetricHandler(statistical_parity, equal_opportunity)
+    metrics = MetricHandler(
+        accuracy, accuracy_disparity, statistical_parity, equal_opportunity
+    )
 
     "### Gold"
 
