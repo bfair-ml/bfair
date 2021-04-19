@@ -78,7 +78,7 @@ protected_attributes = st.sidebar.selectbox(
 )
 
 if protected_attributes:
-    "## Fairness Metrics"
+    "## Disparity Metrics"
 
     "### Gold"
 
