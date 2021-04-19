@@ -3,7 +3,7 @@ import streamlit as st
 from sklearn.preprocessing import LabelEncoder
 from sklearn.tree import DecisionTreeClassifier
 
-from src.datasets.adult import load_dataset as load_adult
+from src.datasets import load_adult
 from src.metrics import (
     MetricHandler,
     accuracy,
