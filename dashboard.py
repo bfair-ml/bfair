@@ -84,7 +84,11 @@ if protected_attributes:
 
     "#### Statistical Parity"
     parity, probs = statistical_parity(
-        df, protected_attributes, target_name, ">50K", return_probs=True
+        data=df,
+        protected_attributes=protected_attributes,
+        target_attribute=target_name,
+        positive_target=">50K",
+        return_probs=True,
     )
     parity
     probs
@@ -108,7 +112,12 @@ if protected_attributes:
 
     "#### Statistical Parity"
     parity, probs = statistical_parity(
-        df, protected_attributes, predicted, ">50K", return_probs=True
+        data=df,
+        protected_attributes=protected_attributes,
+        target_attribute=target_name,
+        target_predictions=predicted,
+        positive_target=">50K",
+        return_probs=True,
     )
     parity
     probs
@@ -132,7 +141,12 @@ if protected_attributes:
 
     "#### Statistical Parity"
     parity, probs = statistical_parity(
-        df, protected_attributes, predicted, ">50K", return_probs=True
+        data=df,
+        protected_attributes=protected_attributes,
+        target_attribute=target_name,
+        target_predictions=predicted,
+        positive_target=">50K",
+        return_probs=True,
     )
     parity
     probs

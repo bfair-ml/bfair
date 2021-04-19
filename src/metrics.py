@@ -4,19 +4,18 @@ from pandas import DataFrame, Series
 
 
 def statistical_parity(
-    data: DataFrame,
-    protected_attributes,
-    target_attribute,
-    positive_target,
     *,
+    data: DataFrame,
+    protected_attributes: Union[List[str], str],
+    target_attribute: str,
+    positive_target,
+    target_predictions: Series = None,
     return_probs=False,
 ):
-    if isinstance(target_attribute, Series):
-        positives = target_attribute == positive_target
-    elif isinstance(target_attribute, str):
-        positives = data[target_attribute] == positive_target
-    else:
-        raise TypeError()
+    if target_predictions is None:
+        target_predictions = data[target_attribute]
+    
+    positives = target_predictions == positive_target
 
     probs = {
         key: len(group[positives]) / len(group)
