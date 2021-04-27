@@ -7,7 +7,9 @@ from sklearn.tree import DecisionTreeClassifier
 from src.datasets import load_adult
 from src.methods import SklearnMitigator
 from src.metrics import (
+    DIFFERENCE,
     MetricHandler,
+    RATIO,
     accuracy,
     accuracy_disparity,
     equal_opportunity,
@@ -80,6 +82,7 @@ else:
 protected_attributes = st.sidebar.selectbox(
     "Protected Attributes", [None] + list(feature_names)
 )
+metric_mode = st.sidebar.selectbox("Disparity Mode", [DIFFERENCE, RATIO])
 
 if protected_attributes:
     "## Disparity Metrics"
@@ -96,6 +99,7 @@ if protected_attributes:
         target_attribute=target_name,
         target_predictions=evaluation_df[target_name],
         positive_target=">50K",
+        mode=metric_mode,
         return_probs=True,
     )
     measure
@@ -111,6 +115,7 @@ if protected_attributes:
         target_attribute=target_name,
         target_predictions=predicted,
         positive_target=">50K",
+        mode=metric_mode,
         return_probs=True,
     )
     measure
@@ -130,6 +135,7 @@ if protected_attributes:
             target_attribute=target_name,
             target_predictions=predicted,
             positive_target=">50K",
+            mode=metric_mode,
             return_probs=True,
         )
         measure
@@ -149,6 +155,7 @@ if protected_attributes:
             target_attribute=target_name,
             target_predictions=predicted,
             positive_target=">50K",
+            mode=metric_mode,
             return_probs=True,
         )
         measure
@@ -168,6 +175,7 @@ if protected_attributes:
             target_attribute=target_name,
             target_predictions=predicted,
             positive_target=">50K",
+            mode=metric_mode,
             return_probs=True,
         )
         measure
@@ -189,6 +197,7 @@ if protected_attributes:
             target_attribute=target_name,
             target_predictions=predicted,
             positive_target=">50K",
+            mode=metric_mode,
             return_probs=True,
         )
         measure

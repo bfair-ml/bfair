@@ -1,7 +1,10 @@
-from typing import List, Union
+from typing import Callable, List, Literal, Union
 
 import pandas as pd
 from pandas import DataFrame, Series
+
+DIFFERENCE = "difference"
+RATIO = "ratio"
 
 
 class MetricHandler:
@@ -20,6 +23,7 @@ class MetricHandler:
         target_attribute: str,
         target_predictions: Series,
         positive_target,
+        mode: Union[Literal["difference", "ratio"], Callable[..., float]] = DIFFERENCE,
         return_probs=False,
     ):
         return {
@@ -29,10 +33,45 @@ class MetricHandler:
                 target_attribute=target_attribute,
                 target_predictions=target_predictions,
                 positive_target=positive_target,
+                mode=mode,
                 return_probs=return_probs,
             )
             for key, metric in self.metrics.items()
         }
+
+
+def base_metric(
+    *,
+    data: DataFrame,
+    protected_attributes: Union[List[str], str],
+    target_attribute: str,
+    target_predictions: Series,
+    positive_target,
+    mode: Union[Literal["difference", "ratio"], Callable[..., float]] = DIFFERENCE,
+    return_probs: bool = False,
+    **kwargs,
+) -> float:
+    pass
+
+
+def disparity_metric(func: Callable) -> base_metric:
+    def metric(*args, mode=DIFFERENCE, return_probs=False, **kwargs):
+        probs = func(*args, mode=mode, **kwargs)
+        min_group = min(probs.values())
+        max_group = max(probs.values())
+
+        value = (
+            max_group - min_group
+            if mode == DIFFERENCE
+            else (1 - min_group / max_group if max_group != 0 else 0)
+            if mode == RATIO
+            else mode(min_group=min_group, max_group=max_group)
+        )
+
+        return (value, probs) if return_probs else value
+
+    metric.__name__ = func.__name__
+    return metric
 
 
 def accuracy(
@@ -43,13 +82,13 @@ def accuracy(
     return sum(equals) / len(equals)
 
 
+@disparity_metric
 def accuracy_disparity(
     *,
     data: DataFrame,
     protected_attributes: Union[List[str], str],
     target_attribute: str,
     target_predictions: Series,
-    return_probs=False,
     **kwargs,
 ):
     all_data = pd.concat(
@@ -62,14 +101,10 @@ def accuracy_disparity(
         for equals in (group[target_attribute] == group["__prediction__"],)
     }
 
-    min_group = min(scores.values())
-    max_group = max(scores.values())
-    if return_probs:
-        return max_group - min_group, scores
-    else:
-        return max_group - min_group
+    return scores
 
 
+@disparity_metric
 def statistical_parity(
     *,
     data: DataFrame,
@@ -77,7 +112,6 @@ def statistical_parity(
     target_attribute: str,
     positive_target,
     target_predictions: Series = None,
-    return_probs=False,
     **kwargs,
 ):
     if target_predictions is None:
@@ -90,14 +124,10 @@ def statistical_parity(
         for key, group in data.groupby(protected_attributes)
     }
 
-    min_group = min(probs.values())
-    max_group = max(probs.values())
-    if return_probs:
-        return max_group - min_group, probs
-    else:
-        return max_group - min_group
+    return probs
 
 
+@disparity_metric
 def equal_opportunity(
     *,
     data: DataFrame,
@@ -105,7 +135,6 @@ def equal_opportunity(
     target_attribute: str,
     target_predictions: Series,
     positive_target,
-    return_probs=False,
     **kwargs,
 ):
     positives = target_predictions == positive_target
@@ -116,9 +145,4 @@ def equal_opportunity(
         for key, group in true_positives.groupby(protected_attributes)
     }
 
-    min_group = min(probs.values())
-    max_group = max(probs.values())
-    if return_probs:
-        return max_group - min_group, probs
-    else:
-        return max_group - min_group
+    return probs
