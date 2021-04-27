@@ -39,6 +39,19 @@ class MetricHandler:
             for key, metric in self.metrics.items()
         }
 
+    @staticmethod
+    def to_df(computed_metrics):
+        data = {}
+        for metric, info in computed_metrics.items():
+            if isinstance(info, (tuple, list)):
+                value, probs = info
+                row = {"value": value}
+                row.update(probs)
+            else:
+                row = {"value": info}
+            data[metric] = row
+        return DataFrame.from_dict(data, orient="index")
+
 
 def base_metric(
     *,

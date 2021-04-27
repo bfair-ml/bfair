@@ -109,6 +109,7 @@ if protected_attributes:
         mode=metric_mode,
         return_probs=True,
     )
+    measure = metrics.to_df(measure)
     measure
 
     "### Only one"
@@ -125,6 +126,7 @@ if protected_attributes:
         mode=metric_mode,
         return_probs=True,
     )
+    measure = metrics.to_df(measure)
     measure
 
     if st.sidebar.checkbox("DecisionTreeClassifier"):
@@ -145,6 +147,7 @@ if protected_attributes:
             mode=metric_mode,
             return_probs=True,
         )
+        measure = metrics.to_df(measure)
         measure
 
     if st.sidebar.checkbox("LogisticRegression"):
@@ -165,6 +168,7 @@ if protected_attributes:
             mode=metric_mode,
             return_probs=True,
         )
+        measure = metrics.to_df(measure)
         measure
 
     if st.sidebar.checkbox("SVC"):
@@ -185,6 +189,7 @@ if protected_attributes:
             mode=metric_mode,
             return_probs=True,
         )
+        measure = metrics.to_df(measure)
         measure
 
     if st.sidebar.checkbox("Ensemble"):
@@ -207,5 +212,6 @@ if protected_attributes:
             mode=metric_mode,
             return_probs=True,
         )
+        measure = metrics.to_df(measure)
         measure
 
