@@ -29,5 +29,6 @@ class AdultDataset:
         test = pd.read_csv(
             test_path, sep=", ", header=None, names=names, engine="python", skiprows=1
         )
+        test["income"] = test["income"].str.slice(0,-1)
 
         return AdultDataset(data=data, test=test)
