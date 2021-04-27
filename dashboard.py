@@ -8,11 +8,13 @@ from src.datasets import load_adult
 from src.methods import SklearnMitigator
 from src.metrics import (
     DIFFERENCE,
-    MetricHandler,
     RATIO,
+    MetricHandler,
     accuracy,
     accuracy_disparity,
     equal_opportunity,
+    equalized_odds,
+    false_positive_rate,
     statistical_parity,
 )
 from src.utils import encode_features
@@ -88,7 +90,12 @@ if protected_attributes:
     "## Disparity Metrics"
 
     metrics = MetricHandler(
-        accuracy, accuracy_disparity, statistical_parity, equal_opportunity
+        accuracy,
+        accuracy_disparity,
+        statistical_parity,
+        equal_opportunity,
+        false_positive_rate,
+        equalized_odds,
     )
 
     "### Gold"

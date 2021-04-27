@@ -146,3 +146,70 @@ def equal_opportunity(
     }
 
     return probs
+
+
+@disparity_metric
+def false_positive_rate(
+    *,
+    data: DataFrame,
+    protected_attributes: Union[List[str], str],
+    target_attribute: str,
+    target_predictions: Series,
+    positive_target,
+    **kwargs,
+):
+    positives = target_predictions == positive_target
+    true_negatives = data[data[target_attribute] != positive_target]
+
+    probs = {
+        key: len(group[positives]) / len(group)
+        for key, group in true_negatives.groupby(protected_attributes)
+    }
+
+    return probs
+
+
+def equalized_odds(
+    *,
+    data: DataFrame,
+    protected_attributes: Union[List[str], str],
+    target_attribute: str,
+    target_predictions: Series,
+    positive_target,
+    mode: Union[Literal["difference", "ratio"], Callable[..., float]] = DIFFERENCE,
+    return_probs: bool = False,
+    **kwargs,
+):
+    def f1(prob1, prob2):
+        try:
+            return 2 * prob1 * prob2 / (prob1 + prob2)
+        except ZeroDivisionError:
+            return 0
+
+    eo_value, eo_probs = equal_opportunity(
+        data=data,
+        protected_attributes=protected_attributes,
+        target_attribute=target_attribute,
+        target_predictions=target_predictions,
+        positive_target=positive_target,
+        mode=mode,
+        return_probs=True,
+    )
+    fpr_value, fpr_probs = false_positive_rate(
+        data=data,
+        protected_attributes=protected_attributes,
+        target_attribute=target_attribute,
+        target_predictions=target_predictions,
+        positive_target=positive_target,
+        mode=mode,
+        return_probs=True,
+    )
+
+    value = 1 - f1(1 - eo_value, 1 - fpr_value)
+
+    probs = {
+        key: f1(eo_probs.get(key, 0), fpr_probs.get(key, 0))
+        for key in eo_probs.keys() | fpr_probs.keys()
+    }
+
+    return (value, probs) if return_probs else value
