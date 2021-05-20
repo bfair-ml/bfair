@@ -1,3 +1,3 @@
-ADULT_DATASET = "/media/jpconsuegra/Data/Cibernética/Doctorado/datasets/adult/"
-COMPAS_DATASET = ""
-GERMAN_DATASET = ""
+ADULT_DATASET = "datasets/adult/"
+COMPAS_DATASET = "datasets/compas/"
+GERMAN_DATASET = "datasets/german/"
