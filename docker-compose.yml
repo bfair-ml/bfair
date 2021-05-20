@@ -1,0 +1,10 @@
+version: "3"
+
+services:
+  main:
+    image: "jpconsuegra/fairness"
+    build: "."
+    volumes:
+      - "./:/workspace"
+      - "~/.ssh/id_rsa:/root/.ssh/id_rsa"
+    network_mode: "host"

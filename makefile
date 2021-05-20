@@ -1,2 +1,2 @@
 dashboard:
-	streamlit run dashboard.py
+	streamlit run --browser.serverAddress localhost dashboard.py
