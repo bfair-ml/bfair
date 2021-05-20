@@ -7,4 +7,5 @@ services:
     volumes:
       - "./:/workspace"
       - "~/.ssh/id_rsa:/root/.ssh/id_rsa"
+      - "./vendor/autogoal/autogoal:/usr/local/lib/python3.8/site-packages/autogoal"
     network_mode: "host"
