@@ -128,3 +128,9 @@ class GermanDataset:
             train, test = data, pd.DataFrame(columns=data.columns).astype(data.dtypes)
 
         return GermanDataset(data=train, test=test)
+
+    @staticmethod
+    def cost_matrix(gold, prediction):
+        if gold == prediction:
+            return 0
+        return 5 if gold == "bad" else 1
