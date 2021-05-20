@@ -3,8 +3,9 @@ import streamlit as st
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
+from streamlit.config import _server_enable_xsrf_protection
 
-from src.datasets import load_adult
+from src.datasets import load_adult, load_german
 from src.methods import SklearnMitigator
 from src.metrics import (
     DIFFERENCE,
@@ -25,11 +26,13 @@ from src.utils import encode_features
 def load_dataset(name):
     if name == "adult":
         return load_adult()
+    if name == "german":
+        return load_german()
     else:
         raise ValueError(f"Unknown dataset: {name}")
 
 
-dataset_name = st.sidebar.selectbox("name", ["adult"])
+dataset_name = st.sidebar.selectbox("name", ["adult", "german"])
 dataset = load_dataset(dataset_name)
 df: pd.DataFrame = dataset.data
 df_test: pd.DataFrame = dataset.test
@@ -37,6 +40,7 @@ df_test: pd.DataFrame = dataset.test
 f"# Dataset: _{dataset_name}_"
 if st.sidebar.checkbox("Show dataset"):
     df
+    df_test
 
 # = FEATURES =================================================
 feature_names = df.columns[:-1]
@@ -56,6 +60,14 @@ if st.sidebar.checkbox("Show Features"):
 target_name = df.columns[-1]
 y = df[target_name]
 
+labels = set(y.unique())
+assert len(labels) == 2
+positive_target = st.sidebar.selectbox("positive_target", list(labels))
+negative_target = (labels - {positive_target}).pop()
+
+f"**Positive target:** {positive_target}"
+f"**Negative target:** {negative_target}"
+
 if st.sidebar.checkbox("Show Target"):
     "## Target"
     y
@@ -69,7 +81,7 @@ X_test, y_test, _ = encode_features(
     df_test, target=target_name, feature_names=feature_names, source_encoders=encoders
 )
 
-use_test = st.sidebar.checkbox("Test")
+use_test = not df_test.empty and st.sidebar.checkbox("Test")
 evaluation_df = df_test if use_test else df
 evaluation_X = X_test if use_test else X
 evaluation_y = y_test if use_test else y
@@ -105,7 +117,7 @@ if protected_attributes:
         protected_attributes=protected_attributes,
         target_attribute=target_name,
         target_predictions=evaluation_df[target_name],
-        positive_target=">50K",
+        positive_target=positive_target,
         mode=metric_mode,
         return_probs=True,
     )
@@ -114,7 +126,9 @@ if protected_attributes:
 
     "### Only one"
     winner = st.sidebar.selectbox("Winner", df[protected_attributes].unique())
-    predictor = lambda x: (">50K" if x[protected_attributes] == winner else "<=50K")
+    predictor = lambda x: (
+        positive_target if x[protected_attributes] == winner else negative_target
+    )
 
     predicted = evaluation_df.apply(predictor, axis=1)
     measure = metrics(
@@ -122,7 +136,7 @@ if protected_attributes:
         protected_attributes=protected_attributes,
         target_attribute=target_name,
         target_predictions=predicted,
-        positive_target=">50K",
+        positive_target=positive_target,
         mode=metric_mode,
         return_probs=True,
     )
@@ -143,7 +157,7 @@ if protected_attributes:
             protected_attributes=protected_attributes,
             target_attribute=target_name,
             target_predictions=predicted,
-            positive_target=">50K",
+            positive_target=positive_target,
             mode=metric_mode,
             return_probs=True,
         )
@@ -164,7 +178,7 @@ if protected_attributes:
             protected_attributes=protected_attributes,
             target_attribute=target_name,
             target_predictions=predicted,
-            positive_target=">50K",
+            positive_target=positive_target,
             mode=metric_mode,
             return_probs=True,
         )
@@ -185,7 +199,7 @@ if protected_attributes:
             protected_attributes=protected_attributes,
             target_attribute=target_name,
             target_predictions=predicted,
-            positive_target=">50K",
+            positive_target=positive_target,
             mode=metric_mode,
             return_probs=True,
         )
@@ -208,10 +222,9 @@ if protected_attributes:
             protected_attributes=protected_attributes,
             target_attribute=target_name,
             target_predictions=predicted,
-            positive_target=">50K",
+            positive_target=positive_target,
             mode=metric_mode,
             return_probs=True,
         )
         measure = metrics.to_df(measure)
         measure
-
