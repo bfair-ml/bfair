@@ -38,19 +38,21 @@ df: pd.DataFrame = dataset.data
 df_test: pd.DataFrame = dataset.test
 
 f"# Dataset: _{dataset_name}_"
-if st.sidebar.checkbox("Show dataset"):
+with st.beta_expander("Explore data"):
+    "**Training set**"
     df
+    "**Test set**"
     df_test
 
 # = FEATURES =================================================
 feature_names = df.columns[:-1]
 X = df[feature_names]
 
-if st.sidebar.checkbox("Show Features"):
-    "## Features"
+with st.beta_expander("Features"):
+    "#### All features"
     X
     for feature in feature_names:
-        f"### {feature}"
+        f"#### {feature}"
         values = df[feature].unique()
         values.sort()
         values
@@ -60,6 +62,9 @@ if st.sidebar.checkbox("Show Features"):
 target_name = df.columns[-1]
 y = df[target_name]
 
+with st.beta_expander("Target"):
+    y
+
 labels = set(y.unique())
 assert len(labels) == 2
 positive_target = st.sidebar.selectbox("positive_target", list(labels))
@@ -67,10 +72,6 @@ negative_target = (labels - {positive_target}).pop()
 
 f"**Positive target:** {positive_target}"
 f"**Negative target:** {negative_target}"
-
-if st.sidebar.checkbox("Show Target"):
-    "## Target"
-    y
 
 # = CLASSIFIER =================================================
 
@@ -110,53 +111,17 @@ if protected_attributes:
         equalized_odds,
     )
 
-    "### Gold"
-
-    measure = metrics(
-        data=evaluation_df,
-        protected_attributes=protected_attributes,
-        target_attribute=target_name,
-        target_predictions=evaluation_df[target_name],
-        positive_target=positive_target,
-        mode=metric_mode,
-        return_probs=True,
-    )
-    measure = metrics.to_df(measure)
-    measure
-
-    "### Only one"
-    winner = st.sidebar.selectbox("Winner", df[protected_attributes].unique())
-    predictor = lambda x: (
-        positive_target if x[protected_attributes] == winner else negative_target
+    selected_algoritms = st.sidebar.multiselect(
+        "Algorithms",
+        ["Only one", "DecisionTreeClassifier", "LogisticRegression", "SVC", "Ensemble"],
     )
 
-    predicted = evaluation_df.apply(predictor, axis=1)
-    measure = metrics(
-        data=evaluation_df,
-        protected_attributes=protected_attributes,
-        target_attribute=target_name,
-        target_predictions=predicted,
-        positive_target=positive_target,
-        mode=metric_mode,
-        return_probs=True,
-    )
-    measure = metrics.to_df(measure)
-    measure
-
-    if st.sidebar.checkbox("DecisionTreeClassifier"):
-        "### DecisionTreeClassifier"
-        classifier = DecisionTreeClassifier(max_depth=max_depth)
-        classifier.fit(X, y)
-
-        predicted = classifier.predict(evaluation_X)
-        predicted = encoder.inverse_transform(predicted)
-        predicted = pd.Series(predicted, evaluation_df.index)
-
+    with st.beta_expander("Gold"):
         measure = metrics(
             data=evaluation_df,
             protected_attributes=protected_attributes,
             target_attribute=target_name,
-            target_predictions=predicted,
+            target_predictions=evaluation_df[target_name],
             positive_target=positive_target,
             mode=metric_mode,
             return_probs=True,
@@ -164,67 +129,110 @@ if protected_attributes:
         measure = metrics.to_df(measure)
         measure
 
-    if st.sidebar.checkbox("LogisticRegression"):
-        "### LogisticRegression"
-        classifier = LogisticRegression()
-        classifier.fit(X, y)
+    if "Only one" in selected_algoritms:
+        with st.beta_expander("Only one"):
+            winner = st.sidebar.selectbox("Winner", df[protected_attributes].unique())
+            predictor = lambda x: (
+                positive_target
+                if x[protected_attributes] == winner
+                else negative_target
+            )
 
-        predicted = classifier.predict(evaluation_X)
-        predicted = encoder.inverse_transform(predicted)
-        predicted = pd.Series(predicted, evaluation_df.index)
+            predicted = evaluation_df.apply(predictor, axis=1)
+            measure = metrics(
+                data=evaluation_df,
+                protected_attributes=protected_attributes,
+                target_attribute=target_name,
+                target_predictions=predicted,
+                positive_target=positive_target,
+                mode=metric_mode,
+                return_probs=True,
+            )
+            measure = metrics.to_df(measure)
+            measure
 
-        measure = metrics(
-            data=evaluation_df,
-            protected_attributes=protected_attributes,
-            target_attribute=target_name,
-            target_predictions=predicted,
-            positive_target=positive_target,
-            mode=metric_mode,
-            return_probs=True,
-        )
-        measure = metrics.to_df(measure)
-        measure
+    if "DecisionTreeClassifier" in selected_algoritms:
+        with st.beta_expander("DecisionTreeClassifier"):
+            classifier = DecisionTreeClassifier(max_depth=max_depth)
+            classifier.fit(X, y)
 
-    if st.sidebar.checkbox("SVC"):
-        "### SVC"
-        classifier = SVC()
-        classifier.fit(X, y)
+            predicted = classifier.predict(evaluation_X)
+            predicted = encoder.inverse_transform(predicted)
+            predicted = pd.Series(predicted, evaluation_df.index)
 
-        predicted = classifier.predict(evaluation_X)
-        predicted = encoder.inverse_transform(predicted)
-        predicted = pd.Series(predicted, evaluation_df.index)
+            measure = metrics(
+                data=evaluation_df,
+                protected_attributes=protected_attributes,
+                target_attribute=target_name,
+                target_predictions=predicted,
+                positive_target=positive_target,
+                mode=metric_mode,
+                return_probs=True,
+            )
+            measure = metrics.to_df(measure)
+            measure
 
-        measure = metrics(
-            data=evaluation_df,
-            protected_attributes=protected_attributes,
-            target_attribute=target_name,
-            target_predictions=predicted,
-            positive_target=positive_target,
-            mode=metric_mode,
-            return_probs=True,
-        )
-        measure = metrics.to_df(measure)
-        measure
+    if "LogisticRegression" in selected_algoritms:
+        with st.beta_expander("LogisticRegression"):
+            classifier = LogisticRegression()
+            classifier.fit(X, y)
 
-    if st.sidebar.checkbox("Ensemble"):
-        "### Ensemble"
-        mitigator = SklearnMitigator(
-            dataset=dataset, target=target_name, metrics=metrics, encoders=encoders
-        )
-        ensemble = mitigator(DecisionTreeClassifier(), LogisticRegression(), SVC())
+            predicted = classifier.predict(evaluation_X)
+            predicted = encoder.inverse_transform(predicted)
+            predicted = pd.Series(predicted, evaluation_df.index)
 
-        predicted = ensemble.predict(evaluation_X)
-        predicted = mitigator.encoders[target_name].inverse_transform(predicted)
-        predicted = pd.Series(predicted, evaluation_df.index)
+            measure = metrics(
+                data=evaluation_df,
+                protected_attributes=protected_attributes,
+                target_attribute=target_name,
+                target_predictions=predicted,
+                positive_target=positive_target,
+                mode=metric_mode,
+                return_probs=True,
+            )
+            measure = metrics.to_df(measure)
+            measure
 
-        measure = metrics(
-            data=evaluation_df,
-            protected_attributes=protected_attributes,
-            target_attribute=target_name,
-            target_predictions=predicted,
-            positive_target=positive_target,
-            mode=metric_mode,
-            return_probs=True,
-        )
-        measure = metrics.to_df(measure)
-        measure
+    if "SVC" in selected_algoritms:
+        with st.beta_expander("SVC"):
+            classifier = SVC()
+            classifier.fit(X, y)
+
+            predicted = classifier.predict(evaluation_X)
+            predicted = encoder.inverse_transform(predicted)
+            predicted = pd.Series(predicted, evaluation_df.index)
+
+            measure = metrics(
+                data=evaluation_df,
+                protected_attributes=protected_attributes,
+                target_attribute=target_name,
+                target_predictions=predicted,
+                positive_target=positive_target,
+                mode=metric_mode,
+                return_probs=True,
+            )
+            measure = metrics.to_df(measure)
+            measure
+
+    if "Ensemble" in selected_algoritms:
+        with st.beta_expander("Ensemble"):
+            mitigator = SklearnMitigator(
+                dataset=dataset, target=target_name, metrics=metrics, encoders=encoders
+            )
+            ensemble = mitigator(DecisionTreeClassifier(), LogisticRegression(), SVC())
+
+            predicted = ensemble.predict(evaluation_X)
+            predicted = mitigator.encoders[target_name].inverse_transform(predicted)
+            predicted = pd.Series(predicted, evaluation_df.index)
+
+            measure = metrics(
+                data=evaluation_df,
+                protected_attributes=protected_attributes,
+                target_attribute=target_name,
+                target_predictions=predicted,
+                positive_target=positive_target,
+                mode=metric_mode,
+                return_probs=True,
+            )
+            measure = metrics.to_df(measure)
+            measure
