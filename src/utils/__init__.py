@@ -1,1 +1,1 @@
-from src.utils.features import encode_features
+from .features import encode_features

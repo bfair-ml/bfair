@@ -1,1 +1,1 @@
-from src.methods.sklearn import SklearnMitigator
+from .sklearn import SklearnMitigator
