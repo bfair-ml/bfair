@@ -42,3 +42,25 @@ def build_oracle_output_matrix(
     signed = matrix.transpose() * 2 - 1
     weighted = signed if weights is None else signed * weights
     return weighted
+
+
+def disagreement(oracle_matrix: ndarray):
+    """
+    ## Parameters
+
+    `oracle_matrix`: ndarray (Ni, Nj)
+        - `i`: training sample.
+        - `j`: classifier.
+
+    ## Returns
+
+    `out`: ndarray (Ni, Ni)
+    """
+    n_samples = oracle_matrix.shape[0]
+
+    def measure(classifier):
+        diff = np.not_equal(oracle_matrix.transpose(), classifier)
+        count = np.count_nonzero(diff, axis=1)
+        return count / n_samples
+
+    return np.apply_along_axis(measure, axis=0, arr=oracle_matrix)
