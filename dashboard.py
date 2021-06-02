@@ -5,9 +5,9 @@ from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from streamlit.config import _server_enable_xsrf_protection
 
-from src.datasets import load_adult, load_german
-from src.methods import SklearnMitigator
-from src.metrics import (
+from bfair.datasets import load_adult, load_german
+from bfair.methods import SklearnMitigator
+from bfair.metrics import (
     DIFFERENCE,
     RATIO,
     MetricHandler,
@@ -18,7 +18,7 @@ from src.metrics import (
     false_positive_rate,
     statistical_parity,
 )
-from src.utils import encode_features
+from bfair.utils import encode_features
 
 
 # = DATASET =================================================

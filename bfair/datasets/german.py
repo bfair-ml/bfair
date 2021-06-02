@@ -1,9 +1,8 @@
 from pathlib import Path
 
 import pandas as pd
+from bfair.envs import GERMAN_DATASET
 from sklearn.model_selection import train_test_split
-from src.envs import GERMAN_DATASET
-
 
 ATTRIBUTES_NAMES = [
     "status of existing checking account",

@@ -1,7 +1,7 @@
 from collections import Counter
 
 import numpy as np
-from src.utils import encode_features
+from bfair.utils import encode_features
 
 from sklearn.ensemble import BaggingClassifier
 

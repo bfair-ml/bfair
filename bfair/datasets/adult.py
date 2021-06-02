@@ -2,7 +2,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from src.envs import ADULT_DATASET
+from bfair.envs import ADULT_DATASET
 
 
 def load_dataset(path=ADULT_DATASET):
@@ -29,6 +29,6 @@ class AdultDataset:
         test = pd.read_csv(
             test_path, sep=", ", header=None, names=names, engine="python", skiprows=1
         )
-        test["income"] = test["income"].str.slice(0,-1)
+        test["income"] = test["income"].str.slice(0, -1)
 
         return AdultDataset(data=data, test=test)
