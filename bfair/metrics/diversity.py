@@ -4,7 +4,7 @@ from numpy import ndarray
 
 def build_oracle_output_matrix(
     gold: ndarray, predictions: ndarray, weights: ndarray = None
-):
+) -> ndarray:
     """
     ## Parameters
 
@@ -44,7 +44,7 @@ def build_oracle_output_matrix(
     return weighted
 
 
-def disagreement(oracle_matrix: ndarray):
+def disagreement(oracle_matrix: ndarray) -> ndarray:
     """
     ## Parameters
 
