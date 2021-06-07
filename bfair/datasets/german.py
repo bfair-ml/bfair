@@ -2,7 +2,8 @@ from pathlib import Path
 
 import pandas as pd
 from bfair.envs import GERMAN_DATASET
-from sklearn.model_selection import train_test_split
+
+from .base import Dataset
 
 ATTRIBUTES_NAMES = [
     "status of existing checking account",
@@ -91,12 +92,9 @@ def load_dataset(path=GERMAN_DATASET, split_seed=None):
     return GermanDataset.load(path, split_seed=split_seed)
 
 
-class GermanDataset:
-    def __init__(self, data: pd.DataFrame, test: pd.DataFrame = None):
-        self.data = data
-        self.test = test
-
-    def load(path, categorical=True, split_seed=None):
+class GermanDataset(Dataset):
+    @classmethod
+    def load(cls, path, categorical=True, split_seed=None):
         path = Path(path)
         data_path = path / ("german.data" if categorical else "german.data-numeric")
 
@@ -119,14 +117,7 @@ class GermanDataset:
 
         data.loc[:, "risk"] = data["risk"].apply({"1": "good", "2": "bad"}.get)
 
-        if split_seed:
-            train, test = train_test_split(
-                data, test_size=0.3, random_state=split_seed, shuffle=True
-            )
-        else:
-            train, test = data, pd.DataFrame(columns=data.columns).astype(data.dtypes)
-
-        return GermanDataset(data=train, test=test)
+        return GermanDataset(data, split_seed=split_seed)
 
     @staticmethod
     def cost_matrix(gold, prediction):

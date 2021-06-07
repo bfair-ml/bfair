@@ -1,20 +1,18 @@
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 from bfair.envs import ADULT_DATASET
+
+from .base import Dataset
 
 
 def load_dataset(path=ADULT_DATASET):
     return AdultDataset.load(path)
 
 
-class AdultDataset:
-    def __init__(self, data: pd.DataFrame, test: pd.DataFrame = None):
-        self.data = data
-        self.test = test
-
-    def load(path):
+class AdultDataset(Dataset):
+    @classmethod
+    def load(cls, path):
         path = Path(path)
         data_path = path / "adult.data"
         test_path = path / "adult.test"
