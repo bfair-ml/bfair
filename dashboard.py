@@ -6,6 +6,7 @@ from sklearn.tree import DecisionTreeClassifier
 from streamlit.config import _server_enable_xsrf_protection
 
 from bfair.datasets import load_adult, load_german
+from bfair.datasets.custom import load_from_file
 from bfair.methods import SklearnMitigator
 from bfair.metrics import (
     DIFFERENCE,
@@ -32,8 +33,15 @@ def load_dataset(name):
         raise ValueError(f"Unknown dataset: {name}")
 
 
-dataset_name = st.sidebar.selectbox("name", ["adult", "german"])
-dataset = load_dataset(dataset_name)
+dataset_name = st.sidebar.selectbox("name", ["custom", "adult", "german"])
+if dataset_name == "custom":
+    uploaded_file = st.file_uploader("Choose a file", type=["csv", "txt"])
+    if uploaded_file is None:
+        st.stop()
+    dataset = load_from_file(uploaded_file)
+else:
+    dataset = load_dataset(dataset_name)
+
 df: pd.DataFrame = dataset.data
 df_test: pd.DataFrame = dataset.test
 
