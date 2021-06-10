@@ -102,22 +102,30 @@ else:
 
 # = PROTECTED ATTRIBUTES =================================================
 
+metric_mode = st.sidebar.selectbox("Disparity Mode", [DIFFERENCE, RATIO])
+default_metrics = [
+    accuracy_disparity,
+    statistical_parity,
+    equal_opportunity,
+    false_positive_rate,
+    equalized_odds,
+]
+all_metrics = [accuracy] + default_metrics
+selected_metrics = st.sidebar.multiselect(
+    "Metrics",
+    all_metrics,
+    default=default_metrics,
+    format_func=lambda x: x.__name__,
+)
+
 protected_attributes = st.sidebar.selectbox(
     "Protected Attributes", [None] + list(feature_names)
 )
-metric_mode = st.sidebar.selectbox("Disparity Mode", [DIFFERENCE, RATIO])
 
 if protected_attributes:
     "## Disparity Metrics"
 
-    metrics = MetricHandler(
-        accuracy,
-        accuracy_disparity,
-        statistical_parity,
-        equal_opportunity,
-        false_positive_rate,
-        equalized_odds,
-    )
+    metrics = MetricHandler(*selected_metrics)
 
     selected_algoritms = st.sidebar.multiselect(
         "Algorithms",
