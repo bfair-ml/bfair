@@ -35,7 +35,7 @@ def load_dataset(name):
 
 dataset_name = st.sidebar.selectbox("name", ["custom", "adult", "german"])
 if dataset_name == "custom":
-    uploaded_file = st.file_uploader("Choose a file", type=["csv", "txt"])
+    uploaded_file = st.file_uploader("Dataset: Choose a file", type=["csv", "txt"])
     if uploaded_file is None:
         st.stop()
     dataset = load_from_file(uploaded_file)
@@ -129,7 +129,14 @@ if protected_attributes:
 
     selected_algoritms = st.sidebar.multiselect(
         "Algorithms",
-        ["Only one", "DecisionTreeClassifier", "LogisticRegression", "SVC", "Ensemble"],
+        [
+            "Custom",
+            "Only one",
+            "DecisionTreeClassifier",
+            "LogisticRegression",
+            "SVC",
+            "Ensemble",
+        ],
     )
 
     with st.beta_expander("Gold"):
@@ -144,6 +151,25 @@ if protected_attributes:
         )
         measure = metrics.to_df(measure)
         measure
+
+    if "Custom" in selected_algoritms:
+        with st.beta_expander("Custom"):
+            uploaded_file = st.file_uploader(
+                "Prediction: Choose a file", type=["csv", "txt"]
+            )
+            if uploaded_file is not None:
+                predicted = pd.read_csv(uploaded_file)[target_name]
+                measure = metrics(
+                    data=evaluation_df,
+                    protected_attributes=protected_attributes,
+                    target_attribute=target_name,
+                    target_predictions=predicted,
+                    positive_target=positive_target,
+                    mode=metric_mode,
+                    return_probs=True,
+                )
+                measure = metrics.to_df(measure)
+                measure
 
     if "Only one" in selected_algoritms:
         with st.beta_expander("Only one"):
