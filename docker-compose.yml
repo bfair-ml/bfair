@@ -2,10 +2,26 @@ version: "3"
 
 services:
   main:
-    image: "jpconsuegra/fairness"
+    container_name: bfair
+    image: "jpconsuegra/bfair"
     build: "."
     volumes:
-      - "./:/workspace"
-      - "~/.ssh/id_rsa:/root/.ssh/id_rsa"
-      - "./vendor/autogoal/autogoal:/usr/local/lib/python3.8/site-packages/autogoal"
+      - "./:/home/coder/bfair"
+      - "~/.ssh:/home/coder/.ssh"
+      - "~/.gitconfig:/home/coder/.gitconfig"
+      - "~/.autogoal:/home/coder/.autogoal"
+      - "./vendor/autogoal/:/home/coder/autogoal"
+      - "./vendor/autogoal/autogoal:/usr/lib/python3/dist-packages/autogoal"
+      - "./vendor/autogoal/vendor/illiterate/illiterate:/usr/lib/python3/dist-packages/illiterate"
     network_mode: "host"
+    depends_on:
+      - autogoal
+    user: "1000:1000"
+
+  autogoal:
+    image: "jpconsuegra/autogoal"
+    build: "./vendor/autogoal/"
+    hostname: autogoal
+    volumes: 
+      - "~/.autogoal:/home/coder/.autogoal"
+    user: "1000:1000"
