@@ -7,7 +7,7 @@ RUN rm ~/starship.sh
 
 RUN pip install -U black
 
-RUN pip install streamlit
+RUN pip install -U streamlit==0.83
 
 RUN pip install sklearn
 

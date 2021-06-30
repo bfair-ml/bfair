@@ -1,4 +1,4 @@
-from typing import Callable, List, Literal, Union
+from typing import Callable, List, Union
 
 import pandas as pd
 from pandas import DataFrame, Series
@@ -23,9 +23,33 @@ class MetricHandler:
         target_attribute: str,
         target_predictions: Series,
         positive_target,
-        mode: Union[Literal["difference", "ratio"], Callable[..., float]] = DIFFERENCE,
+        mode: Union[str, Callable[..., float]] = DIFFERENCE,
         return_probs=False,
     ):
+        """
+        ## Parameters
+
+        `data`: DataFrame with all features (including the protected and target attributes)
+
+        `protected_attributes`: A single attribute name or a list of them.
+
+        `target_attribute`: Name of the attribute used to discriminate the items.
+
+        `target_predictions`: Series of predicted values for the discrimination attribute.
+
+        `positive_target`: Value of the `target_attribute` that indicates a positive discrimination.
+
+        `mode`:
+            - `difference`: compute the difference between the highest scored and least scored groups.
+            - `ratio`: compute the ratio between the highest scored and least scored groups.
+            - `Callable`: compute a custom score between the highest scored and least scored groups.
+
+        `return_probs`: Whether to return the computed probabilities in addition the score.
+
+        ## Returns
+
+        `out`: `(value, probs)` if `return_probs` else `value`
+        """
         return {
             key: metric(
                 data=data,
@@ -60,10 +84,36 @@ def base_metric(
     target_attribute: str,
     target_predictions: Series,
     positive_target,
-    mode: Union[Literal["difference", "ratio"], Callable[..., float]] = DIFFERENCE,
+    mode: Union[str, Callable[..., float]] = DIFFERENCE,
     return_probs: bool = False,
     **kwargs,
 ) -> float:
+    """
+        ## Parameters
+
+        `data`: DataFrame with all features (including the protected and target attributes)
+
+        `protected_attributes`: A single attribute name or a list of them.
+
+        `target_attribute`: Name of the attribute used to discriminate the items.
+
+        `target_predictions`: Series of predicted values for the discrimination attribute.
+
+        `positive_target`: Value of the `target_attribute` that indicates a positive discrimination.
+
+        `mode`:
+            - `difference`: compute the difference between the highest scored and least scored groups.
+            - `ratio`: compute the ratio between the highest scored and least scored groups.
+            - `Callable`: compute a custom score between the highest scored and least scored groups.
+
+        `return_probs`: Whether to return the computed probabilities in addition the score.
+
+        **kwargs: Additional parameters to ignore.
+
+        ## Returns
+
+        `out`: `(value, probs)` if `return_probs` else `value`
+        """
     pass
 
 
@@ -88,7 +138,11 @@ def disparity_metric(func: Callable) -> base_metric:
 
 
 def accuracy(
-    *, data: DataFrame, target_attribute: str, target_predictions: Series, **kwargs,
+    *,
+    data: DataFrame,
+    target_attribute: str,
+    target_predictions: Series,
+    **kwargs,
 ):
     gold_target = data[target_attribute]
     equals = gold_target == target_predictions
@@ -189,7 +243,7 @@ def equalized_odds(
     target_attribute: str,
     target_predictions: Series,
     positive_target,
-    mode: Union[Literal["difference", "ratio"], Callable[..., float]] = DIFFERENCE,
+    mode: Union[str, Callable[..., float]] = DIFFERENCE,
     return_probs: bool = False,
     **kwargs,
 ):

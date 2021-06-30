@@ -3,7 +3,6 @@ import streamlit as st
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
-from streamlit.config import _server_enable_xsrf_protection
 
 from bfair.datasets import load_adult, load_german
 from bfair.datasets.custom import load_from_file
