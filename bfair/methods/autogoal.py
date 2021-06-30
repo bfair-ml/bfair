@@ -43,8 +43,10 @@ class AutoGoalMitigator:
 
             for i in range(n_solutions):
                 pipeline = solutions[i]
-                fn = solutions[i]
+                fn = fns[i]
 
+                pipeline.send("train")
+                pipeline.run(X, y)
                 pipeline.send("eval")
                 y_pred = pipeline.run(X, None)
                 predictions.append(y_pred)
@@ -70,7 +72,7 @@ class AutoGoalMitigator:
             def compute_aggregated_diversity(pipeline_index):
                 return diversity_matrix[selected, pipeline_index].sum()
 
-            for rank in range(n_solutions, 1):
+            for rank in range(n_solutions - 1, 1, -1):
                 best = None
                 best_diversity = float("-inf")
                 for i in range(n_solutions):
