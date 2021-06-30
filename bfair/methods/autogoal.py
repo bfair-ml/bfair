@@ -3,17 +3,24 @@ from typing import Callable, List
 
 from bfair.metrics import build_oracle_output_matrix, disagreement, diversity
 
-from autogoal.kb import VectorCategorical
+from autogoal.kb import Supervised, VectorCategorical
 from autogoal.ml import AutoML
 from autogoal.search import PESearch
 
 
 class AutoGoalMitigator:
-    def __init__(self, *, n_classifiers=None, maximize=True):
+    def __init__(self, *, input, n_classifiers=None, maximize=True):
         self.n_classifiers = n_classifiers
         self.maximize = maximize
 
+        input = (
+            input + (Supervised[VectorCategorical],)
+            if isinstance(input, tuple)
+            else (input, Supervised[VectorCategorical])
+        )
+
         self._automl = AutoML(
+            input=input,
             output=VectorCategorical,
             search_algorithm=PESearch,
             number_of_pipelines=n_classifiers,
