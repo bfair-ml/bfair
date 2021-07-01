@@ -42,29 +42,36 @@ class AutoGoalMitigator:
     def _make_ranking_fn(self, X, y) -> Callable[[List, List[float]], List[float]]:
         def ranking_fn(solutions, fns):
             n_solutions = len(solutions)
+            ranking = [None] * len(solutions)
 
             # COMPUTE PREDICTIONS AND FIND TOP PERFORMING PIPELINE'S INDEX
-            best = 0
-            best_fn = fns[0]
+            best = None
+            best_fn = None
             predictions = []
+            valid_solutions = []
 
             for i in range(n_solutions):
                 pipeline = solutions[i]
                 fn = fns[i]
 
-                pipeline.send("train")
-                pipeline.run(X, y)
-                pipeline.send("eval")
-                y_pred = pipeline.run(X, None)
-                predictions.append(y_pred)
+                try:
+                    pipeline.send("train")
+                    pipeline.run(X, y)
+                    pipeline.send("eval")
+                    y_pred = pipeline.run(X, None)
 
-                if (
-                    best_fn is None
-                    or (fn > best_fn and self.maximize)
-                    or (fn < best_fn and not self.maximize)
-                ):
-                    best = i
-                    best_fn = fn
+                    predictions.append(y_pred)
+                    valid_solutions.append(pipeline)
+
+                    if (
+                        best_fn is None
+                        or (fn > best_fn and self.maximize)
+                        or (fn < best_fn and not self.maximize)
+                    ):
+                        best = i
+                        best_fn = fn
+                except Exception:
+                    ranking[i] = -1
 
             # COMPUTE DIVERSITY BETWEEN PAIRS OF PIPELINES
             oracle_matrix = build_oracle_output_matrix(y, predictions)
@@ -72,14 +79,14 @@ class AutoGoalMitigator:
 
             # RANK PIPELINES GREEDY (root: best_fn, step: diversity)
             # - accuracy is been ignored
-            ranking = [None] * len(solutions)
-            ranking[best] = n_solutions
+            n_valid_solutions = len(valid_solutions)
+            ranking[best] = n_valid_solutions
             selected = [best]
 
             def compute_aggregated_diversity(pipeline_index):
                 return diversity_matrix[selected, pipeline_index].sum()
 
-            for rank in range(n_solutions - 1, 1, -1):
+            for rank in range(n_valid_solutions - 1, 1, -1):
                 best = None
                 best_diversity = float("-inf")
                 for i in range(n_solutions):
