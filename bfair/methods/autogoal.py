@@ -9,7 +9,44 @@ from autogoal.search import PESearch
 
 
 class AutoGoalMitigator:
-    def __init__(self, *, input, n_classifiers=None, maximize=True):
+    def __init__(self, diversifier, ensembler):
+        self.diversifier = diversifier
+        self.ensembler = ensembler
+
+    @classmethod
+    def build(cls, *, input, n_classifiers=None, maximize=True, **automl_kwargs):
+        diversifier = cls.build_diversifier(
+            input=input,
+            n_classifiers=n_classifiers,
+            maximize=maximize,
+            **automl_kwargs,
+        )
+        ensembler = cls.build_ensembler(**automl_kwargs)
+        return cls(diversifier, ensembler)
+
+    @classmethod
+    def build_diversifier(
+        cls, *, input, n_classifiers=None, maximize=True, **automl_kwargs
+    ):
+        return AutoGoalDiversifier(
+            input=input,
+            n_classifiers=n_classifiers,
+            maximize=maximize,
+            **automl_kwargs,
+        )
+
+    @classmethod
+    def build_ensembler(cls, **automl_kwargs):
+        raise NotImplementedError()
+
+    def __call__(self, X, y, **search_kwargs):
+        classifiers, scores = self.diversifier(X, y, **search_kwargs)
+        model = self.ensembler(X, y, classifiers, scores, **search_kwargs)
+        return model
+
+
+class AutoGoalDiversifier:
+    def __init__(self, *, input, n_classifiers=None, maximize=True, **automl_kwargs):
         self.n_classifiers = n_classifiers
         self.maximize = maximize
 
@@ -25,19 +62,18 @@ class AutoGoalMitigator:
             search_algorithm=PESearch,
             number_of_pipelines=n_classifiers,
             maximize=maximize,
+            **automl_kwargs,
         )
 
-    def __call__(self, X, y):
-        classifiers = self._build_base_classifiers(X, y)
-        ensembler = self._build_ensembler(X, y, classifiers)
-        return ensembler
+    def __call__(self, X, y, **search_kwargs):
+        return self._build_base_classifiers(X, y, **search_kwargs)
 
-    def _build_base_classifiers(self, X, y):
+    def _build_base_classifiers(self, X, y, **search_kwargs):
         automl = self._automl
         ranking_fn = self._make_ranking_fn(X, y)
 
-        automl.fit(X, y, ranking_fn=ranking_fn)
-        return automl.top_pipelines_
+        automl.fit(X, y, ranking_fn=ranking_fn, **search_kwargs)
+        return automl.top_pipelines_, automl.top_pipelines_scores_
 
     def _make_ranking_fn(self, X, y) -> Callable[[List, List[float]], List[float]]:
         def ranking_fn(solutions, fns):
@@ -105,6 +141,3 @@ class AutoGoalMitigator:
             return ranking
 
         return ranking_fn
-
-    def _build_ensembler(self, X, y, classifiers):
-        pass
