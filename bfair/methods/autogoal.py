@@ -14,7 +14,7 @@ class AutoGoalMitigator:
         self.ensembler = ensembler
 
     @classmethod
-    def build(cls, *, input, n_classifiers=None, maximize=True, **automl_kwargs):
+    def build(cls, *, input, n_classifiers: int, maximize=True, **automl_kwargs):
         diversifier = cls.build_diversifier(
             input=input,
             n_classifiers=n_classifiers,
@@ -26,7 +26,7 @@ class AutoGoalMitigator:
 
     @classmethod
     def build_diversifier(
-        cls, *, input, n_classifiers=None, maximize=True, **automl_kwargs
+        cls, *, input, n_classifiers: int, maximize=True, **automl_kwargs
     ):
         return AutoGoalDiversifier(
             input=input,
@@ -46,7 +46,7 @@ class AutoGoalMitigator:
 
 
 class AutoGoalDiversifier:
-    def __init__(self, *, input, n_classifiers=None, maximize=True, **automl_kwargs):
+    def __init__(self, *, input, n_classifiers: int, maximize=True, **automl_kwargs):
         self.n_classifiers = n_classifiers
         self.maximize = maximize
 
@@ -70,13 +70,24 @@ class AutoGoalDiversifier:
 
     def _build_base_classifiers(self, X, y, **search_kwargs):
         automl = self._automl
-        ranking_fn = self._make_ranking_fn(X, y)
+        ranking_fn = self.make_ranking_fn(
+            X,
+            y,
+            top_cut=self.n_classifiers,
+            maximize=self.maximize,
+        )
 
         automl.fit(X, y, ranking_fn=ranking_fn, **search_kwargs)
         return automl.top_pipelines_, automl.top_pipelines_scores_
 
-    def _make_ranking_fn(self, X, y) -> Callable[[List, List[float]], List[float]]:
+    @staticmethod
+    def make_ranking_fn(
+        X, y, *, top_cut=None, maximize=True
+    ) -> Callable[[List, List[float]], List[float]]:
         def ranking_fn(solutions, fns):
+            if top_cut is not None and len(solutions) <= top_cut:
+                return fns
+
             n_solutions = len(solutions)
             ranking = [None] * len(solutions)
 
@@ -101,13 +112,20 @@ class AutoGoalDiversifier:
 
                     if (
                         best_fn is None
-                        or (fn > best_fn and self.maximize)
-                        or (fn < best_fn and not self.maximize)
+                        or (fn > best_fn and maximize)
+                        or (fn < best_fn and not maximize)
                     ):
                         best = i
                         best_fn = fn
                 except Exception:
                     ranking[i] = -1
+
+            if (
+                top_cut is not None
+                and len(valid_solutions) <= top_cut
+                or len(valid_solutions) < 3
+            ):
+                return fns
 
             # COMPUTE DIVERSITY BETWEEN PAIRS OF PIPELINES
             oracle_matrix = build_oracle_output_matrix(y, predictions)
