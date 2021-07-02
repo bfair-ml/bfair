@@ -1,20 +1,8 @@
-from collections import Counter
-
-import numpy as np
 from bfair.utils import encode_features
 
 from sklearn.ensemble import BaggingClassifier
 
-
-class VotingClassifier:
-    def __init__(self, estimators):
-        self.estimators = estimators
-
-    def predict(self, X):
-        predictions = [model.predict(X) for model in self.estimators]
-        stack = np.column_stack(predictions)
-        most_commons = [Counter(sample).most_common(1)[0][0] for sample in stack]
-        return np.asarray(most_commons)
+from .voting import VotingClassifier
 
 
 class SklearnMitigator:
