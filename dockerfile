@@ -11,4 +11,6 @@ RUN pip install -U streamlit==0.83
 
 RUN pip install sklearn
 
-WORKDIR /home/code
+WORKDIR /home/coder/bfair
+
+CMD [ "make", "dashboard"]

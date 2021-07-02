@@ -17,6 +17,8 @@ services:
     depends_on:
       - autogoal
     user: "1000:1000"
+    working_dir: /home/coder/bfair
+    command: /usr/bin/make dashboard
 
   autogoal:
     image: "jpconsuegra/autogoal"
