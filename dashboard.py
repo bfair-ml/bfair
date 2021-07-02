@@ -37,7 +37,7 @@ def load_dataset(name):
         raise ValueError(f"Unknown dataset: {name}")
 
 
-dataset_name = st.sidebar.selectbox("name", ["custom", "adult", "german"])
+dataset_name = st.sidebar.selectbox("Dataset", ["custom", "adult", "german"])
 if dataset_name == "custom":
     uploaded_file = st.file_uploader("Dataset: Choose a file", type=["csv", "txt"])
     if uploaded_file is None:
@@ -98,11 +98,6 @@ use_test = not df_test.empty and st.sidebar.checkbox("Test")
 evaluation_df = df_test if use_test else df
 evaluation_X = X_test if use_test else X
 evaluation_y = y_test if use_test else y
-
-if st.sidebar.checkbox("Custom Params"):
-    max_depth = st.sidebar.number_input("max_depth (see range 8..10)", 1)
-else:
-    max_depth = None
 
 # = PROTECTED ATTRIBUTES =================================================
 
@@ -179,9 +174,7 @@ if protected_attributes:
     if "Only one" in selected_algoritms:
         with st.beta_expander("Only one"):
             with st.spinner("Training ..."):
-                winner = st.sidebar.selectbox(
-                    "Winner", df[protected_attributes].unique()
-                )
+                winner = st.selectbox("Winner", df[protected_attributes].unique())
                 predictor = lambda x: (
                     positive_target
                     if x[protected_attributes] == winner
@@ -203,6 +196,11 @@ if protected_attributes:
 
     if "DecisionTreeClassifier" in selected_algoritms:
         with st.beta_expander("DecisionTreeClassifier"):
+            if st.checkbox("Limit depths"):
+                max_depth = st.number_input("max_depth (see range 8..10)", 1)
+            else:
+                max_depth = None
+
             with st.spinner("Training ..."):
                 classifier = DecisionTreeClassifier(max_depth=max_depth)
                 classifier.fit(X, y)
