@@ -1,12 +1,17 @@
 import pandas as pd
 import streamlit as st
+from autogoal.search import ConsoleLogger
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
 from bfair.datasets import load_adult, load_german
 from bfair.datasets.custom import load_from_file
-from bfair.methods import SklearnMitigator
+from bfair.methods import (
+    AutoGoalDiversifier,
+    SklearnMitigator,
+    VotingClassifier,
+)
 from bfair.metrics import (
     DIFFERENCE,
     RATIO,
@@ -135,6 +140,7 @@ if protected_attributes:
             "LogisticRegression",
             "SVC",
             "Ensemble",
+            "AutoGoalMitigator",
         ],
     )
 
@@ -276,6 +282,82 @@ if protected_attributes:
 
                 predicted = ensemble.predict(evaluation_X)
                 predicted = mitigator.encoders[target_name].inverse_transform(predicted)
+                predicted = pd.Series(predicted, evaluation_df.index)
+
+                measure = metrics(
+                    data=evaluation_df,
+                    protected_attributes=protected_attributes,
+                    target_attribute=target_name,
+                    target_predictions=predicted,
+                    positive_target=positive_target,
+                    mode=metric_mode,
+                    return_probs=True,
+                )
+                measure = metrics.to_df(measure)
+                measure
+
+    if "AutoGoalMitigator" in selected_algoritms:
+        with st.beta_expander("AutoGoalMitigator"):
+
+            col1, col2, col3 = st.beta_columns(3)
+
+            n_classifiers = col1.number_input(
+                "Number of classifiers",
+                min_value=1,
+                max_value=20,
+                value=5,
+            )
+            search_iterations = col2.number_input(
+                "Search iterations",
+                min_value=1,
+                value=2,
+            )
+            population_size = col3.number_input(
+                "Population size",
+                min_value=max(n_classifiers // search_iterations, 1),
+                value=20,
+            )
+
+            logger = ConsoleLogger() if st.checkbox("Log to console") else None
+
+            with st.spinner("Training ..."):
+                from autogoal.kb import MatrixContinuousDense
+
+                diversifier = AutoGoalDiversifier(
+                    input=MatrixContinuousDense,
+                    n_classifiers=n_classifiers,
+                    pop_size=population_size,
+                    search_iterations=search_iterations,
+                )
+
+                with st.spinner("Searching pipelines ..."):
+                    pipelines, scores = diversifier(X, y, logger=logger)
+
+                for p, s in zip(pipelines, scores):
+                    "**Pipeline ...**"
+                    p
+                    f"... with score: {s}"
+
+                class ClassifierWrapper:
+                    def __init__(self, pipeline):
+                        self.pipeline = pipeline
+
+                    def fit(self, X, y):
+                        self.pipeline.send("train")
+                        self.pipeline.run(X, y)
+                        return self
+
+                    def predict(self, X):
+                        self.pipeline.send("eval")
+                        y_pred = self.pipeline.run(X, None)
+                        return y_pred
+
+                classifiers = [ClassifierWrapper(p) for p in pipelines]
+
+                voting = VotingClassifier(classifiers)
+
+                predicted = voting.predict(evaluation_X)
+                predicted = encoders[target_name].inverse_transform(predicted)
                 predicted = pd.Series(predicted, evaluation_df.index)
 
                 measure = metrics(
