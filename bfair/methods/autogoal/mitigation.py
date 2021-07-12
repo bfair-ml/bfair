@@ -1,3 +1,5 @@
+from bfair.utils import ClassifierWrapper
+
 from .diversification import AutoGoalDiversifier
 from .ensembling import AutoGoalEnsembler
 
@@ -34,6 +36,7 @@ class AutoGoalMitigator:
         raise NotImplementedError()
 
     def __call__(self, X, y, **search_kwargs):
-        classifiers, scores = self.diversifier(X, y, **search_kwargs)
+        pipelines, scores = self.diversifier(X, y, **search_kwargs)
+        classifiers = [ClassifierWrapper(p) for p in pipelines]
         model = self.ensembler(X, y, classifiers, scores, **search_kwargs)
         return model

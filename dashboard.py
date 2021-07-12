@@ -7,11 +7,7 @@ from sklearn.tree import DecisionTreeClassifier
 
 from bfair.datasets import load_adult, load_german
 from bfair.datasets.custom import load_from_file
-from bfair.methods import (
-    AutoGoalDiversifier,
-    SklearnMitigator,
-    VotingClassifier,
-)
+from bfair.methods import AutoGoalDiversifier, SklearnMitigator, VotingClassifier
 from bfair.metrics import (
     DIFFERENCE,
     RATIO,
@@ -23,7 +19,7 @@ from bfair.metrics import (
     false_positive_rate,
     statistical_parity,
 )
-from bfair.utils import encode_features
+from bfair.utils import ClassifierWrapper, encode_features
 
 
 # = DATASET =================================================
@@ -335,20 +331,6 @@ if protected_attributes:
                     "**Pipeline ...**"
                     p
                     f"... with score: {s}"
-
-                class ClassifierWrapper:
-                    def __init__(self, pipeline):
-                        self.pipeline = pipeline
-
-                    def fit(self, X, y):
-                        self.pipeline.send("train")
-                        self.pipeline.run(X, y)
-                        return self
-
-                    def predict(self, X):
-                        self.pipeline.send("eval")
-                        y_pred = self.pipeline.run(X, None)
-                        return y_pred
 
                 classifiers = [ClassifierWrapper(p) for p in pipelines]
 
