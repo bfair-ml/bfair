@@ -17,8 +17,16 @@ class AutoGoalMitigator:
             maximize=maximize,
             **automl_kwargs,
         )
+
+        score_metric = diversifier.score_metric
         search_kwargs = diversifier.search_parameters
-        ensembler = cls.build_ensembler(**search_kwargs)
+
+        ensembler = cls.build_ensembler(
+            score_metric=score_metric,
+            maximize=maximize,
+            **search_kwargs,
+        )
+
         return cls(diversifier, ensembler)
 
     @classmethod
@@ -33,11 +41,11 @@ class AutoGoalMitigator:
         )
 
     @classmethod
-    def build_ensembler(cls, **search_kwargs):
-        raise NotImplementedError()
+    def build_ensembler(cls, *, score_metric, **search_kwargs):
+        return AutoGoalEnsembler(score_metric=score_metric, **search_kwargs)
 
     def __call__(self, X, y, **run_kwargs):
         pipelines, scores = self.diversifier(X, y, **run_kwargs)
         classifiers = [ClassifierWrapper(p) for p in pipelines]
-        model = self.ensembler(X, y, classifiers, scores, **run_kwargs)
-        return model
+        ensemble, score = self.ensembler(X, y, classifiers, scores, **run_kwargs)
+        return ensemble.model
