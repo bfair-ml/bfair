@@ -27,10 +27,14 @@ class AutoGoalDiversifier:
             **automl_kwargs,
         )
 
-    def __call__(self, X, y, **search_kwargs):
-        return self._build_base_classifiers(X, y, **search_kwargs)
+    @property
+    def search_parameters(self):
+        return self._automl.search_kwargs
 
-    def _build_base_classifiers(self, X, y, **search_kwargs):
+    def __call__(self, X, y, **run_kwargs):
+        return self._build_base_classifiers(X, y, **run_kwargs)
+
+    def _build_base_classifiers(self, X, y, **run_kwargs):
         automl = self._automl
         ranking_fn = self.make_ranking_fn(
             X,
@@ -39,7 +43,7 @@ class AutoGoalDiversifier:
             maximize=self.maximize,
         )
 
-        automl.fit(X, y, ranking_fn=ranking_fn, **search_kwargs)
+        automl.fit(X, y, ranking_fn=ranking_fn, **run_kwargs)
         return automl.top_pipelines_, automl.top_pipelines_scores_
 
     @staticmethod
