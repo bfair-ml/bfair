@@ -15,3 +15,9 @@ class ClassifierWrapper:
     @staticmethod
     def wrap(pipelines):
         return [ClassifierWrapper(p) for p in pipelines]
+
+    def __str__(self) -> str:
+        return str(self.pipeline)
+
+    def __repr__(self) -> str:
+        return repr(self.pipeline)
