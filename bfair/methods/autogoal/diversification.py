@@ -35,14 +35,17 @@ class AutoGoalDiversifier:
     def score_metric(self):
         return self._automl.score_metric
 
-    def __call__(self, X, y, **run_kwargs):
-        return self._build_base_classifiers(X, y, **run_kwargs)
+    def __call__(self, X, y, *, test_on=None, **run_kwargs):
+        return self._build_base_classifiers(X, y, test_on, **run_kwargs)
 
-    def _build_base_classifiers(self, X, y, **run_kwargs):
+    def _build_base_classifiers(self, X, y, test_on=None, **run_kwargs):
         automl = self._automl
+        X_test, y_test = (X, y) if test_on is None else test_on
         ranking_fn = self.make_ranking_fn(
             X,
             y,
+            X_test,
+            y_test,
             top_cut=self.n_classifiers,
             maximize=self.maximize,
         )
@@ -52,7 +55,7 @@ class AutoGoalDiversifier:
 
     @staticmethod
     def make_ranking_fn(
-        X, y, *, top_cut=None, maximize=True
+        X, y, X_test, y_test, *, top_cut=None, maximize=True
     ) -> Callable[[List, List[float]], List[float]]:
         def ranking_fn(solutions, fns):
             if top_cut is not None and len(solutions) <= top_cut:
@@ -75,7 +78,7 @@ class AutoGoalDiversifier:
                     pipeline.send("train")
                     pipeline.run(X, y)
                     pipeline.send("eval")
-                    y_pred = pipeline.run(X, None)
+                    y_pred = pipeline.run(X_test, None)
 
                     predictions.append(y_pred)
                     valid_solutions.append(pipeline)
@@ -98,7 +101,7 @@ class AutoGoalDiversifier:
                 return fns
 
             # COMPUTE DIVERSITY BETWEEN PAIRS OF PIPELINES
-            oracle_matrix = build_oracle_output_matrix(y, predictions)
+            oracle_matrix = build_oracle_output_matrix(y_test, predictions)
             diversity_matrix = disagreement(oracle_matrix)
 
             # RANK PIPELINES GREEDY (root: best_fn, step: diversity)

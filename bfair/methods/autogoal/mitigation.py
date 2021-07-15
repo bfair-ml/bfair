@@ -44,8 +44,22 @@ class AutoGoalMitigator:
     def build_ensembler(cls, *, score_metric, **search_kwargs):
         return AutoGoalEnsembler(score_metric=score_metric, **search_kwargs)
 
-    def __call__(self, X, y, **run_kwargs):
-        pipelines, scores = self.diversifier(X, y, **run_kwargs)
+    def __call__(self, X, y, *, test_on=None, **run_kwargs):
+        pipelines, scores = self.diversifier(
+            X,
+            y,
+            test_on=test_on,
+            **run_kwargs,
+        )
+
         classifiers = [ClassifierWrapper(p) for p in pipelines]
-        ensemble, score = self.ensembler(X, y, classifiers, scores, **run_kwargs)
+
+        ensemble, score = self.ensembler(
+            X,
+            y,
+            classifiers,
+            scores,
+            test_on=test_on,
+            **run_kwargs,
+        )
         return ensemble.model

@@ -22,14 +22,33 @@ class AutoGoalEnsembler:
         y,
         classifiers: List[ClassifierWrapper],
         scores: List[float],
-        **run_kwargs
+        *,
+        test_on=None,
+        **run_kwargs,
     ):
-        return self._optimize_sampler_fn(X, y, classifiers, scores, **run_kwargs)
+        return self._optimize_sampler_fn(
+            X, y, classifiers, scores, test_on, **run_kwargs
+        )
 
     def _optimize_sampler_fn(
-        self, X, y, classifiers, scores, **run_kwargs
+        self,
+        X,
+        y,
+        classifiers,
+        scores,
+        test_on=None,
+        **run_kwargs,
     ) -> Tuple[SampleModel, float]:
-        generator, fn = self._build_generator_and_fn(X, y, classifiers, scores)
+
+        X_test, y_test = (X, y) if test_on is None else test_on
+        generator, fn = self._build_generator_and_fn(
+            X,
+            y,
+            X_test,
+            y_test,
+            classifiers,
+            scores,
+        )
         search = PESearch(
             generator_fn=generator,
             fitness_fn=fn,
@@ -40,16 +59,20 @@ class AutoGoalEnsembler:
         best, best_fn = search.run(**run_kwargs)
         return best, best_fn
 
-    def _build_generator_and_fn(self, X, y, classifiers, scores):
-        def generator(sampler: Sampler, log=True):
-            sampler = LogSampler(sampler) if log else sampler
-            ensembler = ...  # TODO: use sampler to build ensembler
+    def _build_generator_and_fn(self, X, y, X_test, y_test, classifiers, scores):
+        def build_ensembler(sampler: LogSampler):
+            return ...  # TODO: use sampler to build ensembler
+
+        def generator(sampler: Sampler):
+            sampler = LogSampler(sampler)
+            ensembler = build_ensembler(sampler)
             return SampleModel(sampler, ensembler)
 
         def fn(generated: SampleModel):
             ensembler = generated.model
-            y_pred = ensembler.predict(X)
-            score = self.score_metric(y, y_pred)
+            ensembler.fit(X, y)
+            y_pred = ensembler.predict(X_test)
+            score = self.score_metric(y_test, y_pred)
             return score
 
         return generator, fn
