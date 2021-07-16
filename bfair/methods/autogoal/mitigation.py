@@ -39,7 +39,6 @@ class AutoGoalMitigator:
             include_filter=include_filter,
             exclude_filter=exclude_filter,
             registry=registry,
-            maximize=maximize,
             **search_kwargs,
         )
 
