@@ -10,11 +10,24 @@ class AutoGoalMitigator:
         self.ensembler = ensembler
 
     @classmethod
-    def build(cls, *, input, n_classifiers: int, maximize=True, **automl_kwargs):
+    def build(
+        cls,
+        *,
+        input,
+        n_classifiers: int,
+        maximize=True,
+        include_filter=".*",
+        exclude_filter=None,
+        registry=None,
+        **automl_kwargs
+    ):
         diversifier = cls.build_diversifier(
             input=input,
             n_classifiers=n_classifiers,
             maximize=maximize,
+            include_filter=include_filter,
+            exclude_filter=exclude_filter,
+            registry=registry,
             **automl_kwargs,
         )
 
@@ -23,6 +36,9 @@ class AutoGoalMitigator:
 
         ensembler = cls.build_ensembler(
             score_metric=score_metric,
+            include_filter=include_filter,
+            exclude_filter=exclude_filter,
+            registry=registry,
             maximize=maximize,
             **search_kwargs,
         )
@@ -41,8 +57,22 @@ class AutoGoalMitigator:
         )
 
     @classmethod
-    def build_ensembler(cls, *, score_metric, **search_kwargs):
-        return AutoGoalEnsembler(score_metric=score_metric, **search_kwargs)
+    def build_ensembler(
+        cls,
+        *,
+        score_metric,
+        include_filter=".*",
+        exclude_filter=None,
+        registry=None,
+        **search_kwargs
+    ):
+        return AutoGoalEnsembler(
+            score_metric=score_metric,
+            include_filter=include_filter,
+            exclude_filter=exclude_filter,
+            registry=registry,
+            **search_kwargs,
+        )
 
     def __call__(self, X, y, *, test_on=None, **run_kwargs):
         pipelines, scores = self.diversifier(
