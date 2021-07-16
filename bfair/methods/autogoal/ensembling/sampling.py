@@ -64,7 +64,7 @@ class LogSampler:
         values = []
         candidates = list(options)
         for _ in range(k):
-            value = self._sampler.choice(candidates, handle)
+            value = self._sampler.choice(candidates)
             candidates.remove(value)
             values.append(value)
         return self._log_sample(handle, values, log=log)
