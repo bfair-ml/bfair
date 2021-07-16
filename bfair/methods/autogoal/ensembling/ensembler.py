@@ -15,6 +15,7 @@ class AutoGoalEnsembler:
         self,
         *,
         score_metric,
+        maximize=True,
         errors="warn",
         allow_duplicates=False,
         include_filter=".*",
@@ -26,6 +27,7 @@ class AutoGoalEnsembler:
         self.search_kwargs = search_kwargs
         self.search_kwargs["errors"] = errors
         self.search_kwargs["allow_duplicates"] = allow_duplicates
+        self.search_kwargs["maximize"] = maximize
 
         self._pipeline_space = AutoML(
             input=(MatrixCategorical, Supervised[VectorCategorical]),
@@ -71,7 +73,6 @@ class AutoGoalEnsembler:
         search = PESearch(
             generator_fn=generator,
             fitness_fn=fn,
-            maximize=self.maximize,
             **self.search_kwargs,
         )
 
