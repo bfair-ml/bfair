@@ -89,6 +89,7 @@ class AutoGoalMitigator:
             classifiers,
             scores,
             test_on=test_on,
+            generations=self.diversifier.search_iterations,
             **run_kwargs,
         )
         return ensemble.model

@@ -35,6 +35,10 @@ class AutoGoalDiversifier:
     def score_metric(self):
         return self._automl.score_metric
 
+    @property
+    def search_iterations(self):
+        return self._automl.search_iterations
+
     def __call__(self, X, y, *, test_on=None, **run_kwargs):
         return self._build_base_classifiers(X, y, test_on, **run_kwargs)
 
