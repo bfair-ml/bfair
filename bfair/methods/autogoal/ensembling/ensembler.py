@@ -48,7 +48,12 @@ class AutoGoalEnsembler:
         **run_kwargs,
     ):
         return self._optimize_sampler_fn(
-            X, y, classifiers, scores, test_on, **run_kwargs
+            X,
+            y,
+            classifiers,
+            scores,
+            test_on=test_on,
+            **run_kwargs,
         )
 
     def _optimize_sampler_fn(
@@ -57,6 +62,7 @@ class AutoGoalEnsembler:
         y,
         classifiers,
         scores,
+        *,
         test_on=None,
         **run_kwargs,
     ) -> Tuple[SampleModel, float]:
