@@ -24,7 +24,7 @@ class VotingClassifier:
 
 
 class MLVotingClassifier(VotingClassifier):
-    def __self__(self, estimators, model_init):
+    def __init__(self, estimators, model_init):
         super().__init__(estimators)
         self.model = model_init()
 
