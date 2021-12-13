@@ -40,6 +40,12 @@ class LogSampler:
             self._log.append((handle, value))
         return result
 
+    def distribution(self, name: str, handle=None, log=True, **kwargs):
+        try:
+            return getattr(self, name)(handle=handle, log=log, **kwargs)
+        except AttributeError:
+            raise ValueError("Unrecognized distribution name: %s" % name)
+
     def boolean(self, handle=None, log=True) -> bool:
         value = self._sampler.boolean(handle)
         return self._log_sample(handle, value, log=log)
