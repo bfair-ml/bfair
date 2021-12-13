@@ -16,6 +16,13 @@ class ClassifierWrapper:
     def wrap(pipelines):
         return [ClassifierWrapper(p) for p in pipelines]
 
+    @classmethod
+    def wrap_and_fit(cls, pipelines, X, y):
+        classifiers = cls.wrap(pipelines)
+        for wrapped in classifiers:
+            wrapped.fit(X, y)
+        return classifiers
+
     def __str__(self) -> str:
         return str(self.pipeline)
 

@@ -95,7 +95,7 @@ class AutoGoalMitigator:
             **run_kwargs,
         )
 
-        classifiers = [ClassifierWrapper(p) for p in pipelines]
+        classifiers = ClassifierWrapper.wrap_and_fit(pipelines, X, y)
 
         constraint = self._build_constraint_fn(
             scores,
