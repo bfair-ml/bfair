@@ -24,9 +24,13 @@ class VotingClassifier:
 
 
 class MLVotingClassifier(VotingClassifier):
-    def __init__(self, estimators, model_init):
+    def __init__(self, estimators, *, model=None, model_init=None):
+        if model is None == model_init is None:
+            raise ValueError(
+                "One and only one between `model` and `model_init` should be supplied"
+            )
         super().__init__(estimators)
-        self.model = model_init()
+        self.model = model_init() if model is None else model
 
     def fit(self, X, y):
         predictions = self._stack_predictions(X)

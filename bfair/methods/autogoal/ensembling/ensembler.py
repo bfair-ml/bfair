@@ -109,9 +109,10 @@ class AutoGoalEnsembler:
                 ensembler = VotingClassifier(selected_classifiers)
             elif ensembler_type == "learning":
                 pipeline = model_generator(sampler)
-                ensembler = MLVotingClassifier(
-                    selected_classifiers, model_init=lambda: ClassifierWrapper(pipeline)
-                )
+                model = ClassifierWrapper(pipeline)
+                ensembler = MLVotingClassifier(selected_classifiers, model=model)
+            else:
+                raise Exception(f"Unknown ensembler_type: {ensembler_type}")
             return ensembler
 
         def generator(sampler: Sampler):
