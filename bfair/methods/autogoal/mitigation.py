@@ -33,6 +33,7 @@ class AutoGoalMitigator:
         n_classifiers: int,
         detriment: Union[int, float],
         fairness_metric: base_metric = None,
+        maximize_fmetric=False,
         protected_attributes: Union[List[str], str] = None,
         target_attribute: str = None,
         positive_target=None,
@@ -55,6 +56,9 @@ class AutoGoalMitigator:
         )
 
         search_kwargs = diversifier.search_parameters
+
+        if fairness_metric is not None:
+            search_kwargs["maximize"] = maximize_fmetric
 
         score_metric = (
             cls.build_fairness_fn(
@@ -120,6 +124,10 @@ class AutoGoalMitigator:
     ) -> Callable[[Any, Any, Any], float]:
         if protected_attributes is None:
             raise ValueError("No protected attributes were provided")
+        if target_attribute is None:
+            raise ValueError("No target attribute was provided")
+        if positive_target is None:
+            raise ValueError("Positive target was not provided")
         if metric_kwargs is None:
             metric_kwargs = {}
 
@@ -130,6 +138,8 @@ class AutoGoalMitigator:
                 X = DataFrame(X, columns=protected_attributes)
 
             data = pd.concat((X, Series(y, name=target_attribute)), axis=1)
+            y_pred = pd.Series(y_pred, data.index)
+
             return fairness_metric(
                 data=data,
                 protected_attributes=protected_attributes,
