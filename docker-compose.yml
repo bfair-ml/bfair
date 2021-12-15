@@ -13,6 +13,7 @@ services:
       - "./vendor/autogoal/:/home/coder/autogoal"
       - "./vendor/autogoal/autogoal:/usr/lib/python3/dist-packages/autogoal"
       - "./vendor/autogoal/vendor/illiterate/illiterate:/usr/lib/python3/dist-packages/illiterate"
+      - "./bfair:/usr/lib/python3/dist-packages/bfair"
     network_mode: "host"
     depends_on:
       - autogoal
