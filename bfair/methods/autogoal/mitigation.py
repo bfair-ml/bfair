@@ -1,6 +1,9 @@
-from typing import Callable, Union
+from typing import Any, Callable, Dict, List, Union
 
+import pandas as pd
+from bfair.metrics import base_metric
 from bfair.utils import ClassifierWrapper
+from pandas import DataFrame, Series
 
 from .diversification import AutoGoalDiversifier
 from .ensembling import AutoGoalEnsembler
@@ -29,6 +32,12 @@ class AutoGoalMitigator:
         input,
         n_classifiers: int,
         detriment: Union[int, float],
+        fairness_metric: base_metric = None,
+        protected_attributes: Union[List[str], str] = None,
+        target_attribute: str = None,
+        positive_target=None,
+        metric_kwargs: Dict[str, object] = None,
+        sensor: Callable[..., DataFrame] = None,
         maximize=True,
         include_filter=".*",
         exclude_filter=None,
@@ -45,8 +54,20 @@ class AutoGoalMitigator:
             **automl_kwargs,
         )
 
-        score_metric = diversifier.score_metric
         search_kwargs = diversifier.search_parameters
+
+        score_metric = (
+            cls.build_fairness_fn(
+                fairness_metric,
+                protected_attributes,
+                target_attribute,
+                positive_target,
+                metric_kwargs,
+                sensor,
+            )
+            if fairness_metric is not None
+            else (lambda X, y, y_pred: diversifier.score_metric(y, y_pred))
+        )
 
         ensembler = cls.build_ensembler(
             score_metric=score_metric,
@@ -73,7 +94,7 @@ class AutoGoalMitigator:
     def build_ensembler(
         cls,
         *,
-        score_metric: Callable,
+        score_metric: Callable[[Any, Any, Any], float],
         include_filter=".*",
         exclude_filter=None,
         registry=None,
@@ -86,6 +107,39 @@ class AutoGoalMitigator:
             registry=registry,
             **search_kwargs,
         )
+
+    @classmethod
+    def build_fairness_fn(
+        cls,
+        fairness_metric: base_metric,
+        protected_attributes: Union[List[str], str],
+        target_attribute: str,
+        positive_target,
+        metric_kwargs: Dict[str, object] = None,
+        sensor: Callable[..., DataFrame] = None,
+    ) -> Callable[[Any, Any, Any], float]:
+        if protected_attributes is None:
+            raise ValueError("No protected attributes were provided")
+        if metric_kwargs is None:
+            metric_kwargs = {}
+
+        def fairness_fn(X, y, y_pred):
+            if sensor is not None:
+                X = sensor(X)
+            if not isinstance(X, DataFrame):
+                X = DataFrame(X, columns=protected_attributes)
+
+            data = pd.concat((X, Series(y, name=target_attribute)), axis=1)
+            return fairness_metric(
+                data=data,
+                protected_attributes=protected_attributes,
+                target_attribute=target_attribute,
+                target_predictions=y_pred,
+                positive_target=positive_target,
+                **metric_kwargs,
+            )
+
+        return fairness_fn
 
     def __call__(self, X, y, *, test_on=None, **run_kwargs):
         pipelines, scores = self.diversifier(

@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import Any, Callable, List, Tuple
 
 from autogoal.kb import MatrixCategorical, Supervised, VectorCategorical
 from autogoal.ml import AutoML
@@ -14,7 +14,7 @@ class AutoGoalEnsembler:
     def __init__(
         self,
         *,
-        score_metric,
+        score_metric: Callable[[Any, Any, Any], float],
         maximize=True,
         errors="warn",
         allow_duplicates=False,
@@ -124,7 +124,7 @@ class AutoGoalEnsembler:
             ensembler = generated.model
             ensembler.fit(X, y)
             y_pred = ensembler.predict(X_test)
-            score = self.score_metric(y_test, y_pred)
+            score = self.score_metric(X_test, y_test, y_pred)
             return score
 
         return generator, fn

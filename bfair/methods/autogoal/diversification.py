@@ -1,4 +1,4 @@
-from typing import Callable, List
+from typing import Any, Callable, List
 
 from bfair.metrics import build_oracle_output_matrix, disagreement
 
@@ -32,7 +32,7 @@ class AutoGoalDiversifier:
         return self._automl.search_kwargs
 
     @property
-    def score_metric(self):
+    def score_metric(self) -> Callable[[Any, Any], float]:
         return self._automl.score_metric
 
     @property
