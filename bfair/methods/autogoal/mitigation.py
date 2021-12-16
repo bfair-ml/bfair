@@ -25,6 +25,14 @@ class AutoGoalMitigator:
         self.ensembler = ensembler
         self.detriment = detriment
 
+    @property
+    def score_metric(self):
+        return self.diversifier.score_metric
+
+    @property
+    def fairness_metric(self):
+        return self.ensembler.score_metric
+
     @classmethod
     def build(
         cls,
