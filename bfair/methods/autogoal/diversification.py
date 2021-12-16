@@ -21,7 +21,6 @@ class AutoGoalDiversifier:
         self._automl = AutoML(
             input=input,
             output=VectorCategorical,
-            search_algorithm=PESearch,
             number_of_pipelines=n_classifiers,
             maximize=maximize,
             **automl_kwargs,
