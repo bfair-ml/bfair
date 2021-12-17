@@ -1,7 +1,7 @@
 version: "3"
 
 services:
-  main:
+  main: &main
     container_name: bfair
     image: "jpconsuegra/bfair"
     build: "."
@@ -21,10 +21,21 @@ services:
     working_dir: /home/coder/bfair
     command: /usr/bin/make dashboard
 
+  main-gpu:
+    <<: *main
+    container_name: "bfair-gpu"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
   autogoal:
     image: "jpconsuegra/autogoal"
     build: "./vendor/autogoal/"
     hostname: autogoal
-    volumes: 
+    volumes:
       - "~/.autogoal:/home/coder/.autogoal"
     user: "1000:1000"
