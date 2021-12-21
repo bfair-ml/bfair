@@ -1,3 +1,10 @@
+import datetime
+import time
+from pathlib import Path
+
+from autogoal.search import Logger
+
+
 class ClassifierWrapper:
     def __init__(self, pipeline):
         self.pipeline = pipeline
@@ -28,3 +35,27 @@ class ClassifierWrapper:
 
     def __repr__(self) -> str:
         return repr(self.pipeline)
+
+
+class FileLogger(Logger):
+    def __init__(self, output_path: str):
+        super().__init__()
+        self.output_path = Path(output_path)
+        self.start_time = None
+
+    def begin(self, generations, pop_size):
+        self.start_time = time.time()
+
+    def end(self, best, best_fn):
+        current_time = time.time()
+        elapsed = int(current_time - self.start_time)
+        elapsed = datetime.timedelta(seconds=elapsed)
+
+        with self.output_path.open("a") as fd:
+            fd.writelines(
+                (
+                    "Search completed: best_fn=%.3f, best=\n%r\n" % (best_fn, best),
+                    f"Time spent: elapsed={elapsed}\n",
+                    "\n",
+                )
+            )
