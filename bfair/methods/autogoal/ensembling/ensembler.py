@@ -123,7 +123,7 @@ class AutoGoalEnsembler:
 
         def build_ensembler(sampler: LogSampler):
             n_classifiers = sampler.discrete(
-                min=2,
+                min=min(2, len(classifiers)),
                 max=len(classifiers),
                 handle="n_classifiers",
             )
