@@ -48,6 +48,7 @@ class AutoGoalMitigator:
         metric_kwargs: Dict[str, object] = None,
         sensor: Callable[..., DataFrame] = None,
         maximize=True,
+        validation_split=0.3,
         include_filter=".*",
         exclude_filter=None,
         registry=None,
@@ -57,6 +58,7 @@ class AutoGoalMitigator:
             input=input,
             n_classifiers=n_classifiers,
             maximize=maximize,
+            validation_split=validation_split,
             include_filter=include_filter,
             exclude_filter=exclude_filter,
             registry=registry,
@@ -83,6 +85,7 @@ class AutoGoalMitigator:
 
         ensembler = cls.build_ensembler(
             score_metric=score_metric,
+            validation_split=validation_split,
             include_filter=include_filter,
             exclude_filter=exclude_filter,
             registry=registry,
@@ -107,6 +110,7 @@ class AutoGoalMitigator:
         cls,
         *,
         score_metric: Callable[[Any, Any, Any], float],
+        validation_split=0.3,
         include_filter=".*",
         exclude_filter=None,
         registry=None,
@@ -114,6 +118,7 @@ class AutoGoalMitigator:
     ):
         return AutoGoalEnsembler(
             score_metric=score_metric,
+            validation_split=validation_split,
             include_filter=include_filter,
             exclude_filter=exclude_filter,
             registry=registry,

@@ -1,5 +1,6 @@
 from typing import Any, Callable, List, Tuple
 
+import numpy as np
 from autogoal.kb import MatrixCategorical, Supervised, VectorCategorical
 from autogoal.ml import AutoML
 from autogoal.sampling import Sampler
@@ -15,6 +16,7 @@ class AutoGoalEnsembler:
         self,
         *,
         score_metric: Callable[[Any, Any, Any], float],
+        validation_split=0.3,
         maximize=True,
         errors="warn",
         allow_duplicates=False,
@@ -24,6 +26,7 @@ class AutoGoalEnsembler:
         **search_kwargs,
     ):
         self.score_metric = score_metric
+        self.validation_split = validation_split
         self.search_kwargs = search_kwargs
         self.search_kwargs["errors"] = errors
         self.search_kwargs["allow_duplicates"] = allow_duplicates
@@ -67,7 +70,34 @@ class AutoGoalEnsembler:
         **run_kwargs,
     ) -> Tuple[SampleModel, float]:
 
-        X_test, y_test = (X, y) if test_on is None else test_on
+        if test_on is None:
+            len_x = len(X) if isinstance(X, list) else X.shape[0]
+            indices = np.arange(0, len_x)
+            np.random.shuffle(indices)
+            split_index = int(self.validation_split * len(indices))
+
+            if split_index == 0:
+                X_test, y_test = (X, y)
+            else:
+                train_indices = indices[:-split_index]
+                test_indices = indices[-split_index:]
+
+                if isinstance(X, list):
+                    X, y, X_test, y_test = (
+                        [X[i] for i in train_indices],
+                        y[train_indices],
+                        [X[i] for i in test_indices],
+                        y[test_indices],
+                    )
+                else:
+                    X, y, X_test, y_test = (
+                        X[train_indices],
+                        y[train_indices],
+                        X[test_indices],
+                        y[test_indices],
+                    )
+        else:
+            X_test, y_test = test_on
         generator, fn = self._build_generator_and_fn(
             X,
             y,
