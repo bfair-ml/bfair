@@ -2,16 +2,24 @@ import datetime
 import time
 from pathlib import Path
 
+import numpy as np
+
 from autogoal.search import Logger
 
 
 class ClassifierWrapper:
     def __init__(self, pipeline):
         self.pipeline = pipeline
+        self._fitted = False
+
+    @property
+    def fitted(self):
+        return self._fitted
 
     def fit(self, X, y):
         self.pipeline.send("train")
         self.pipeline.run(X, y)
+        self._fitted = True
         return self
 
     def predict(self, X):
@@ -59,3 +67,33 @@ class FileLogger(Logger):
                     "\n",
                 )
             )
+
+
+def split_input(X, y, validation_split=0.3):
+    len_x = len(X) if isinstance(X, list) else X.shape[0]
+    indices = np.arange(0, len_x)
+    np.random.shuffle(indices)
+    split_index = int(validation_split * len(indices))
+
+    if split_index == 0:
+        X_test, y_test = (X, y)
+    else:
+        train_indices = indices[:-split_index]
+        test_indices = indices[-split_index:]
+
+        if isinstance(X, list):
+            X, y, X_test, y_test = (
+                [X[i] for i in train_indices],
+                y[train_indices],
+                [X[i] for i in test_indices],
+                y[test_indices],
+            )
+        else:
+            X, y, X_test, y_test = (
+                X[train_indices],
+                y[train_indices],
+                X[test_indices],
+                y[test_indices],
+            )
+
+    return X, y, (X_test, y_test)

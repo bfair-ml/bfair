@@ -6,6 +6,10 @@ class VotingClassifier:
     def __init__(self, estimators):
         self.estimators = estimators
 
+    @property
+    def fitted(self):
+        return True
+
     def fit_estimators(self, X, y):
         for estimator in self.estimators:
             estimator.fit(X, y)
@@ -31,6 +35,10 @@ class MLVotingClassifier(VotingClassifier):
             )
         super().__init__(estimators)
         self.model = model_init() if model is None else model
+
+    @property
+    def fitted(self):
+        return self.model.fitted
 
     def fit(self, X, y):
         predictions = self._stack_predictions(X)

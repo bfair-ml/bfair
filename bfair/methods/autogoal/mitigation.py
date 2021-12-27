@@ -5,6 +5,8 @@ from bfair.metrics import base_metric
 from bfair.utils import ClassifierWrapper
 from pandas import DataFrame, Series
 
+from bfair.utils.autogoal import split_input
+
 from .diversification import AutoGoalDiversifier
 from .ensembling import AutoGoalEnsembler
 
@@ -175,6 +177,11 @@ class AutoGoalMitigator:
             **run_kwargs,
         )
 
+        # TODO: should fmetric be scored on fully trained pipelines?
+
+        if test_on is None:
+            X, y, test_on = split_input(X, y, self.ensembler.validation_split)
+
         classifiers = ClassifierWrapper.wrap_and_fit(pipelines, X, y)
 
         constraint = (
@@ -232,6 +239,8 @@ class AutoGoalMitigator:
 
         def constraint(generated, disparity_fn):
             ensemble = generated.model
+            if not ensemble.fitted:
+                ensemble.fit(X, y)
             y_pred = ensemble.predict(X_test)
             score = score_metric(y_test, y_pred)
             return measure_of_detriment(score)

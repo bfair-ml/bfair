@@ -7,6 +7,7 @@ from autogoal.sampling import Sampler
 from autogoal.search import PESearch
 from bfair.methods.voting import MLVotingClassifier, VotingClassifier
 from bfair.utils import ClassifierWrapper
+from bfair.utils.autogoal import split_input
 
 from .sampling import LogSampler, SampleModel
 
@@ -71,31 +72,7 @@ class AutoGoalEnsembler:
     ) -> Tuple[SampleModel, float]:
 
         if test_on is None:
-            len_x = len(X) if isinstance(X, list) else X.shape[0]
-            indices = np.arange(0, len_x)
-            np.random.shuffle(indices)
-            split_index = int(self.validation_split * len(indices))
-
-            if split_index == 0:
-                X_test, y_test = (X, y)
-            else:
-                train_indices = indices[:-split_index]
-                test_indices = indices[-split_index:]
-
-                if isinstance(X, list):
-                    X, y, X_test, y_test = (
-                        [X[i] for i in train_indices],
-                        y[train_indices],
-                        [X[i] for i in test_indices],
-                        y[test_indices],
-                    )
-                else:
-                    X, y, X_test, y_test = (
-                        X[train_indices],
-                        y[train_indices],
-                        X[test_indices],
-                        y[test_indices],
-                    )
+            X, y, (X_test, y_test) = split_input(X, y, self.validation_split)
         else:
             X_test, y_test = test_on
         generator, fn = self._build_generator_and_fn(
@@ -148,11 +125,11 @@ class AutoGoalEnsembler:
         def generator(sampler: Sampler):
             sampler = LogSampler(sampler)
             ensembler = build_ensembler(sampler)
+            ensembler.fit(X, y)
             return SampleModel(sampler, ensembler)
 
         def fn(generated: SampleModel):
             ensembler = generated.model
-            ensembler.fit(X, y)
             y_pred = ensembler.predict(X_test)
             score = self.score_metric(X_test, y_test, y_pred)
             return score
