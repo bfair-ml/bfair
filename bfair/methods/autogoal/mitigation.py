@@ -14,8 +14,11 @@ class AutoGoalMitigator:
         self,
         diversifier: AutoGoalDiversifier,
         ensembler: AutoGoalEnsembler,
-        detriment: Union[int, float],
+        detriment: Union[int, float, None],
     ):
+        """
+        If `detriment` is negative, then the score should be improved in at least `abs(detriment)` units.
+        """
         if not isinstance(detriment, (int, float)):
             raise TypeError
         if isinstance(detriment, int) and not diversifier.maximize:
@@ -174,14 +177,18 @@ class AutoGoalMitigator:
 
         classifiers = ClassifierWrapper.wrap_and_fit(pipelines, X, y)
 
-        constraint = self._build_constraint_fn(
-            scores,
-            X,
-            y,
-            test_on=test_on,
-            detriment=self.detriment,
-            score_metric=self.diversifier.score_metric,
-            maximize_scores=self.diversifier.maximize,
+        constraint = (
+            self._build_constraint_fn(
+                scores,
+                X,
+                y,
+                test_on=test_on,
+                detriment=self.detriment,
+                score_metric=self.diversifier.score_metric,
+                maximize_scores=self.diversifier.maximize,
+            )
+            if self.detriment is not None
+            else None
         )
 
         ensemble, score = self.ensembler(
@@ -208,10 +215,16 @@ class AutoGoalMitigator:
         maximize_scores,
     ):
         best_score = max(scores) if maximize_scores else min(scores)
+
+        if isinstance(detriment, int) and detriment > 0:
+            detriment = (
+                abs(best_score * detriment / 100)
+                if best_score != 0
+                else detriment / 100
+            )
+
         measure_of_detriment = (
-            (lambda score: 1 - score / best_score <= detriment / 100)
-            if isinstance(detriment, int)
-            else (lambda score: best_score - score <= detriment)
+            (lambda score: best_score - score <= detriment)
             if maximize_scores
             else (lambda score: score - best_score <= detriment)
         )
