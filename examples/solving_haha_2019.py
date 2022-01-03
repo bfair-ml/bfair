@@ -41,12 +41,10 @@ import sys
 
 from autogoal.contrib import find_classes
 from autogoal.datasets import haha
-from autogoal.kb import (
-    Sentence,
-    Seq,
-)
+from autogoal.kb import Sentence, Seq
 from autogoal.search import ConsoleLogger, PESearch, ProgressLogger
 from bfair.methods.autogoal import AutoGoalMitigator
+from bfair.utils.autogoal import ClassifierWrapper
 from sklearn.metrics import f1_score
 
 # Next, we parse the command line arguments to configure the experiment.
@@ -131,41 +129,65 @@ if args.output:
 # Finally, running the `AutoML` instance, and printing the results.
 
 model = mitigator(X_train, y_train, logger=loggers)
+best_base_model = ClassifierWrapper(mitigator.diversifier._automl.best_pipeline_)
 
-try:
-    model.fit(X_train, y_train)
 
-    y_pred = model.predict(X_train)
-    score = mitigator.score_metric(y_train, y_pred)
-    fscore = mitigator.fairness_metric(X_train, y_train, y_pred)
+def report(model, X, y, fit, header):
+    try:
+        if fit:
+            model.fit(X, y)
 
-    training_report = "\n".join(
-        (
-            "# TRAINING RESULTS #",
-            f"Score: {score}",
-            f"FScore: {fscore}",
+        y_pred = model.predict(X)
+        score = mitigator.score_metric(y, y_pred)
+        fscore = mitigator.fairness_metric(X, y, y_pred)
+
+        msg = "\n".join(
+            (
+                f"Score: {score}",
+                f"FScore: {fscore}",
+            )
         )
-    )
-except Exception as e:
-    training_report = str(e)
 
-try:
-    y_pred = model.predict(X_test)
-    score = mitigator.score_metric(y_test, y_pred)
-    fscore = mitigator.fairness_metric(X_test, y_test, y_pred)
+    except Exception as e:
+        msg = str(e)
 
-    testing_report = "\n".join(
-        (
-            "# TESTING RESULTS #",
-            f"Score: {score}",
-            f"FScore: {fscore}",
-        )
-    )
-except Exception as e:
-    testing_report = str(e)
+    return (f"# {header} #\n{msg}",)
 
-print(training_report, file=output_stream, flush=True)
-print(testing_report, file=output_stream, flush=True)
+
+reports = [
+    report(
+        best_base_model,
+        X_train,
+        y_train,
+        fit=False,
+        header="BASE @ TRAINING",
+    ),
+    report(
+        best_base_model,
+        X_test,
+        y_test,
+        fit=False,
+        header="BASE @ TESTING",
+    ),
+    report(
+        model,
+        X_train,
+        y_train,
+        fit=True,
+        header="ENSEMBLER @ TRAINING",
+    ),
+    report(
+        model,
+        X_test,
+        y_test,
+        fit=False,
+        header="ENSEMBLER @ TESTING",
+    ),
+]
+
+
+for msg in reports:
+    print(msg, file=output_stream, flush=True)
 
 if args.output:
     output_stream.close()
