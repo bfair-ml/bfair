@@ -128,8 +128,10 @@ if args.output:
 
 # Finally, running the `AutoML` instance, and printing the results.
 
-model = mitigator(X_train, y_train, logger=loggers)
-best_base_model = ClassifierWrapper(mitigator.diversifier._automl.best_pipeline_)
+pipelines, scores = mitigator.diversify(X_train, y_train, logger=loggers)
+model, score = mitigator.ensemble(pipelines, scores, X_train, y_train, logger=loggers)
+
+best_base_model = ClassifierWrapper(pipelines[0])
 
 
 def report(model, X, y, fit, header):
@@ -159,7 +161,7 @@ reports = [
         best_base_model,
         X_train,
         y_train,
-        fit=False,
+        fit=True,
         header="BASE @ TRAINING",
     ),
     report(
