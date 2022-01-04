@@ -170,14 +170,23 @@ class AutoGoalMitigator:
         return fairness_fn
 
     def __call__(self, X, y, *, test_on=None, **run_kwargs):
+        pipelines, scores = self.diversify(X, y, test_on=test_on, **run_kwargs)
+        model, _ = self.ensemble(pipelines, scores, X, y, test_on=test_on, **run_kwargs)
+        return model
+
+    def diversify(self, X, y, *, test_on=None, **run_kwargs):
+        # should pipelines be trained in the whole training set (with cross validation)? R.\ YES
+
         pipelines, scores = self.diversifier(
             X,
             y,
             test_on=test_on,
             **run_kwargs,
         )
+        return pipelines, scores
 
-        # TODO: should fmetric be scored on fully trained pipelines?
+    def ensemble(self, pipelines, scores, X, y, *, test_on=None, **run_kwargs):
+        # should fmetric be scored on fully trained pipelines? R.\ NO
 
         if test_on is None:
             X, y, test_on = split_input(X, y, self.ensembler.validation_split)
@@ -208,7 +217,7 @@ class AutoGoalMitigator:
             constraint=constraint,
             **run_kwargs,
         )
-        return ensemble.model
+        return ensemble.model, score
 
     def _build_constraint_fn(
         self,
