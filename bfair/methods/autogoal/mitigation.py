@@ -21,7 +21,7 @@ class AutoGoalMitigator:
         """
         If `detriment` is negative, then the score should be improved in at least `abs(detriment)` units.
         """
-        if not isinstance(detriment, (int, float)):
+        if detriment is not None and not isinstance(detriment, (int, float)):
             raise TypeError
         if isinstance(detriment, int) and not diversifier.maximize:
             raise ValueError
