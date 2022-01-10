@@ -36,7 +36,7 @@ def build_oracle_output_matrix(
             raise ValueError("All weights must be positive.")
 
     def correct(predictions):
-        return np.equal(predictions, gold)
+        return predictions == gold
 
     matrix = np.apply_along_axis(correct, axis=1, arr=predictions)
     signed = matrix.transpose() * 2 - 1
