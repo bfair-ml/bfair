@@ -2,6 +2,11 @@ import numpy as np
 from collections import Counter
 
 
+def stack_predictions(X, estimators):
+    predictions = [model.predict(X) for model in estimators]
+    return np.column_stack(predictions)
+
+
 class VotingClassifier:
     def __init__(self, estimators):
         self.estimators = estimators
@@ -14,17 +19,29 @@ class VotingClassifier:
         for estimator in self.estimators:
             estimator.fit(X, y)
 
-    def fit(self, X, y):
+    def fit(self, X, y, on_predictions=False, selection=None):
         pass
 
-    def predict(self, X):
-        predictions = self._stack_predictions(X)
-        most_commons = [Counter(sample).most_common(1)[0][0] for sample in predictions]
-        return np.asarray(most_commons)
+    def predict(self, X, on_predictions=False, selection=None):
+        predictions = self._get_predictions(X, on_predictions, selection)
+        y = self._forward_predictions(predictions)
+        return y
+
+    def _get_predictions(self, X, on_predictions=False, selection=None):
+        return (
+            self._stack_predictions(X)
+            if not on_predictions
+            else X[:, selection]
+            if selection is not None
+            else X
+        )
 
     def _stack_predictions(self, X):
-        predictions = [model.predict(X) for model in self.estimators]
-        return np.column_stack(predictions)
+        return stack_predictions(X, self.estimators)
+
+    def _forward_predictions(self, predictions):
+        most_commons = [Counter(sample).most_common(1)[0][0] for sample in predictions]
+        return np.asarray(most_commons)
 
 
 class MLVotingClassifier(VotingClassifier):
@@ -40,10 +57,9 @@ class MLVotingClassifier(VotingClassifier):
     def fitted(self):
         return self.model.fitted
 
-    def fit(self, X, y):
-        predictions = self._stack_predictions(X)
+    def fit(self, X, y, on_predictions=False, selection=None):
+        predictions = self._get_predictions(X, on_predictions, selection)
         self.model.fit(predictions, y)
 
-    def predict(self, X):
-        predictions = self._stack_predictions(X)
+    def _forward_predictions(self, predictions):
         return self.model.predict(predictions)

@@ -16,9 +16,10 @@ class Cache:
 
 
 class SampleModel:
-    def __init__(self, sampler, model):
+    def __init__(self, sampler, model, **kargs):
         self.sampler = sampler
         self.model = model
+        self.info = kargs
 
     def __str__(self):
         return str(self.sampler)

@@ -5,7 +5,7 @@ from autogoal.kb import MatrixCategorical, Supervised, VectorCategorical
 from autogoal.ml import AutoML
 from autogoal.sampling import Sampler
 from autogoal.search import PESearch
-from bfair.methods.voting import MLVotingClassifier, VotingClassifier
+from bfair.methods.voting import MLVotingClassifier, VotingClassifier, stack_predictions
 from bfair.utils import ClassifierWrapper
 from bfair.utils.autogoal import split_input
 
@@ -49,6 +49,7 @@ class AutoGoalEnsembler:
         scores: List[float],
         *,
         test_on=None,
+        pre_caching=True,
         **run_kwargs,
     ):
         return self._optimize_sampler_fn(
@@ -57,6 +58,7 @@ class AutoGoalEnsembler:
             classifiers,
             scores,
             test_on=test_on,
+            pre_caching=pre_caching,
             **run_kwargs,
         )
 
@@ -68,6 +70,7 @@ class AutoGoalEnsembler:
         scores,
         *,
         test_on=None,
+        pre_caching=True,
         **run_kwargs,
     ) -> Tuple[SampleModel, float]:
 
@@ -82,6 +85,7 @@ class AutoGoalEnsembler:
             y_test,
             classifiers,
             scores,
+            pre_caching,
         )
         search = PESearch(
             generator_fn=generator,
@@ -92,9 +96,15 @@ class AutoGoalEnsembler:
         best, best_fn = search.run(**run_kwargs)
         return best, best_fn
 
-    def _build_generator_and_fn(self, X, y, X_test, y_test, classifiers, scores):
+    def _build_generator_and_fn(
+        self, X, y, X_test, y_test, classifiers, scores, pre_caching
+    ):
         named_classifiers = {str(c): c for c in classifiers}
+        classifier2index = {str(c): i for i, c in enumerate(classifiers)}
         ensembler_types = ["voting", "learning"]
+
+        e_input = stack_predictions(X, classifiers) if pre_caching else X
+        e_input_test = stack_predictions(X_test, classifiers) if pre_caching else X_test
 
         model_generator = self._pipeline_space
 
@@ -110,6 +120,7 @@ class AutoGoalEnsembler:
                 handle="selected_classifiers",
             )
             selected_classifiers = [named_classifiers[n] for n in names]
+            indexes = [classifier2index[n] for n in names]
 
             ensembler_type = sampler.choice(ensembler_types, handle="ensembler_type")
             if ensembler_type == "voting":
@@ -120,17 +131,27 @@ class AutoGoalEnsembler:
                 ensembler = MLVotingClassifier(selected_classifiers, model=model)
             else:
                 raise Exception(f"Unknown ensembler_type: {ensembler_type}")
-            return ensembler
+            return ensembler, indexes
 
         def generator(sampler: Sampler):
             sampler = LogSampler(sampler)
-            ensembler = build_ensembler(sampler)
-            ensembler.fit(X, y)
-            return SampleModel(sampler, ensembler)
+            ensembler, indexes = build_ensembler(sampler)
+            ensembler.fit(
+                e_input,
+                y,
+                on_predictions=pre_caching,
+                selection=indexes,
+            )
+            return SampleModel(sampler, ensembler, indexes=indexes)
 
         def fn(generated: SampleModel):
             ensembler = generated.model
-            y_pred = ensembler.predict(X_test)
+            indexes = generated.info["indexes"]
+            y_pred = ensembler.predict(
+                e_input_test,
+                on_predictions=pre_caching,
+                selection=indexes,
+            )
             score = self.score_metric(X_test, y_test, y_pred)
             return score
 

@@ -1,11 +1,11 @@
 from typing import Any, Callable, Dict, List, Union
 
 import pandas as pd
+from bfair.methods.voting import stack_predictions
 from bfair.metrics import base_metric
 from bfair.utils import ClassifierWrapper
-from pandas import DataFrame, Series
-
 from bfair.utils.autogoal import split_input
+from pandas import DataFrame, Series
 
 from .diversification import AutoGoalDiversifier
 from .ensembling import AutoGoalEnsembler
@@ -195,9 +195,10 @@ class AutoGoalMitigator:
 
         constraint = (
             self._build_constraint_fn(
-                scores,
                 X,
                 y,
+                classifiers,
+                scores,
                 test_on=test_on,
                 detriment=self.detriment,
                 score_metric=self.diversifier.score_metric,
@@ -221,14 +222,16 @@ class AutoGoalMitigator:
 
     def _build_constraint_fn(
         self,
-        scores,
         X,
         y,
+        classifiers,
+        scores,
         *,
         test_on,
         detriment,
         score_metric,
         maximize_scores,
+        pre_caching=True,
     ):
         best_score = max(scores) if maximize_scores else min(scores)
 
@@ -246,11 +249,19 @@ class AutoGoalMitigator:
         )
         X_test, y_test = (X, y) if test_on is None else test_on
 
+        e_input = stack_predictions(X, classifiers) if pre_caching else X
+        e_input_test = stack_predictions(X_test, classifiers) if pre_caching else X_test
+
         def constraint(generated, disparity_fn):
             ensemble = generated.model
+            indexes = generated.info["indexes"]
             if not ensemble.fitted:
-                ensemble.fit(X, y)
-            y_pred = ensemble.predict(X_test)
+                ensemble.fit(e_input, y, on_predictions=pre_caching, selection=indexes)
+            y_pred = ensemble.predict(
+                e_input_test,
+                on_predictions=pre_caching,
+                selection=indexes,
+            )
             score = score_metric(y_test, y_pred)
             return measure_of_detriment(score)
 
