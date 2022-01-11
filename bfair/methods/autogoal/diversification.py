@@ -1,6 +1,7 @@
 from typing import Any, Callable, List
 
 from bfair.metrics import build_oracle_output_matrix, disagreement
+from bfair.utils.autogoal import join_input, split_input
 
 from autogoal.kb import Supervised, VectorCategorical
 from autogoal.ml import AutoML
@@ -8,9 +9,18 @@ from autogoal.search import PESearch
 
 
 class AutoGoalDiversifier:
-    def __init__(self, *, input, n_classifiers: int, maximize=True, **automl_kwargs):
+    def __init__(
+        self,
+        *,
+        input,
+        n_classifiers: int,
+        maximize=True,
+        validation_split=0.3,
+        **automl_kwargs
+    ):
         self.n_classifiers = n_classifiers
         self.maximize = maximize
+        self.validation_split = validation_split
 
         input = (
             input + (Supervised[VectorCategorical],)
@@ -23,6 +33,7 @@ class AutoGoalDiversifier:
             output=VectorCategorical,
             number_of_pipelines=n_classifiers,
             maximize=maximize,
+            validation_split=validation_split,
             **automl_kwargs,
         )
 
@@ -43,10 +54,21 @@ class AutoGoalDiversifier:
 
     def _build_base_classifiers(self, X, y, test_on=None, **run_kwargs):
         automl = self._automl
-        X_test, y_test = (X, y) if test_on is None else test_on
+
+        if test_on is None:
+            X_train, y_train, (X_test, y_test) = split_input(
+                X,
+                y,
+                self.validation_split,
+            )
+        else:
+            X_train, y_train = X, y
+            X_test, y_test = test_on
+            X, y = join_input(X_train, y_train, X_test, y_test)
+
         ranking_fn = self.make_ranking_fn(
-            X,
-            y,
+            X_train,
+            y_train,
             X_test,
             y_test,
             top_cut=self.n_classifiers,

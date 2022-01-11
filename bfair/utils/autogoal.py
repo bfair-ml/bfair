@@ -97,3 +97,13 @@ def split_input(X, y, validation_split=0.3):
             )
 
     return X, y, (X_test, y_test)
+
+
+def join_input(X_train, y_train, X_test, y_test):
+    if isinstance(X_train, list):
+        X = X_train + X_test
+        y = y_train + y_test
+    else:
+        X = np.concatenate((X_train, X_test))
+        y = np.concatenate((y_train, y_test))
+    return X, y

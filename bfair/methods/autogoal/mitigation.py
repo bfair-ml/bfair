@@ -17,6 +17,8 @@ class AutoGoalMitigator:
         diversifier: AutoGoalDiversifier,
         ensembler: AutoGoalEnsembler,
         detriment: Union[int, float, None],
+        *,
+        validation_split: float = None,
     ):
         """
         If `detriment` is negative, then the score should be improved in at least `abs(detriment)` units.
@@ -29,6 +31,7 @@ class AutoGoalMitigator:
         self.diversifier = diversifier
         self.ensembler = ensembler
         self.detriment = detriment
+        self.validation_split = validation_split
 
     @property
     def score_metric(self):
@@ -97,16 +100,23 @@ class AutoGoalMitigator:
             **search_kwargs,
         )
 
-        return cls(diversifier, ensembler, detriment)
+        return cls(diversifier, ensembler, detriment, validation_split=validation_split)
 
     @classmethod
     def build_diversifier(
-        cls, *, input, n_classifiers: int, maximize=True, **automl_kwargs
+        cls,
+        *,
+        input,
+        n_classifiers: int,
+        maximize=True,
+        validation_split=0.3,
+        **automl_kwargs,
     ):
         return AutoGoalDiversifier(
             input=input,
             n_classifiers=n_classifiers,
             maximize=maximize,
+            validation_split=validation_split,
             **automl_kwargs,
         )
 
@@ -170,6 +180,9 @@ class AutoGoalMitigator:
         return fairness_fn
 
     def __call__(self, X, y, *, test_on=None, **run_kwargs):
+        if test_on is None and self.validation_split is not None:
+            X, y, test_on = split_input(X, y, self.validation_split)
+
         pipelines, scores = self.diversify(X, y, test_on=test_on, **run_kwargs)
         model, _ = self.ensemble(pipelines, scores, X, y, test_on=test_on, **run_kwargs)
         return model
