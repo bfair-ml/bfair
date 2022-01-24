@@ -33,13 +33,19 @@ class AutoGoalEnsembler:
         self.search_kwargs["allow_duplicates"] = allow_duplicates
         self.search_kwargs["maximize"] = maximize
 
-        self._pipeline_space = AutoML(
+        self._automl_scaffold = AutoML(
             input=(MatrixCategorical, Supervised[VectorCategorical]),
             output=VectorCategorical,
             include_filter=include_filter,
             exclude_filter=exclude_filter,
             registry=registry,
-        ).make_pipeline_builder()
+        )
+        self._pipeline_space = None
+
+    def _init_space(self):
+        if self._pipeline_space is None:
+            self._pipeline_space = self._automl_scaffold.make_pipeline_builder()
+        return self._pipeline_space
 
     def __call__(
         self,
@@ -52,6 +58,7 @@ class AutoGoalEnsembler:
         pre_caching=True,
         **run_kwargs,
     ):
+        self._init_space()
         return self._optimize_sampler_fn(
             X,
             y,
