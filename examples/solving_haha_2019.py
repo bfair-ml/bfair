@@ -60,7 +60,7 @@ parser.add_argument("--timeout", type=int, default=60)
 parser.add_argument("--memory", type=int, default=2)
 parser.add_argument("--popsize", type=int, default=50)
 parser.add_argument("--selection", type=int, default=10)
-parser.add_argument("--global-timeout", type=int, default=None)
+parser.add_argument("--global-timeout", type=int, default=60 * 60)
 parser.add_argument("--examples", type=int, default=None)
 parser.add_argument("--token", default=None)
 parser.add_argument("--channel", default=None)
@@ -92,7 +92,7 @@ X_train, y_train, X_test, y_test = haha.load()
 
 mitigator = AutoGoalMitigator.build(
     input=Seq[Sentence],
-    n_classifiers=5,
+    n_classifiers=20,
     detriment=20,
     # [start] AutoML args [start]
     #
@@ -153,7 +153,7 @@ def report(model, X, y, fit, header):
     except Exception as e:
         msg = str(e)
 
-    return (f"# {header} #\n{msg}",)
+    return f"# {header} #\n{msg}"
 
 
 reports = [

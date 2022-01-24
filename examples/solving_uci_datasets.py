@@ -161,7 +161,7 @@ def report(model, X, y, fit, header, score_metric, fairness_metric):
     except Exception as e:
         msg = str(e)
 
-    return (f"# {header} #\n{msg}",)
+    return f"# {header} #\n{msg}"
 
 
 for epoch in range(args.epochs):
@@ -189,7 +189,7 @@ for epoch in range(args.epochs):
 
         mitigator = AutoGoalMitigator.build(
             input=MatrixContinuousDense,
-            n_classifiers=5,
+            n_classifiers=20,
             detriment=20,
             # [start] AutoML args [start]
             #
