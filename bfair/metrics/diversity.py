@@ -86,7 +86,7 @@ def double_fault(oracle_matrix: ndarray) -> ndarray:
     n_samples = oracle_matrix.shape[0]
 
     def measure(classifier):
-        mistake = classifier == -1
+        mistake = classifier < 0
         same = np.equal(oracle_matrix.transpose(), classifier)
         count = np.count_nonzero(same & mistake, axis=1)
         return count / n_samples
