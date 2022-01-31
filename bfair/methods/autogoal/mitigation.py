@@ -3,6 +3,7 @@ from typing import Any, Callable, Dict, List, Union
 import pandas as pd
 from bfair.methods.voting import stack_predictions
 from bfair.metrics import base_metric
+from bfair.metrics.diversity import double_fault_inverse
 from bfair.utils import ClassifierWrapper
 from bfair.utils.autogoal import split_input
 from pandas import DataFrame, Series
@@ -48,6 +49,7 @@ class AutoGoalMitigator:
         input,
         n_classifiers: int,
         detriment: Union[int, float],
+        diversity_metric=double_fault_inverse,
         fairness_metric: base_metric = None,
         maximize_fmetric=False,
         protected_attributes: Union[List[str], str] = None,
@@ -65,6 +67,7 @@ class AutoGoalMitigator:
         diversifier = cls.build_diversifier(
             input=input,
             n_classifiers=n_classifiers,
+            diversity_metric=diversity_metric,
             maximize=maximize,
             validation_split=validation_split,
             include_filter=include_filter,
@@ -108,6 +111,7 @@ class AutoGoalMitigator:
         *,
         input,
         n_classifiers: int,
+        diversity_metric=double_fault_inverse,
         maximize=True,
         validation_split=0.3,
         **automl_kwargs,
@@ -115,6 +119,7 @@ class AutoGoalMitigator:
         return AutoGoalDiversifier(
             input=input,
             n_classifiers=n_classifiers,
+            diversity_metric=diversity_metric,
             maximize=maximize,
             validation_split=validation_split,
             **automl_kwargs,

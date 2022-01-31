@@ -1,6 +1,6 @@
 from typing import Any, Callable, List
 
-from bfair.metrics import build_oracle_output_matrix, disagreement
+from bfair.metrics import build_oracle_output_matrix, double_fault_inverse
 from bfair.utils.autogoal import join_input, split_input
 
 from autogoal.kb import Supervised, VectorCategorical
@@ -14,11 +14,13 @@ class AutoGoalDiversifier:
         *,
         input,
         n_classifiers: int,
+        diversity_metric=double_fault_inverse,
         maximize=True,
         validation_split=0.3,
-        **automl_kwargs
+        **automl_kwargs,
     ):
         self.n_classifiers = n_classifiers
+        self.diversity_metric = diversity_metric
         self.maximize = maximize
         self.validation_split = validation_split
 
@@ -71,6 +73,7 @@ class AutoGoalDiversifier:
             y_train,
             X_test,
             y_test,
+            diversity_metric=self.diversity_metric,
             top_cut=self.n_classifiers,
             maximize=self.maximize,
         )
@@ -80,7 +83,14 @@ class AutoGoalDiversifier:
 
     @staticmethod
     def make_ranking_fn(
-        X, y, X_test, y_test, *, top_cut=None, maximize=True
+        X,
+        y,
+        X_test,
+        y_test,
+        *,
+        diversity_metric=double_fault_inverse,
+        top_cut=None,
+        maximize=True,
     ) -> Callable[[List, List[float]], List[float]]:
         def ranking_fn(solutions, fns):
             if top_cut is not None and len(solutions) <= top_cut:
@@ -127,7 +137,7 @@ class AutoGoalDiversifier:
 
             # COMPUTE DIVERSITY BETWEEN PAIRS OF PIPELINES
             oracle_matrix = build_oracle_output_matrix(y_test, predictions)
-            diversity_matrix = disagreement(oracle_matrix)
+            diversity_matrix = diversity_metric(oracle_matrix)
 
             # RANK PIPELINES GREEDY (root: best_fn, step: diversity)
             # - accuracy is been ignored
