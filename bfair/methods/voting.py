@@ -1,5 +1,10 @@
+from collections import Counter, defaultdict
+from typing import List
+
 import numpy as np
-from collections import Counter
+from bfair.utils.autogoal import ClassifierWrapper
+
+from sklearn.metrics import accuracy_score
 
 
 def stack_predictions(X, estimators):
@@ -63,3 +68,35 @@ class MLVotingClassifier(VotingClassifier):
 
     def _forward_predictions(self, predictions):
         return self.model.predict(predictions)
+
+
+def optimistic_oracle(X, y, score_metric, estimators: List[ClassifierWrapper]):
+    predictions = stack_predictions(X, estimators)
+    y_pred = np.asarray(
+        [gold if gold in pred else pred[0] for pred, gold in zip(predictions, y)]
+    )
+    return score_metric(y, y_pred)
+
+
+def optimistic_oracle_coverage(X, y, estimators: List[ClassifierWrapper]):
+    predictions = stack_predictions(X, estimators)
+    y = y[np.newaxis].T  # row array to column array
+    grid = np.equal(predictions, y)
+    found = grid.any(axis=-1)
+    correct = found.sum()
+    return correct / len(y)
+
+
+def overfitted_oracle(X, y, score_metric, estimators: List[ClassifierWrapper]):
+    predictions = stack_predictions(X, estimators)
+    group = defaultdict(list)
+    for pred, gold in zip(predictions, y):
+        key = tuple(pred)
+        group[key].append(gold)
+    oracle = {key: Counter(value).most_common(1)[0][0] for key, value in group.items()}
+    y_pred = np.asarray([oracle[tuple(pred)] for pred in predictions])
+    return score_metric(y, y_pred)
+
+
+def overfitted_oracle_coverage(X, y, estimators: List[ClassifierWrapper]):
+    return overfitted_oracle(X, y, accuracy_score, estimators)
