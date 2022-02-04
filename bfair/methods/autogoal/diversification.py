@@ -1,5 +1,7 @@
+import random
 from typing import Any, Callable, List
 
+import numpy as np
 from bfair.metrics import build_oracle_output_matrix, double_fault_inverse
 from bfair.utils.autogoal import join_input, split_input
 
@@ -17,12 +19,14 @@ class AutoGoalDiversifier:
         diversity_metric=double_fault_inverse,
         maximize=True,
         validation_split=0.3,
+        ranking_fn: Callable[[List, List[float]], List[float]] = None,
         **automl_kwargs,
     ):
         self.n_classifiers = n_classifiers
         self.diversity_metric = diversity_metric
         self.maximize = maximize
         self.validation_split = validation_split
+        self.ranking_fn = ranking_fn
 
         input = (
             input + (Supervised[VectorCategorical],)
@@ -57,26 +61,29 @@ class AutoGoalDiversifier:
     def _build_base_classifiers(self, X, y, test_on=None, **run_kwargs):
         automl = self._automl
 
-        if test_on is None:
-            X_train, y_train, (X_test, y_test) = split_input(
-                X,
-                y,
-                self.validation_split,
+        if self.ranking_fn is None:
+            if test_on is None:
+                X_train, y_train, (X_test, y_test) = split_input(
+                    X,
+                    y,
+                    self.validation_split,
+                )
+            else:
+                X_train, y_train = X, y
+                X_test, y_test = test_on
+                X, y = join_input(X_train, y_train, X_test, y_test)
+
+            ranking_fn = self.make_ranking_fn(
+                X_train,
+                y_train,
+                X_test,
+                y_test,
+                diversity_metric=self.diversity_metric,
+                top_cut=self.n_classifiers,
+                maximize=self.maximize,
             )
         else:
-            X_train, y_train = X, y
-            X_test, y_test = test_on
-            X, y = join_input(X_train, y_train, X_test, y_test)
-
-        ranking_fn = self.make_ranking_fn(
-            X_train,
-            y_train,
-            X_test,
-            y_test,
-            diversity_metric=self.diversity_metric,
-            top_cut=self.n_classifiers,
-            maximize=self.maximize,
-        )
+            ranking_fn = self.ranking_fn
 
         automl.fit(X, y, ranking_fn=ranking_fn, **run_kwargs)
         return automl.top_pipelines_, automl.top_pipelines_scores_
@@ -167,3 +174,40 @@ class AutoGoalDiversifier:
             return ranking
 
         return ranking_fn
+
+
+def build_random_ranking_fn():
+    def ranking_fn(solutions, fns):
+        ranking = list(range(len(solutions)))
+        random.shuffle(ranking)
+        return ranking
+
+    return ranking_fn
+
+
+def build_random_but_single_best_ranking_fn(maximize):
+    def ranking_fn(solutions, fns):
+        n_solutions = len(solutions)
+
+        ranking = list(range(1, n_solutions))  # one element is missing
+        random.shuffle(ranking)
+
+        indexes = np.argsort(fns if maximize else -np.asarray(fns))
+        best_index = indexes[-1]
+        ranking.insert(best_index, n_solutions)
+
+        return ranking
+
+    return ranking_fn
+
+
+def build_best_performance_ranking_fd(maximize):
+    def ranking_fn(solutions, fns):
+        indexes = np.argsort(fns if maximize else -np.asarray(fns))
+
+        ranking = [None] * len(solutions)
+        for i, solution_index in enumerate(indexes):
+            ranking[solution_index] = i
+        return ranking
+
+    return ranking_fn

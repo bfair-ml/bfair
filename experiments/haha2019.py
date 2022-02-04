@@ -9,5 +9,6 @@ run(
     load_dataset=haha.load,
     input_type=Seq[Sentence],
     score_metric=f1_score,
+    maximize=True,
     args=args,
 )

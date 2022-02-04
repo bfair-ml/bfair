@@ -6,12 +6,18 @@ from itertools import product
 from autogoal.contrib import find_classes
 from autogoal.search import PESearch, RichLogger
 from bfair.methods import AutoGoalMitigator
+from bfair.methods.autogoal.diversification import (
+    build_best_performance_ranking_fd,
+    build_random_but_single_best_ranking_fn,
+    build_random_ranking_fn,
+)
 from bfair.methods.voting import (
     optimistic_oracle,
     optimistic_oracle_coverage,
     overfitted_oracle,
     overfitted_oracle_coverage,
 )
+from bfair.metrics import disagreement, double_fault_inverse
 from bfair.utils import ClassifierWrapper
 
 
@@ -29,16 +35,37 @@ def setup():
     parser.add_argument("--token", default=None)
     parser.add_argument("--channel", default=None)
     parser.add_argument("--output", default=None)
+    parser.add_argument(
+        "--diversity",
+        type=str,
+        default="double-fault",
+        choices=["double-fault", "disagreement", "shuffle", "arbitrary", "best"],
+    )
 
     return parser.parse_args()
 
 
-def run(load_dataset, input_type, score_metric, args):
+def run(load_dataset, input_type, score_metric, maximize, args):
     output_stream = open(args.output, mode="a") if args.output else sys.stdout
 
     print(args, file=output_stream, flush=True)
     for cls in find_classes():
         print("Using: %s" % cls.__name__, file=output_stream, flush=True)
+
+    ranking_fn = None
+    diversity_metric = None
+    if args.diversity == "double-fault":
+        diversity_metric = double_fault_inverse
+    elif args.diversity == "disagreement":
+        diversity_metric = disagreement
+    elif args.diversity == "shuffle":
+        ranking_fn = build_random_ranking_fn()
+    elif args.diversity == "arbitrary":
+        ranking_fn = build_random_but_single_best_ranking_fn(maximize=maximize)
+    elif args.diversity == "best":
+        ranking_fn = build_best_performance_ranking_fd(maximize=maximize)
+    else:
+        raise ValueError(f"Unknown value for diversity metric: {args.diversity}")
 
     X_train, y_train, X_test, y_test = load_dataset(max_examples=args.examples)
 
@@ -46,6 +73,9 @@ def run(load_dataset, input_type, score_metric, args):
         input=input_type,
         n_classifiers=args.n_classifiers,
         detriment=20,
+        diversity_metric=diversity_metric,
+        ranking_fn=ranking_fn,
+        maximize=maximize,
         # [start] AutoML args [start]
         #
         search_algorithm=PESearch,

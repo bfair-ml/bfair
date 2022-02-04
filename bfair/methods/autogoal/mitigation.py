@@ -59,6 +59,7 @@ class AutoGoalMitigator:
         sensor: Callable[..., DataFrame] = None,
         maximize=True,
         validation_split=0.3,
+        ranking_fn: Callable[[List, List[float]], List[float]] = None,
         include_filter=".*",
         exclude_filter=None,
         registry=None,
@@ -70,6 +71,7 @@ class AutoGoalMitigator:
             diversity_metric=diversity_metric,
             maximize=maximize,
             validation_split=validation_split,
+            ranking_fn=ranking_fn,
             include_filter=include_filter,
             exclude_filter=exclude_filter,
             registry=registry,
@@ -114,6 +116,7 @@ class AutoGoalMitigator:
         diversity_metric=double_fault_inverse,
         maximize=True,
         validation_split=0.3,
+        ranking_fn=None,
         **automl_kwargs,
     ):
         return AutoGoalDiversifier(
@@ -122,6 +125,7 @@ class AutoGoalMitigator:
             diversity_metric=diversity_metric,
             maximize=maximize,
             validation_split=validation_split,
+            ranking_fn=ranking_fn,
             **automl_kwargs,
         )
 
