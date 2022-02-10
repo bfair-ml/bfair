@@ -34,7 +34,7 @@ def setup():
     parser.add_argument("--examples", type=int, default=None)
     parser.add_argument("--token", default=None)
     parser.add_argument("--channel", default=None)
-    parser.add_argument("--output", default=None)
+    parser.add_argument("--output", default="")
     parser.add_argument(
         "--diversity",
         type=str,
@@ -46,13 +46,14 @@ def setup():
 
 
 def run(load_dataset, input_type, score_metric, maximize, args, title):
-    output_stream = open(args.output, mode="a") if args.output else sys.stdout
+    path = args.output.format(title)
+    output_stream = open(path, mode="a") if path else sys.stdout
 
     print(args, file=output_stream, flush=True)
     for cls in find_classes():
         print("Using: %s" % cls.__name__, file=output_stream, flush=True)
 
-    print(f"Experiment: {title.upper()}")
+    print(f"Experiment: {title.upper()}", file=output_stream, flush=True)
 
     ranking_fn = None
     diversity_metric = None
@@ -104,10 +105,10 @@ def run(load_dataset, input_type, score_metric, maximize, args, title):
         )
         loggers.append(telegram)
 
-    if args.output:
+    if path:
         from bfair.utils.autogoal import FileLogger
 
-        file_logger = FileLogger(output_path=args.output)
+        file_logger = FileLogger(output_path=path)
         loggers.append(file_logger)
 
     pipelines, scores = mitigator.diversify(
@@ -183,7 +184,7 @@ def run(load_dataset, input_type, score_metric, maximize, args, title):
     ]:
         print(f"- {title}: {coverage}", file=output_stream, flush=True)
 
-    if args.output:
+    if path:
         output_stream.close()
 
 
