@@ -1,6 +1,15 @@
 from functools import partial
 
 from autogoal import datasets
+from autogoal.datasets import (
+    abalone,
+    cars,
+    dorothea,
+    german_credit,
+    gisette,
+    shuttle,
+    yeast,
+)
 from autogoal.kb import MatrixContinuousDense
 from autogoal.ml.metrics import accuracy
 from sklearn.model_selection import train_test_split
