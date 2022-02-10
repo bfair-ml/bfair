@@ -45,12 +45,14 @@ def setup():
     return parser.parse_args()
 
 
-def run(load_dataset, input_type, score_metric, maximize, args):
+def run(load_dataset, input_type, score_metric, maximize, args, title):
     output_stream = open(args.output, mode="a") if args.output else sys.stdout
 
     print(args, file=output_stream, flush=True)
     for cls in find_classes():
         print("Using: %s" % cls.__name__, file=output_stream, flush=True)
+
+    print(f"Experiment: {title.upper()}")
 
     ranking_fn = None
     diversity_metric = None
@@ -97,7 +99,7 @@ def run(load_dataset, input_type, score_metric, maximize, args):
 
         telegram = TelegramLogger(
             token=args.token,
-            name=f"HAHA",
+            name=title.upper(),
             channel=args.channel,
         )
         loggers.append(telegram)

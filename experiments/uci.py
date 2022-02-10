@@ -51,6 +51,7 @@ def main():
             score_metric=accuracy,
             maximize=True,
             args=args,
+            title=name,
         )
 
 

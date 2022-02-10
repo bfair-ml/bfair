@@ -13,6 +13,7 @@ def main():
         score_metric=f1_score,
         maximize=True,
         args=args,
+        title="haha19",
     )
 
 
