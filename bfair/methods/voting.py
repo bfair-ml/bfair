@@ -81,7 +81,7 @@ def optimistic_oracle(X, y, score_metric, estimators: List[ClassifierWrapper]):
 def optimistic_oracle_coverage(X, y, estimators: List[ClassifierWrapper]):
     predictions = stack_predictions(X, estimators)
     y = y[np.newaxis].T  # row array to column array
-    grid = np.equal(predictions, y)
+    grid = predictions == y
     found = grid.any(axis=-1)
     correct = found.sum()
     return correct / len(y)
