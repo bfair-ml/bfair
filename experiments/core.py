@@ -49,6 +49,28 @@ def run(load_dataset, input_type, score_metric, maximize, args, title):
     path = args.output.format(title)
     output_stream = open(path, mode="a") if path else sys.stdout
 
+    try:
+        _run(
+            load_dataset,
+            input_type,
+            score_metric,
+            maximize,
+            args,
+            title,
+            output_stream,
+            path,
+        )
+    except Exception as e:
+        print("\n", "ERROR", "\n", str(e), "\n", file=output_stream, flush=True)
+    finally:
+        if path:
+            output_stream.close()
+
+
+def _run(
+    load_dataset, input_type, score_metric, maximize, args, title, output_stream, path
+):
+
     print(args, file=output_stream, flush=True)
     for cls in find_classes():
         print("Using: %s" % cls.__name__, file=output_stream, flush=True)
@@ -183,9 +205,6 @@ def run(load_dataset, input_type, score_metric, maximize, args, title):
         ),
     ]:
         print(f"- {title}: {coverage}", file=output_stream, flush=True)
-
-    if path:
-        output_stream.close()
 
 
 def inspect(
