@@ -5,7 +5,12 @@ from autogoal.kb import MatrixCategorical, Supervised, VectorCategorical
 from autogoal.ml import AutoML
 from autogoal.sampling import Sampler
 from autogoal.search import PESearch
-from bfair.methods.voting import MLVotingClassifier, VotingClassifier, stack_predictions
+from bfair.methods.voting import (
+    MLVotingClassifier,
+    OverfittedVotingClassifier,
+    VotingClassifier,
+    stack_predictions,
+)
 from bfair.utils import ClassifierWrapper
 from bfair.utils.autogoal import split_input
 
@@ -108,7 +113,7 @@ class AutoGoalEnsembler:
     ):
         named_classifiers = {str(c): c for c in classifiers}
         classifier2index = {str(c): i for i, c in enumerate(classifiers)}
-        ensembler_types = ["voting", "learning"]
+        ensembler_types = ["voting", "learning", "overfit"]
 
         e_input = stack_predictions(X, classifiers) if pre_caching else X
         e_input_test = stack_predictions(X_test, classifiers) if pre_caching else X_test
@@ -128,14 +133,21 @@ class AutoGoalEnsembler:
             )
             selected_classifiers = [named_classifiers[n] for n in names]
             indexes = [classifier2index[n] for n in names]
+            selected_scores = [scores[i] for i in indexes]
 
             ensembler_type = sampler.choice(ensembler_types, handle="ensembler_type")
             if ensembler_type == "voting":
-                ensembler = VotingClassifier(selected_classifiers)
+                ensembler = VotingClassifier(selected_classifiers, selected_scores)
             elif ensembler_type == "learning":
                 pipeline = model_generator(sampler)
                 model = ClassifierWrapper(pipeline)
-                ensembler = MLVotingClassifier(selected_classifiers, model=model)
+                ensembler = MLVotingClassifier(
+                    selected_classifiers, selected_scores, model=model
+                )
+            elif ensembler_type == "overfit":
+                ensembler = OverfittedVotingClassifier(
+                    selected_classifiers, selected_scores
+                )
             else:
                 raise Exception(f"Unknown ensembler_type: {ensembler_type}")
             return ensembler, indexes
