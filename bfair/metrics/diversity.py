@@ -1,5 +1,6 @@
 import numpy as np
 from numpy import ndarray
+from sklearn.metrics import classification_report
 
 
 def build_oracle_output_matrix(
@@ -110,3 +111,31 @@ def double_fault_inverse(oracle_matrix: ndarray) -> ndarray:
     """
 
     return 1 - double_fault(oracle_matrix)
+
+
+def kohavi_wolpert_variance(oracle_matrix: ndarray) -> ndarray:
+    """
+    The diversity increases as the value of the variance increases
+
+
+    ## Parameters
+
+    `oracle_matrix`: ndarray (Ni, Nj)
+        - `i`: training sample.
+        - `j`: classifier.
+
+    ## Returns
+
+    `out`: ndarray (Ni,)
+    """
+
+    n_classifiers = oracle_matrix.shape[1]
+
+    def variance(sample: ndarray):
+        mistakes = sample < 0
+        probs = mistakes / n_classifiers
+        prob = probs.sum()
+
+        return prob * (1 - prob)
+
+    return np.apply_along_axis(variance, axis=1, arr=oracle_matrix)
