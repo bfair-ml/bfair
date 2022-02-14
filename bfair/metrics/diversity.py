@@ -129,13 +129,14 @@ def kohavi_wolpert_variance(oracle_matrix: ndarray) -> ndarray:
     `out`: ndarray (Ni,)
     """
 
+    # This is computed this way because we are assuming equally weighted classsifiers
+    probs = np.apply_along_axis(lambda sample: (sample < 0) / 2, axis=1, arr=oracle_matrix)
+
     n_classifiers = oracle_matrix.shape[1]
+    kw_variance = np.zeros((n_classifiers, n_classifiers))
+    for i in range(n_classifiers):
+        for j in range(n_classifiers):
+            classifiers_probs = np.sum(probs[:, (i, j)], axis=1)
+            kw_variance[i, j] = np.sum(classifiers_probs * (1-classifiers_probs))
 
-    def variance(sample: ndarray):
-        mistakes = sample < 0
-        probs = mistakes / n_classifiers
-        prob = probs.sum()
-
-        return prob * (1 - prob)
-
-    return np.apply_along_axis(variance, axis=1, arr=oracle_matrix)
+    return kw_variance
