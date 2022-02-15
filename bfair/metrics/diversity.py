@@ -1,6 +1,5 @@
 import numpy as np
 from numpy import ndarray
-from sklearn.metrics import classification_report
 
 
 def build_oracle_output_matrix(
@@ -129,14 +128,15 @@ def kohavi_wolpert_variance(oracle_matrix: ndarray) -> ndarray:
     `out`: ndarray (Ni,)
     """
 
-    # This is computed this way because we are assuming equally weighted classsifiers
-    probs = np.apply_along_axis(lambda sample: (sample < 0) / 2, axis=1, arr=oracle_matrix)
+    probs = np.apply_along_axis(
+        lambda sample: (sample < 0) / 2, axis=1, arr=oracle_matrix
+    )
 
     n_classifiers = oracle_matrix.shape[1]
     kw_variance = np.zeros((n_classifiers, n_classifiers))
     for i in range(n_classifiers):
         for j in range(n_classifiers):
             classifiers_probs = np.sum(probs[:, (i, j)], axis=1)
-            kw_variance[i, j] = np.sum(classifiers_probs * (1-classifiers_probs))
+            kw_variance[i, j] = np.average(classifiers_probs * (1 - classifiers_probs))
 
     return kw_variance
