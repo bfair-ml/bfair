@@ -1,4 +1,5 @@
 from collections import Counter, defaultdict
+from functools import partial
 from typing import List
 
 import numpy as np
@@ -12,14 +13,46 @@ def stack_predictions(X, estimators):
     return np.column_stack(predictions)
 
 
-# TODO: if two labels have the same number of votes,
-#       select the one predicted by the most accurate estimator.
+def get_most_common(items, prefered=None):
+    counter = Counter(items)
+    best, count = counter.most_common(1)[0]
+    return best if prefered is None or counter.get(prefered, -1) < count else prefered
+
+
+# TODO: per label scores
+
+
+def get_most_common_with_score(items, scores, maximize=True):
+    select_best = max if maximize else min
+    worst_score = float("-inf") if maximize else float("+inf")
+
+    counter = {}
+    default = (0, worst_score)
+    for item, score in zip(items, scores):
+        count, best_score = counter.get(item, default)
+        counter[item] = (count + 1, select_best(score, best_score))
+
+    best = None
+    best_count = -1
+    best_score = worst_score
+    for item, (count, score) in counter.items():
+        if (
+            count > best_count
+            or count == best_count
+            and select_best(score, best_score) != best_score
+        ):
+            best = item
+            best_count = count
+            best_score = score
+
+    return best
 
 
 class VotingClassifier:
-    def __init__(self, estimators, scores=None):
+    def __init__(self, estimators, scores=None, maximize=True):
         self.estimators = estimators
         self.scores = scores
+        self.maximize = maximize
 
     @property
     def fitted(self):
@@ -55,17 +88,28 @@ class VotingClassifier:
         return stack_predictions(X, self.estimators)
 
     def _forward_predictions(self, predictions):
-        most_commons = [Counter(sample).most_common(1)[0][0] for sample in predictions]
+        select = (
+            get_most_common
+            if self.scores is None
+            else partial(
+                get_most_common_with_score,
+                scores=self.scores,
+                maximize=self.maximize,
+            )
+        )
+        most_commons = [select(sample) for sample in predictions]
         return np.asarray(most_commons)
 
 
 class MLVotingClassifier(VotingClassifier):
-    def __init__(self, estimators, scores=None, *, model=None, model_init=None):
+    def __init__(
+        self, estimators, scores=None, maximize=True, *, model=None, model_init=None
+    ):
         if model is None == model_init is None:
             raise ValueError(
                 "One and only one between `model` and `model_init` should be supplied"
             )
-        super().__init__(estimators, scores)
+        super().__init__(estimators, scores, maximize)
         self.model = model_init() if model is None else model
 
     @property
@@ -81,9 +125,9 @@ class MLVotingClassifier(VotingClassifier):
 
 
 class OverfittedVotingClassifier(VotingClassifier):
-    def __init__(self, estimators, scores):
-        super().__init__(estimators, scores)
-        self.best_index = np.argmax(scores)
+    def __init__(self, estimators, scores, maximize=True):
+        super().__init__(estimators, scores, maximize)
+        self.best_index = np.argmax(scores) if maximize else np.argmin(scores)
         self.oracle = None
 
     @property
