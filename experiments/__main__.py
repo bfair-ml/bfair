@@ -45,6 +45,8 @@ def main(name, output_dir, *args):
             f"experiments.{name}",
             "--output",
             str(output_path),
+            "--title",
+            repr(".".join(highlights)),
         ]
         cmd.extend(options)
 

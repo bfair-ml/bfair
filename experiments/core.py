@@ -35,6 +35,7 @@ def setup():
     parser.add_argument("--token", default=None)
     parser.add_argument("--channel", default=None)
     parser.add_argument("--output", default="")
+    parser.add_argument("--title", default=None)
     parser.add_argument(
         "--diversity",
         type=str,
@@ -56,7 +57,7 @@ def run(load_dataset, input_type, score_metric, maximize, args, title):
             score_metric,
             maximize,
             args,
-            title,
+            title if args.title is None else f"{title}: {args.title}",
             output_stream,
             path,
         )
@@ -168,7 +169,7 @@ def _run(
         print(msg, file=output_stream, flush=True)
 
     print("## Coverage", file=output_stream)
-    for title, coverage in [
+    for caption, coverage in [
         (
             "Optimistic Oracle (score_metric)",
             optimistic_oracle(
@@ -204,7 +205,7 @@ def _run(
             ),
         ),
     ]:
-        print(f"- {title}: {coverage}", file=output_stream, flush=True)
+        print(f"- {caption}: {coverage}", file=output_stream, flush=True)
 
 
 def inspect(
