@@ -33,10 +33,10 @@ class AutoGoalEnsembler:
     ):
         self.score_metric = score_metric
         self.validation_split = validation_split
+        self.maximize = maximize
         self.search_kwargs = search_kwargs
         self.search_kwargs["errors"] = errors
         self.search_kwargs["allow_duplicates"] = allow_duplicates
-        self.search_kwargs["maximize"] = maximize
 
         self._automl_scaffold = AutoML(
             input=(MatrixCategorical, Supervised[VectorCategorical]),
@@ -98,10 +98,12 @@ class AutoGoalEnsembler:
             classifiers,
             scores,
             pre_caching,
+            self.maximize,
         )
         search = PESearch(
             generator_fn=generator,
             fitness_fn=fn,
+            maximize=self.maximize,
             **self.search_kwargs,
         )
 
@@ -109,7 +111,7 @@ class AutoGoalEnsembler:
         return best, best_fn
 
     def _build_generator_and_fn(
-        self, X, y, X_test, y_test, classifiers, scores, pre_caching
+        self, X, y, X_test, y_test, classifiers, scores, pre_caching, maximize
     ):
         named_classifiers = {str(c): c for c in classifiers}
         classifier2index = {str(c): i for i, c in enumerate(classifiers)}
@@ -137,16 +139,18 @@ class AutoGoalEnsembler:
 
             ensembler_type = sampler.choice(ensembler_types, handle="ensembler_type")
             if ensembler_type == "voting":
-                ensembler = VotingClassifier(selected_classifiers, selected_scores)
+                ensembler = VotingClassifier(
+                    selected_classifiers, selected_scores, maximize
+                )
             elif ensembler_type == "learning":
                 pipeline = model_generator(sampler)
                 model = ClassifierWrapper(pipeline)
                 ensembler = MLVotingClassifier(
-                    selected_classifiers, selected_scores, model=model
+                    selected_classifiers, selected_scores, maximize, model=model
                 )
             elif ensembler_type == "overfit":
                 ensembler = OverfittedVotingClassifier(
-                    selected_classifiers, selected_scores
+                    selected_classifiers, selected_scores, maximize
                 )
             else:
                 raise Exception(f"Unknown ensembler_type: {ensembler_type}")
