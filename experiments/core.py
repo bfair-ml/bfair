@@ -99,13 +99,13 @@ def _run(
         input=input_type,
         n_classifiers=args.n_classifiers,
         detriment=20,
+        score_metric=score_metric,
         diversity_metric=diversity_metric,
         ranking_fn=ranking_fn,
         maximize=maximize,
         # [start] AutoML args [start]
         #
         search_algorithm=PESearch,
-        score_metric=score_metric,
         pop_size=args.popsize,
         search_iterations=args.iterations,
         evaluation_timeout=args.timeout,

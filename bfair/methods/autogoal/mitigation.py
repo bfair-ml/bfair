@@ -49,6 +49,7 @@ class AutoGoalMitigator:
         input,
         n_classifiers: int,
         detriment: Union[int, float],
+        score_metric: Callable[[Any, Any], float],
         diversity_metric=double_fault_inverse,
         fairness_metric: base_metric = None,
         maximize_fmetric=False,
@@ -68,6 +69,7 @@ class AutoGoalMitigator:
         diversifier = cls.build_diversifier(
             input=input,
             n_classifiers=n_classifiers,
+            score_metric=score_metric,
             diversity_metric=diversity_metric,
             maximize=maximize,
             validation_split=validation_split,
@@ -83,7 +85,7 @@ class AutoGoalMitigator:
         if fairness_metric is not None:
             search_kwargs["maximize"] = maximize_fmetric
 
-        score_metric = (
+        second_phase_score_metric = (
             cls.build_fairness_fn(
                 fairness_metric,
                 protected_attributes,
@@ -93,11 +95,11 @@ class AutoGoalMitigator:
                 sensor,
             )
             if fairness_metric is not None
-            else (lambda X, y, y_pred: diversifier.score_metric(y, y_pred))
+            else (lambda X, y, y_pred: score_metric(y, y_pred))
         )
 
         ensembler = cls.build_ensembler(
-            score_metric=score_metric,
+            score_metric=second_phase_score_metric,
             validation_split=validation_split,
             include_filter=include_filter,
             exclude_filter=exclude_filter,
@@ -113,6 +115,7 @@ class AutoGoalMitigator:
         *,
         input,
         n_classifiers: int,
+        score_metric: Callable[[Any, Any], float],
         diversity_metric=double_fault_inverse,
         maximize=True,
         validation_split=0.3,
@@ -125,6 +128,7 @@ class AutoGoalMitigator:
             diversity_metric=diversity_metric,
             maximize=maximize,
             validation_split=validation_split,
+            score_metric=score_metric,
             ranking_fn=ranking_fn,
             **automl_kwargs,
         )

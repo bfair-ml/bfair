@@ -11,7 +11,7 @@ from autogoal.datasets import (
     yeast,
 )
 from autogoal.kb import MatrixContinuousDense
-from autogoal.ml.metrics import accuracy
+from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 
 from experiments.core import run, setup
@@ -48,7 +48,7 @@ def main():
         run(
             load_dataset=partial(load_dataset, name=name),
             input_type=MatrixContinuousDense,
-            score_metric=accuracy,
+            score_metric=accuracy_score,
             maximize=True,
             args=args,
             title=name,

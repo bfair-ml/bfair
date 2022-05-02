@@ -8,6 +8,7 @@ from bfair.utils.autogoal import join_input, split_input
 from autogoal.kb import Supervised, VectorCategorical
 from autogoal.ml import AutoML
 from autogoal.search import PESearch
+from autogoal.ml.metrics import supervised_fitness_fn
 
 
 class AutoGoalDiversifier:
@@ -16,6 +17,7 @@ class AutoGoalDiversifier:
         *,
         input,
         n_classifiers: int,
+        score_metric: Callable[[Any, Any], float],
         diversity_metric=double_fault_inverse,
         maximize=True,
         validation_split=0.3,
@@ -23,6 +25,7 @@ class AutoGoalDiversifier:
         **automl_kwargs,
     ):
         self.n_classifiers = n_classifiers
+        self.score_metric = score_metric
         self.diversity_metric = diversity_metric
         self.maximize = maximize
         self.validation_split = validation_split
@@ -40,16 +43,13 @@ class AutoGoalDiversifier:
             number_of_pipelines=n_classifiers,
             maximize=maximize,
             validation_split=validation_split,
+            score_metric=supervised_fitness_fn(score_metric),
             **automl_kwargs,
         )
 
     @property
     def search_parameters(self):
         return self._automl.search_kwargs
-
-    @property
-    def score_metric(self) -> Callable[[Any, Any], float]:
-        return self._automl.score_metric
 
     @property
     def search_iterations(self):
