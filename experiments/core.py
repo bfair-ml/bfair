@@ -178,6 +178,10 @@ def _run(
         logger=loggers,
     )
 
+    for i, p in enumerate(pipelines):
+        print(f"Pipeline-{i}", file=output_stream)
+        print(p, file=output_stream, flush=True)
+
     base_models = [ClassifierWrapper(p) for p in pipelines]
     best_base_model = base_models[0]
 
