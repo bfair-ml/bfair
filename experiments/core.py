@@ -3,6 +3,7 @@ import sys
 from collections import OrderedDict
 from itertools import product
 
+import bfair.metrics.disparity as fairness_metrics
 from autogoal.contrib import find_classes
 from autogoal.search import PESearch, RichLogger
 from bfair.methods import AutoGoalMitigator
@@ -41,6 +42,17 @@ def setup():
         type=str,
         default="double-fault",
         choices=["double-fault", "disagreement", "shuffle", "arbitrary", "best"],
+    )
+    parser.add_argument(
+        "--fairness",
+        type=str,
+        default=None,
+        choices=[
+            "statistical-parity",
+            "equal-opportunity",
+            "equalized-odds",
+            "accuracy-disparity",
+        ],
     )
 
     return parser.parse_args()
@@ -93,6 +105,13 @@ def _run(
     else:
         raise ValueError(f"Unknown value for diversity metric: {args.diversity}")
 
+    fairness_metric = None
+    if args.fairness is not None:
+        try:
+            fairness_metric = getattr(fairness_metrics.replace("-", "_"), args.fairness)
+        except AttributeError:
+            raise ValueError(f"Unknown value for fairness metric: {args.fairness}")
+
     X_train, y_train, X_test, y_test = load_dataset(max_examples=args.examples)
 
     mitigator = AutoGoalMitigator.build(
@@ -101,6 +120,7 @@ def _run(
         detriment=20,
         score_metric=score_metric,
         diversity_metric=diversity_metric,
+        fairness_metric=fairness_metric,
         ranking_fn=ranking_fn,
         maximize=maximize,
         # [start] AutoML args [start]
@@ -109,7 +129,7 @@ def _run(
         pop_size=args.popsize,
         search_iterations=args.iterations,
         evaluation_timeout=args.timeout,
-        memory_limit=args.memory * 1024 ** 3,
+        memory_limit=args.memory * 1024**3,
         search_timeout=args.global_timeout,
         errors="warn",
         #
