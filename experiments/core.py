@@ -143,7 +143,7 @@ def _run(
     fairness_metric = None
     if args.fairness is not None:
         try:
-            fairness_metric = getattr(fairness_metrics.replace("-", "_"), args.fairness)
+            fairness_metric = getattr(fairness_metrics, args.fairness.replace("-", "_"))
         except AttributeError:
             raise ValueError(f"Unknown value for fairness metric: {args.fairness}")
     maximize_fmetric = args.fmode == RATIO
