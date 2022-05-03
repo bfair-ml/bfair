@@ -171,6 +171,8 @@ class AutoGoalMitigator:
             raise ValueError("Positive target was not provided")
         if metric_kwargs is None:
             metric_kwargs = {}
+        if isinstance(protected_attributes, str):
+            protected_attributes = [protected_attributes]
 
         def fairness_fn(X, y, y_pred):
             if sensor is not None:
