@@ -18,7 +18,7 @@ from bfair.methods.voting import (
     overfitted_oracle,
     overfitted_oracle_coverage,
 )
-from bfair.metrics import disagreement, double_fault_inverse
+from bfair.metrics import DIFFERENCE, RATIO, disagreement, double_fault_inverse
 from bfair.utils import ClassifierWrapper
 
 
@@ -53,6 +53,12 @@ def setup():
             "equalized-odds",
             "accuracy-disparity",
         ],
+    )
+    parser.add_argument(
+        "--fmode",
+        type=str,
+        default=DIFFERENCE,
+        choices=[DIFFERENCE, RATIO],
     )
 
     return parser.parse_args()
@@ -111,6 +117,7 @@ def _run(
             fairness_metric = getattr(fairness_metrics.replace("-", "_"), args.fairness)
         except AttributeError:
             raise ValueError(f"Unknown value for fairness metric: {args.fairness}")
+    maximize_fmetric = args.fmode == RATIO
 
     X_train, y_train, X_test, y_test = load_dataset(max_examples=args.examples)
 
@@ -123,6 +130,10 @@ def _run(
         fairness_metric=fairness_metric,
         ranking_fn=ranking_fn,
         maximize=maximize,
+        maximize_fmetric=maximize_fmetric,
+        metric_kwargs=dict(
+            mode=args.fmode,
+        ),
         # [start] AutoML args [start]
         #
         search_algorithm=PESearch,
