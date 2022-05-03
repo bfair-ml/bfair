@@ -13,6 +13,10 @@ class Dataset:
             else self._split(data, split_seed)
         )
 
+    @property
+    def columns(self):
+        return self.data.columns
+
     @staticmethod
     def _split(data, split_seed=0):
         train, test = train_test_split(

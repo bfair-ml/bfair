@@ -2,6 +2,7 @@ import argparse
 import sys
 from collections import OrderedDict
 from itertools import product
+from typing import Any, Callable, Tuple
 
 import bfair.metrics.disparity as fairness_metrics
 from autogoal.contrib import find_classes
@@ -64,20 +65,36 @@ def setup():
     return parser.parse_args()
 
 
-def run(load_dataset, input_type, score_metric, maximize, args, title):
+def run(
+    *,
+    load_dataset: Callable[[int], Tuple[Any, Any, Any, Any]],
+    input_type,
+    score_metric,
+    maximize,
+    args,
+    title,
+    protected_attributes=None,
+    target_attribute=None,
+    positive_target=None,
+    sensor=None,
+):
     path = args.output.format(title)
     output_stream = open(path, mode="a") if path else sys.stdout
 
     try:
         _run(
-            load_dataset,
-            input_type,
-            score_metric,
-            maximize,
-            args,
-            title if args.title is None else f"{title}: {args.title}",
-            output_stream,
-            path,
+            load_dataset=load_dataset,
+            input_type=input_type,
+            score_metric=score_metric,
+            maximize=maximize,
+            protected_attributes=protected_attributes,
+            target_attribute=target_attribute,
+            positive_target=positive_target,
+            sensor=sensor,
+            args=args,
+            title=title if args.title is None else f"{title}: {args.title}",
+            output_stream=output_stream,
+            path=path,
         )
     except Exception as e:
         print("\n", "ERROR", "\n", str(e), "\n", file=output_stream, flush=True)
@@ -87,7 +104,19 @@ def run(load_dataset, input_type, score_metric, maximize, args, title):
 
 
 def _run(
-    load_dataset, input_type, score_metric, maximize, args, title, output_stream, path
+    *,
+    load_dataset,
+    input_type,
+    score_metric,
+    maximize,
+    protected_attributes,
+    target_attribute,
+    positive_target,
+    sensor,
+    args,
+    title,
+    output_stream,
+    path,
 ):
 
     print(args, file=output_stream, flush=True)
@@ -131,6 +160,10 @@ def _run(
         ranking_fn=ranking_fn,
         maximize=maximize,
         maximize_fmetric=maximize_fmetric,
+        protected_attributes=protected_attributes,
+        target_attribute=target_attribute,
+        positive_target=positive_target,
+        sensor=sensor,
         metric_kwargs=dict(
             mode=args.fmode,
         ),
