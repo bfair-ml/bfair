@@ -40,9 +40,9 @@ def main():
     target_attribute = "income"
     protected_attributes = ["sex"]  # ["race", "sex", "marital-status", ...]
 
-    data, encoders = encode_dataset(target_attribute=target_attribute)
+    data, encoders = encode_dataset(dataset, target_attribute=target_attribute)
 
-    positive_target = encoders[target_attribute].transform(">50K")
+    positive_target = encoders[target_attribute].transform([">50K"])[0]
     protected_indexes = [dataset.columns.get_loc(attr) for attr in protected_attributes]
 
     args = setup()
