@@ -89,31 +89,31 @@ def base_metric(
     **kwargs,
 ) -> float:
     """
-        ## Parameters
+    ## Parameters
 
-        `data`: DataFrame with all features (including the protected and target attributes)
+    `data`: DataFrame with all features (including the protected and target attributes)
 
-        `protected_attributes`: A single attribute name or a list of them.
+    `protected_attributes`: A single attribute name or a list of them.
 
-        `target_attribute`: Name of the attribute used to discriminate the items.
+    `target_attribute`: Name of the attribute used to discriminate the items.
 
-        `target_predictions`: Series of predicted values for the discrimination attribute.
+    `target_predictions`: Series of predicted values for the discrimination attribute.
 
-        `positive_target`: Value of the `target_attribute` that indicates a positive discrimination.
+    `positive_target`: Value of the `target_attribute` that indicates a positive discrimination.
 
-        `mode`:
-            - `difference`: compute the difference between the highest scored and least scored groups.
-            - `ratio`: compute the ratio between the highest scored and least scored groups.
-            - `Callable`: compute a custom score between the highest scored and least scored groups.
+    `mode`:
+        - `difference`: compute the difference between the highest scored and least scored groups.
+        - `ratio`: compute the ratio between the highest scored and least scored groups.
+        - `Callable`: compute a custom score between the highest scored and least scored groups.
 
-        `return_probs`: Whether to return the computed probabilities in addition the score.
+    `return_probs`: Whether to return the computed probabilities in addition the score.
 
-        **kwargs: Additional parameters to ignore.
+    **kwargs: Additional parameters to ignore.
 
-        ## Returns
+    ## Returns
 
-        `out`: `(value, probs)` if `return_probs` else `value`
-        """
+    `out`: `(value, probs)` if `return_probs` else `value`
+    """
     pass
 
 
@@ -184,10 +184,10 @@ def statistical_parity(
     if target_predictions is None:
         target_predictions = data[target_attribute]
 
-    positives = target_predictions == positive_target
+    positives = target_predictions[target_predictions == positive_target]
 
     probs = {
-        key: len(group[positives]) / len(group)
+        key: len(group.index & positives.index) / len(group)
         for key, group in data.groupby(protected_attributes)
     }
 
@@ -204,11 +204,11 @@ def equal_opportunity(
     positive_target,
     **kwargs,
 ):
-    positives = target_predictions == positive_target
+    positives = target_predictions[target_predictions == positive_target]
     true_positives = data[data[target_attribute] == positive_target]
 
     probs = {
-        key: len(group[positives]) / len(group)
+        key: len(group.index & positives.index) / len(group)
         for key, group in true_positives.groupby(protected_attributes)
     }
 
@@ -225,11 +225,11 @@ def false_positive_rate(
     positive_target,
     **kwargs,
 ):
-    positives = target_predictions == positive_target
+    positives = target_predictions[target_predictions == positive_target]
     true_negatives = data[data[target_attribute] != positive_target]
 
     probs = {
-        key: len(group[positives]) / len(group)
+        key: len(group.index & positives.index) / len(group)
         for key, group in true_negatives.groupby(protected_attributes)
     }
 
