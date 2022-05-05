@@ -175,6 +175,10 @@ class AutoGoalMitigator:
             protected_attributes = [protected_attributes]
 
         def fairness_fn(X, y, y_pred):
+            if not (len(X) == len(y) == len(y_pred)):
+                raise ValueError(
+                    f"Input shapes do not match (X[{len(X)}], y[{len(y)}], y_pred[{len(y_pred)}])"
+                )
             if sensor is not None:
                 X = sensor(X)
             if not isinstance(X, DataFrame):
