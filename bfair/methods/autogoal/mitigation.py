@@ -80,7 +80,7 @@ class AutoGoalMitigator:
             **automl_kwargs,
         )
 
-        search_kwargs = diversifier.search_parameters
+        search_kwargs = diversifier.search_parameters.copy()
 
         if fairness_metric is not None:
             search_kwargs["maximize"] = maximize_fmetric
