@@ -21,6 +21,7 @@ from bfair.methods.voting import (
 )
 from bfair.metrics import DIFFERENCE, RATIO, disagreement, double_fault_inverse
 from bfair.utils import ClassifierWrapper
+from numpy import argmax, argmin
 
 
 def setup():
@@ -215,8 +216,11 @@ def _run(
         print(f"Pipeline-{i}", file=output_stream)
         print(p, file=output_stream, flush=True)
 
-    base_models = [ClassifierWrapper(p) for p in pipelines]
-    best_base_model = base_models[0]
+    base_models = ClassifierWrapper.wrap(pipelines)
+    best_index = argmax(scores) if maximize else argmin(scores)
+    best_base_model = base_models[best_index]
+
+    print(f"Best Base Model @ {best_index}", file=output_stream, flush=True)
 
     models = OrderedDict()
     for i, base_model in enumerate(base_models):
