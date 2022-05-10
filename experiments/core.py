@@ -6,7 +6,7 @@ from typing import Any, Callable, Tuple
 
 import bfair.metrics.disparity as disparity
 from autogoal.contrib import find_classes
-from autogoal.search import PESearch, RichLogger
+from autogoal.search import ConsoleLogger, PESearch
 from bfair.methods import AutoGoalMitigator
 from bfair.methods.autogoal.diversification import (
     build_best_performance_ranking_fd,
@@ -184,7 +184,7 @@ def _run(
         # [ end ] AutoML args [ end ]
     )
 
-    loggers = [RichLogger()]
+    loggers = [ConsoleLogger()]
 
     if args.token:
         from autogoal.contrib.telegram import TelegramLogger
