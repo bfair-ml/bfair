@@ -4,7 +4,7 @@ from collections import OrderedDict
 from itertools import product
 from typing import Any, Callable, Tuple
 
-import bfair.metrics.disparity as fairness_metrics
+import bfair.metrics.disparity as disparity
 from autogoal.contrib import find_classes
 from autogoal.search import PESearch, RichLogger
 from bfair.methods import AutoGoalMitigator
@@ -55,6 +55,7 @@ def setup():
             "equalized-odds",
             "accuracy-disparity",
         ],
+        action="append",
     )
     parser.add_argument(
         "--fmode",
@@ -141,10 +142,12 @@ def _run(
     else:
         raise ValueError(f"Unknown value for diversity metric: {args.diversity}")
 
-    fairness_metric = None
+    fairness_metrics = None
     if args.fairness is not None:
         try:
-            fairness_metric = getattr(fairness_metrics, args.fairness.replace("-", "_"))
+            fairness_metrics = [
+                getattr(disparity, name.replace("-", "_")) for name in args.fairness
+            ]
         except AttributeError:
             raise ValueError(f"Unknown value for fairness metric: {args.fairness}")
     maximize_fmetric = args.fmode == RATIO
@@ -157,7 +160,7 @@ def _run(
         detriment=20,
         score_metric=score_metric,
         diversity_metric=diversity_metric,
-        fairness_metric=fairness_metric,
+        fairness_metrics=fairness_metrics,
         ranking_fn=ranking_fn,
         maximize=maximize,
         maximize_fmetric=maximize_fmetric,

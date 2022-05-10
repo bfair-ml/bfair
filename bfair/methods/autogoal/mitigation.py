@@ -51,7 +51,7 @@ class AutoGoalMitigator:
         detriment: Union[int, float],
         score_metric: Callable[[Any, Any], float],
         diversity_metric=double_fault_inverse,
-        fairness_metric: base_metric = None,
+        fairness_metrics: Union[base_metric, List[base_metric]] = None,
         maximize_fmetric=False,
         protected_attributes: Union[List[str], str] = None,
         target_attribute: str = None,
@@ -82,19 +82,19 @@ class AutoGoalMitigator:
 
         search_kwargs = diversifier.search_parameters.copy()
 
-        if fairness_metric is not None:
+        if fairness_metrics is not None:
             search_kwargs["maximize"] = maximize_fmetric
 
         second_phase_score_metric = (
             cls.build_fairness_fn(
-                fairness_metric,
+                fairness_metrics,
                 protected_attributes,
                 target_attribute,
                 positive_target,
                 metric_kwargs,
                 sensor,
             )
-            if fairness_metric is not None
+            if fairness_metrics is not None
             else (lambda X, y, y_pred: score_metric(y, y_pred))
         )
 
@@ -156,7 +156,7 @@ class AutoGoalMitigator:
     @classmethod
     def build_fairness_fn(
         cls,
-        fairness_metric: base_metric,
+        fairness_metrics: Union[base_metric, List[base_metric]],
         protected_attributes: Union[List[str], str],
         target_attribute: str,
         positive_target,
@@ -171,6 +171,8 @@ class AutoGoalMitigator:
             raise ValueError("Positive target was not provided")
         if metric_kwargs is None:
             metric_kwargs = {}
+        if callable(fairness_metrics):
+            fairness_metrics = (fairness_metrics,)
         if isinstance(protected_attributes, str):
             protected_attributes = [protected_attributes]
 
@@ -187,13 +189,16 @@ class AutoGoalMitigator:
             data = pd.concat((X, Series(y, name=target_attribute)), axis=1)
             y_pred = pd.Series(y_pred, data.index)
 
-            return fairness_metric(
-                data=data,
-                protected_attributes=protected_attributes,
-                target_attribute=target_attribute,
-                target_predictions=y_pred,
-                positive_target=positive_target,
-                **metric_kwargs,
+            return sum(
+                fairness_metric(
+                    data=data,
+                    protected_attributes=protected_attributes,
+                    target_attribute=target_attribute,
+                    target_predictions=y_pred,
+                    positive_target=positive_target,
+                    **metric_kwargs,
+                )
+                for fairness_metric in fairness_metrics
             )
 
         return fairness_fn
