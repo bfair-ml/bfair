@@ -49,7 +49,11 @@ class AutoGoalDiversifier:
 
     @property
     def search_parameters(self):
-        return self._automl.search_kwargs
+        return dict(
+            self._automl.search_kwargs,
+            random_state=self._automl.random_state,
+            errors=self._automl.errors,
+        )
 
     @property
     def search_iterations(self):
