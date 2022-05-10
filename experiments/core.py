@@ -24,10 +24,18 @@ from bfair.utils import ClassifierWrapper
 from numpy import argmax, argmin
 
 
+def to_number(value: str):
+    try:
+        return int(value)
+    except ValueError:
+        return float(value)
+
+
 def setup():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--n-classifiers", type=int, default=20)
+    parser.add_argument("--detriment", type=to_number, default=20)
     parser.add_argument("--iterations", type=int, default=10000)
     parser.add_argument("--timeout", type=int, default=60)
     parser.add_argument("--memory", type=int, default=2)
@@ -157,7 +165,7 @@ def _run(
     mitigator = AutoGoalMitigator.build(
         input=input_type,
         n_classifiers=args.n_classifiers,
-        detriment=20,
+        detriment=args.detriment,
         score_metric=score_metric,
         diversity_metric=diversity_metric,
         fairness_metrics=fairness_metrics,
