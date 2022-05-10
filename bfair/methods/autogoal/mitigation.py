@@ -203,12 +203,35 @@ class AutoGoalMitigator:
 
         return fairness_fn
 
-    def __call__(self, X, y, *, test_on=None, **run_kwargs):
+    def __call__(
+        self,
+        X,
+        y,
+        *,
+        test_on=None,
+        diversifier_run_kwargs,
+        ensembler_run_kwargs,
+        **run_kwargs,
+    ):
         if test_on is None and self.validation_split is not None:
             X, y, test_on = split_input(X, y, self.validation_split)
 
-        pipelines, scores = self.diversify(X, y, test_on=test_on, **run_kwargs)
-        model, _ = self.ensemble(pipelines, scores, X, y, test_on=test_on, **run_kwargs)
+        pipelines, scores = self.diversify(
+            X,
+            y,
+            test_on=test_on,
+            **run_kwargs,
+            **diversifier_run_kwargs,
+        )
+        model, _ = self.ensemble(
+            pipelines,
+            scores,
+            X,
+            y,
+            test_on=test_on,
+            **run_kwargs,
+            **ensembler_run_kwargs,
+        )
         return model
 
     def diversify(self, X, y, *, test_on=None, **run_kwargs):
@@ -230,7 +253,7 @@ class AutoGoalMitigator:
 
         classifiers = ClassifierWrapper.wrap_and_fit(pipelines, X, y)
 
-        constraint = (
+        detriment_constraint = (
             self._build_constraint_fn(
                 X,
                 y,
@@ -244,6 +267,14 @@ class AutoGoalMitigator:
             if self.detriment is not None
             else None
         )
+
+        try:
+            user_constraint = run_kwargs["constraint"]
+            constraint = lambda solution, fn: (
+                user_constraint(solution, fn) and detriment_constraint(solution, fn)
+            )
+        except KeyError:
+            constraint = detriment_constraint
 
         ensemble, score = self.ensembler(
             X,

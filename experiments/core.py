@@ -87,6 +87,8 @@ def run(
     target_attribute=None,
     positive_target=None,
     sensor=None,
+    diversifier_run_kwargs=None,
+    ensembler_run_kwargs=None,
 ):
     path = args.output.format(title)
     output_stream = open(path, mode="a") if path else sys.stdout
@@ -105,6 +107,8 @@ def run(
             title=title if args.title is None else f"{title}: {args.title}",
             output_stream=output_stream,
             path=path,
+            diversifier_run_kwargs=diversifier_run_kwargs or {},
+            ensembler_run_kwargs=ensembler_run_kwargs or {},
         )
     except Exception as e:
         print("\n", "ERROR", "\n", str(e), "\n", file=output_stream, flush=True)
@@ -127,6 +131,8 @@ def _run(
     title,
     output_stream,
     path,
+    diversifier_run_kwargs,
+    ensembler_run_kwargs,
 ):
 
     print(args, file=output_stream, flush=True)
@@ -214,6 +220,7 @@ def _run(
         X_train,
         y_train,
         logger=loggers,
+        **diversifier_run_kwargs,
     )
     model, score = mitigator.ensemble(
         pipelines,
@@ -221,6 +228,7 @@ def _run(
         X_train,
         y_train,
         logger=loggers,
+        **ensembler_run_kwargs,
     )
 
     for i, p in enumerate(pipelines):

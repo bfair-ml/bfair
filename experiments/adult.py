@@ -1,7 +1,9 @@
 from functools import partial
+
 from autogoal.kb import MatrixContinuousDense
 from bfair.datasets import load_adult
 from bfair.utils import encode_features
+from bfair.utils.autogoal import succeeds_in_training_and_testing
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 
@@ -41,6 +43,7 @@ def main():
     protected_attributes = ["sex"]  # ["race", "sex", "marital-status", ...]
 
     data, encoders = encode_dataset(dataset, target_attribute=target_attribute)
+    X_train, X_test, y_train, y_test = data
 
     positive_target = encoders[target_attribute].transform([">50K"])[0]
     protected_indexes = [dataset.columns.get_loc(attr) for attr in protected_attributes]
@@ -57,6 +60,9 @@ def main():
         target_attribute=target_attribute,
         positive_target=positive_target,
         sensor=partial(sensor, indexes=protected_indexes),
+        diversifier_run_kwargs=dict(
+            constraint=succeeds_in_training_and_testing(X_train, y_train, X_test)
+        ),
     )
 
 

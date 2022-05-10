@@ -107,3 +107,17 @@ def join_input(X_train, y_train, X_test, y_test):
         X = np.concatenate((X_train, X_test))
         y = np.concatenate((y_train, y_test))
     return X, y
+
+
+def succeeds_in_training_and_testing(X_train, y_train, X_test):
+    def constraint(solution, fn):
+        try:
+            solution.send("train")
+            solution.run(X_train, y_train)
+            solution.send("eval")
+            y_pred = solution.run(X_test, None)
+            return True
+        except:
+            return False
+
+    return constraint
