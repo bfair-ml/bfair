@@ -159,9 +159,10 @@ def _run(
     fairness_metrics = None
     if args.fairness is not None:
         try:
-            fairness_metrics = [
-                getattr(disparity, name.replace("-", "_")) for name in args.fairness
-            ]
+            fairness_metrics = {
+                name: getattr(disparity, name.replace("-", "_"))
+                for name in args.fairness
+            }
         except AttributeError:
             raise ValueError(f"Unknown value for fairness metric: {args.fairness}")
     maximize_fmetric = args.fmode == RATIO
@@ -174,7 +175,7 @@ def _run(
         detriment=args.detriment,
         score_metric=score_metric,
         diversity_metric=diversity_metric,
-        fairness_metrics=fairness_metrics,
+        fairness_metrics=list(fairness_metrics.values()),
         ranking_fn=ranking_fn,
         maximize=maximize,
         maximize_fmetric=maximize_fmetric,
@@ -256,6 +257,7 @@ def _run(
         y_test,
         mitigator.score_metric,
         mitigator.fairness_metric,
+        other_fmetrics=fairness_metrics,
     ):
         print(msg, file=output_stream, flush=True)
 
@@ -307,6 +309,7 @@ def inspect(
     y_test,
     score_metric,
     fairness_metric,
+    other_fmetrics=None,
 ):
     collections = [(X_train, y_train, True), (X_test, y_test, False)]
     return [
@@ -317,13 +320,14 @@ def inspect(
             fit=fit,
             score_metric=score_metric,
             fairness_metric=fairness_metric,
+            other_fmetrics=other_fmetrics or {},
             header=f"{name.upper()} @ {'TRAINING' if fit else 'TESTING'}",
         )
         for (name, model), (X, y, fit) in product(models.items(), collections)
     ]
 
 
-def report(model, X, y, fit, score_metric, fairness_metric, header):
+def report(model, X, y, fit, score_metric, fairness_metric, other_fmetrics, header):
     try:
         if fit:
             model.fit(X, y)
@@ -337,6 +341,7 @@ def report(model, X, y, fit, score_metric, fairness_metric, header):
                 f"Score: {score}",
                 f"FScore: {fscore}",
             )
+            + tuple(f"{name}: {f(X, y, y_pred)}" for name, f in other_fmetrics.items())
         )
 
     except Exception as e:
