@@ -156,15 +156,20 @@ def _run(
     else:
         raise ValueError(f"Unknown value for diversity metric: {args.diversity}")
 
-    fairness_metrics = None
+    args_fmetrics = {}
     if args.fairness is not None:
         try:
-            fairness_metrics = {
+            args_fmetrics = {
                 name: getattr(disparity, name.replace("-", "_"))
                 for name in args.fairness
             }
         except AttributeError:
             raise ValueError(f"Unknown value for fairness metric: {args.fairness}")
+
+    fairness_metrics = None
+    if args_fmetrics:
+        fairness_metrics = list(args_fmetrics.values())
+
     maximize_fmetric = args.fmode == RATIO
 
     X_train, y_train, X_test, y_test = load_dataset(max_examples=args.examples)
@@ -175,7 +180,7 @@ def _run(
         detriment=args.detriment,
         score_metric=score_metric,
         diversity_metric=diversity_metric,
-        fairness_metrics=list(fairness_metrics.values()),
+        fairness_metrics=fairness_metrics,
         ranking_fn=ranking_fn,
         maximize=maximize,
         maximize_fmetric=maximize_fmetric,
@@ -248,6 +253,20 @@ def _run(
     models["ensemble"] = model
     models["best-base-model"] = best_base_model
 
+    other_fmetrics = {
+        name: mitigator.build_fairness_fn(
+            fairness_metrics=metric,
+            protected_attributes=protected_attributes,
+            target_attribute=target_attribute,
+            positive_target=positive_target,
+            metric_kwargs=dict(
+                mode=args.fmode,
+            ),
+            sensor=sensor,
+        )
+        for name, metric in args_fmetrics.items()
+    }
+
     print("## Performance ...", file=output_stream)
     for msg in inspect(
         models,
@@ -257,7 +276,7 @@ def _run(
         y_test,
         mitigator.score_metric,
         mitigator.fairness_metric,
-        other_fmetrics=fairness_metrics,
+        other_fmetrics=other_fmetrics,
     ):
         print(msg, file=output_stream, flush=True)
 
@@ -328,23 +347,23 @@ def inspect(
 
 
 def report(model, X, y, fit, score_metric, fairness_metric, other_fmetrics, header):
+    items = []
     try:
         if fit:
             model.fit(X, y)
 
         y_pred = model.predict(X)
-        score = score_metric(y, y_pred)
-        fscore = fairness_metric(X, y, y_pred)
 
-        msg = "\n".join(
-            (
-                f"Score: {score}",
-                f"FScore: {fscore}",
-            )
-            + tuple(f"{name}: {f(X, y, y_pred)}" for name, f in other_fmetrics.items())
-        )
+        score = score_metric(y, y_pred)
+        items.append(f"Score: {score}")
+        fscore = fairness_metric(X, y, y_pred)
+        items.append(f"FScore: {fscore}")
+
+        for name, f in other_fmetrics.items():
+            items.append(f"{name}: {f(X, y, y_pred)}")
 
     except Exception as e:
-        msg = str(e)
+        items.append(str(e))
 
+    msg = "\n".join(items)
     return f"# {header} #\n{msg}"
