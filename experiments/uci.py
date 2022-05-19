@@ -44,7 +44,8 @@ def load_dataset(name, max_examples=None):
 
 def main():
     args = setup()
-    for name in valid_datasets:
+    selected_datasets = [args.title] if args.title in valid_datasets else valid_datasets
+    for name in selected_datasets:
         run(
             load_dataset=partial(load_dataset, name=name),
             input_type=MatrixContinuousDense,
