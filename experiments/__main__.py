@@ -37,7 +37,7 @@ def main(name, output_dir, *args):
     output_stream = report_path.open(mode="w")
 
     for options, highlights in explode(args):
-        output_path = output_dir / f"{name}.{'.'.join(highlights)}.txt"
+        output_path = output_dir / f"{name}[{{}}].{'.'.join(highlights)}.txt"
 
         cmd = [
             "python",
