@@ -51,6 +51,8 @@ def main(name, output_dir, *args):
         cmd.extend(options)
 
         textual_cmd = " ".join(cmd)
+        output_path.with_suffix(".sh").write_text(textual_cmd)
+
         print("============", file=output_stream)
         print("- STARTING -", file=output_stream)
         print("============", file=output_stream)
@@ -66,7 +68,6 @@ def main(name, output_dir, *args):
         print("============", file=output_stream)
         print("\n", file=output_stream, flush=True)
 
-        output_path.with_suffix(".sh").write_text(textual_cmd)
 
     output_stream.close()
 
