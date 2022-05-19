@@ -2,6 +2,7 @@ import argparse
 import sys
 from collections import OrderedDict
 from itertools import product
+from pathlib import Path
 from typing import Any, Callable, Tuple
 
 import bfair.metrics.disparity as disparity
@@ -91,7 +92,11 @@ def run(
     ensembler_run_kwargs=None,
 ):
     path = args.output.format(title)
-    output_stream = open(path, mode="a") if path else sys.stdout
+    if path:
+        Path(path).parent.mkdir(exist_ok=True)
+        output_stream = open(path, mode="a")
+    else:
+        output_stream = sys.stdout
 
     try:
         _run(
