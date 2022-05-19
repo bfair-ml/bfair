@@ -30,7 +30,7 @@ valid_datasets = [
 def load_dataset(name, max_examples=None):
     data = getattr(datasets, name).load()
     if len(data) == 4:
-        X_train, X_test, y_train, y_test = data
+        X_train, y_train, X_test, y_test = data
     else:
         X, y = data
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
