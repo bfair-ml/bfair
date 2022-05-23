@@ -33,6 +33,7 @@ def main(name, output_dir, repeat, *args):
     if not output_dir.is_dir():
         raise ValueError(f"Invalid output dir: {output_dir}")
 
+    repeat = int(repeat)
     report_path = output_dir / "__report__.txt"
     output_stream = report_path.open(mode="w")
 
@@ -47,7 +48,7 @@ def main(name, output_dir, repeat, *args):
                 "--output",
                 str(output_path),
                 "--title",
-                repr(".".join(highlights)),
+                repr(str(iteration) + ".".join(highlights)),
             ]
             cmd.extend(options)
 
