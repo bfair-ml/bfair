@@ -39,7 +39,9 @@ def main(name, output_dir, repeat, *args):
 
     for options, highlights in explode(args):
         for iteration in range(repeat):
-            output_path = output_dir / f"{name}[{{}}].{iteration}.{'.'.join(highlights)}.txt"
+            output_path = (
+                output_dir / f"{name}[{{}}].{iteration}.{'.'.join(highlights)}.txt"
+            )
 
             cmd = [
                 "python",
@@ -47,9 +49,10 @@ def main(name, output_dir, repeat, *args):
                 f"experiments.{name}",
                 "--output",
                 str(output_path),
-                "--title",
-                repr(str(iteration) + ".".join(highlights)),
             ]
+            if "--title" not in args:
+                cmd.add("--title")
+                cmd.add(repr(str(iteration) + ".".join(highlights)))
             cmd.extend(options)
 
             textual_cmd = " ".join(cmd)
@@ -69,7 +72,6 @@ def main(name, output_dir, repeat, *args):
                 print("ERROR!", file=output_stream)
             print("============", file=output_stream)
             print("\n", file=output_stream, flush=True)
-
 
     output_stream.close()
 
