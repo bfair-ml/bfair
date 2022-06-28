@@ -29,11 +29,13 @@ class AutoGoalEnsembler:
         include_filter=".*",
         exclude_filter=None,
         registry=None,
+        search_algorithm=PESearch,
         **search_kwargs,
     ):
         self.score_metric = score_metric
         self.validation_split = validation_split
         self.maximize = maximize
+        self.search_algorithm = search_algorithm
         self.search_kwargs = search_kwargs
         self.search_kwargs["errors"] = errors
         self.search_kwargs["allow_duplicates"] = allow_duplicates
@@ -100,7 +102,7 @@ class AutoGoalEnsembler:
             pre_caching,
             self.maximize,
         )
-        search = PESearch(
+        search = self.search_algorithm(
             generator_fn=generator,
             fitness_fn=fn,
             maximize=self.maximize,
