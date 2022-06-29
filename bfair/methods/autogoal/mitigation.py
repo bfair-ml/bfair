@@ -52,7 +52,7 @@ class AutoGoalMitigator:
         score_metric: Callable[[Any, Any], float],
         diversity_metric=double_fault_inverse,
         fairness_metrics: Union[base_metric, List[base_metric]] = None,
-        maximize_fmetric=False,
+        maximize_fmetric: Union[bool, List[bool]] = False,
         protected_attributes: Union[List[str], str] = None,
         target_attribute: str = None,
         positive_target=None,
@@ -83,7 +83,10 @@ class AutoGoalMitigator:
         search_kwargs = diversifier.search_parameters
 
         if fairness_metrics is not None:
-            search_kwargs["maximize"] = maximize_fmetric
+            del search_kwargs["maximize"]
+
+            if isinstance(maximize_fmetric, bool):
+                maximize_fmetric = [maximize_fmetric] * len(fairness_metrics)
 
         second_phase_score_metric = (
             cls.build_fairness_fn(
@@ -93,6 +96,7 @@ class AutoGoalMitigator:
                 positive_target,
                 metric_kwargs,
                 sensor,
+                score_metric=score_metric,
             )
             if fairness_metrics is not None
             else (lambda X, y, y_pred: score_metric(y, y_pred))
@@ -100,6 +104,7 @@ class AutoGoalMitigator:
 
         ensembler = cls.build_ensembler(
             score_metric=second_phase_score_metric,
+            maximize=maximize_fmetric,
             validation_split=validation_split,
             include_filter=include_filter,
             exclude_filter=exclude_filter,
@@ -138,6 +143,7 @@ class AutoGoalMitigator:
         cls,
         *,
         score_metric: Callable[[Any, Any, Any], float],
+        maximize: List[bool],
         validation_split=0.3,
         include_filter=".*",
         exclude_filter=None,
@@ -146,6 +152,7 @@ class AutoGoalMitigator:
     ):
         return AutoGoalEnsembler(
             score_metric=score_metric,
+            maximize=maximize,
             validation_split=validation_split,
             include_filter=include_filter,
             exclude_filter=exclude_filter,
@@ -162,6 +169,8 @@ class AutoGoalMitigator:
         positive_target,
         metric_kwargs: Dict[str, object] = None,
         sensor: Callable[..., DataFrame] = None,
+        score_metric: Callable[[Any, Any], float] = None,
+        aggregate_fn: Callable[[List[float]], float] = None,
     ) -> Callable[[Any, Any, Any], float]:
         if protected_attributes is None:
             raise ValueError("No protected attributes were provided")
@@ -189,7 +198,7 @@ class AutoGoalMitigator:
             data = pd.concat((X, Series(y, name=target_attribute)), axis=1)
             y_pred = pd.Series(y_pred, data.index)
 
-            return sum(
+            evaluations = [
                 fairness_metric(
                     data=data,
                     protected_attributes=protected_attributes,
@@ -199,6 +208,13 @@ class AutoGoalMitigator:
                     **metric_kwargs,
                 )
                 for fairness_metric in fairness_metrics
+            ]
+
+            if score_metric is not None:
+                evaluations.append(score_metric(y, y_pred))
+
+            return (
+                aggregate_fn(evaluations) if aggregate_fn is not None else evaluations
             )
 
         return fairness_fn

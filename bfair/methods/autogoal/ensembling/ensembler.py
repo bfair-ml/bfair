@@ -1,4 +1,4 @@
-from typing import Any, Callable, List, Tuple
+from typing import Any, Callable, List, Tuple, Union
 
 import numpy as np
 from autogoal.kb import MatrixCategorical, Supervised, VectorCategorical
@@ -21,9 +21,9 @@ class AutoGoalEnsembler:
     def __init__(
         self,
         *,
-        score_metric: Callable[[Any, Any, Any], float],
+        score_metric: Callable[[Any, Any, Any], Union[float, List[float]]],
+        maximize: Union[bool, List[bool]],
         validation_split=0.3,
-        maximize=True,
         errors="warn",
         allow_duplicates=False,
         include_filter=".*",
