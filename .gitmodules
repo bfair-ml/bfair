@@ -1,4 +1,4 @@
 [submodule "vendor/autogoal"]
 	path = vendor/autogoal
-	url = git@github.com:jpconsuegra/autogoal.git
+	url = git@github.com:bfair-ml/autogoal.git
 	branch = develop
