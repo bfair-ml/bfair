@@ -51,8 +51,8 @@ def main(name, output_dir, repeat, *args):
                 str(output_path),
             ]
             if "--title" not in args:
-                cmd.add("--title")
-                cmd.add(repr(str(iteration) + ".".join(highlights)))
+                cmd.append("--title")
+                cmd.append(repr(str(iteration) + ".".join(highlights)))
             cmd.extend(options)
 
             textual_cmd = " ".join(cmd)
