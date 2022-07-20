@@ -297,6 +297,7 @@ class AutoGoalMitigator:
             y,
             classifiers,
             scores,
+            maximized=self.diversifier.maximize,
             test_on=test_on,
             generations=self.diversifier.search_iterations,
             constraint=constraint,
