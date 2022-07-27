@@ -36,7 +36,7 @@ def setup():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--n-classifiers", type=int, default=20)
-    parser.add_argument("--detriment", type=to_number, default=20)
+    parser.add_argument("--detriment", type=to_number, default=None)
     parser.add_argument("--iterations", type=int, default=10000)
     parser.add_argument("--timeout", type=int, default=60)
     parser.add_argument("--memory", type=int, default=2)
@@ -182,8 +182,8 @@ def _run(
     mitigator = AutoGoalMitigator.build(
         input=input_type,
         n_classifiers=args.n_classifiers,
-        detriment=args.detriment,
         score_metric=score_metric,
+        detriment=args.detriment,
         diversity_metric=diversity_metric,
         fairness_metrics=fairness_metrics,
         ranking_fn=ranking_fn,
