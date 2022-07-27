@@ -269,30 +269,28 @@ class AutoGoalMitigator:
 
         classifiers = ClassifierWrapper.wrap_and_fit(pipelines, X, y)
 
-        # NOTE: With multi-objective we're no longer using constraints in the second phase
-        #
-        # detriment_constraint = (
-        #     self._build_constraint_fn(
-        #         X,
-        #         y,
-        #         classifiers,
-        #         scores,
-        #         test_on=test_on,
-        #         detriment=self.detriment,
-        #         score_metric=self.diversifier.score_metric,
-        #         maximize_scores=self.diversifier.maximize,
-        #     )
-        #     if self.detriment is not None
-        #     else None
-        # )
-        #
-        # try:
-        #     user_constraint = run_kwargs["constraint"]
-        #     constraint = lambda solution, fn: (
-        #         user_constraint(solution, fn) and detriment_constraint(solution, fn)
-        #     )
-        # except KeyError:
-        #     constraint = detriment_constraint
+        detriment_constraint = (
+            self._build_constraint_fn(
+                X,
+                y,
+                classifiers,
+                scores,
+                test_on=test_on,
+                detriment=self.detriment,
+                score_metric=self.diversifier.score_metric,
+                maximize_scores=self.diversifier.maximize,
+            )
+            if self.detriment is not None
+            else None
+        )
+
+        try:
+            user_constraint = run_kwargs["constraint"]
+            constraint = lambda solution, fn: (
+                user_constraint(solution, fn) and detriment_constraint(solution, fn)
+            )
+        except KeyError:
+            constraint = detriment_constraint
 
         ensemble, score = self.ensembler(
             X,
@@ -302,6 +300,7 @@ class AutoGoalMitigator:
             maximized=self.diversifier.maximize,
             test_on=test_on,
             generations=self.diversifier.search_iterations,
+            constraint=constraint,
             **run_kwargs,
         )
         return ensemble.model, score
