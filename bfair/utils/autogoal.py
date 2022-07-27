@@ -62,7 +62,7 @@ class FileLogger(Logger):
         with self.output_path.open("a") as fd:
             fd.writelines(
                 (
-                    "Search completed: best_fn=%.3f, best=\n%r\n" % (best_fn, best),
+                    f"Search completed: best_fn={self.format_fitness(best_fn)}, best=\n{repr(best)}\n",
                     f"Time spent: elapsed={elapsed}\n",
                     "\n",
                 )
