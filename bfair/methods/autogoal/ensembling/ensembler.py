@@ -4,7 +4,7 @@ import numpy as np
 from autogoal.kb import MatrixCategorical, Supervised, VectorCategorical
 from autogoal.ml import AutoML
 from autogoal.sampling import Sampler
-from autogoal.search import PESearch
+from autogoal.search import NSPESearch
 from bfair.methods.voting import (
     MLVotingClassifier,
     OverfittedVotingClassifier,
@@ -29,7 +29,7 @@ class AutoGoalEnsembler:
         include_filter=".*",
         exclude_filter=None,
         registry=None,
-        search_algorithm=PESearch,
+        search_algorithm=NSPESearch,
         **search_kwargs,
     ):
         self.score_metric = score_metric

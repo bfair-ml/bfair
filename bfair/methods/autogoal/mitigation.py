@@ -104,7 +104,7 @@ class AutoGoalMitigator:
 
         ensembler = cls.build_ensembler(
             score_metric=second_phase_score_metric,
-            maximize=maximize_fmetric,
+            maximize=maximize_fmetric + [maximize],
             validation_split=validation_split,
             include_filter=include_filter,
             exclude_filter=exclude_filter,
