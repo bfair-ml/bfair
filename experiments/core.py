@@ -1,5 +1,6 @@
 import argparse
 import sys
+import traceback
 from collections import OrderedDict
 from itertools import product
 from pathlib import Path
@@ -116,7 +117,17 @@ def run(
             ensembler_run_kwargs=ensembler_run_kwargs or {},
         )
     except Exception as e:
-        print("\n", "ERROR", "\n", str(e), "\n", file=output_stream, flush=True)
+        print(
+            "\n",
+            "ERROR",
+            "\n",
+            str(e),
+            "\n",
+            traceback.format_exc(),
+            "\n",
+            file=output_stream,
+            flush=True,
+        )
     finally:
         if path:
             output_stream.close()
