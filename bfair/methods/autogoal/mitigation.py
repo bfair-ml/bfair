@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Union
 
 import pandas as pd
 from bfair.methods.voting import stack_predictions
@@ -18,7 +18,7 @@ class AutoGoalMitigator:
         diversifier: AutoGoalDiversifier,
         ensembler: AutoGoalEnsembler,
         *,
-        detriment: Optional[Union[int, float]],
+        detriment: Union[int, float] = None,
         validation_split: float = None,
     ):
         """
@@ -49,7 +49,7 @@ class AutoGoalMitigator:
         input,
         n_classifiers: int,
         score_metric: Callable[[Any, Any], float],
-        detriment: Optional[Union[int, float]]=None,
+        detriment: Union[int, float] = None,
         diversity_metric=double_fault_inverse,
         fairness_metrics: Union[base_metric, List[base_metric]] = None,
         maximize_fmetric: Union[bool, List[bool]] = False,
@@ -114,7 +114,12 @@ class AutoGoalMitigator:
             **search_kwargs,
         )
 
-        return cls(diversifier, ensembler, detriment=detriment, validation_split=validation_split)
+        return cls(
+            diversifier,
+            ensembler,
+            detriment=detriment,
+            validation_split=validation_split,
+        )
 
     @classmethod
     def build_diversifier(
