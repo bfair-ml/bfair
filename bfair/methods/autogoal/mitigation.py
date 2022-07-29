@@ -53,7 +53,7 @@ class AutoGoalMitigator:
         diversity_metric=double_fault_inverse,
         fairness_metrics: Union[base_metric, List[base_metric]] = None,
         maximize_fmetric: Union[bool, List[bool]] = False,
-        ensemble_with_score_metric: bool = True,
+        send_score_metric_to_ensembler: bool = True,
         protected_attributes: Union[List[str], str] = None,
         target_attribute: str = None,
         positive_target=None,
@@ -106,7 +106,7 @@ class AutoGoalMitigator:
         ensembler = cls.build_ensembler(
             score_metric=second_phase_score_metric,
             maximize=maximize_fmetric
-            + ([maximize] if ensemble_with_score_metric else []),
+            + ([maximize] if send_score_metric_to_ensembler else []),
             validation_split=validation_split,
             include_filter=include_filter,
             exclude_filter=exclude_filter,
