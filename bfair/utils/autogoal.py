@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 
-from autogoal.search import Logger
+from autogoal.search import Logger, format_fitness
 
 
 class ClassifierWrapper:
@@ -62,7 +62,7 @@ class FileLogger(Logger):
         with self.output_path.open("a") as fd:
             fd.writelines(
                 (
-                    f"Search completed: best_fn={self.format_fitness(best_fn)}, best=\n{repr(best)}\n",
+                    f"Search completed: best_fn={format_fitness(best_fn)}, best=\n{repr(best)}\n",
                     f"Time spent: elapsed={elapsed}\n",
                     "\n",
                 )
