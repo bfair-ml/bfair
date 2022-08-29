@@ -113,7 +113,7 @@ class AutoGoalEnsembler:
         )
 
         best, best_fn = search.run(**run_kwargs)
-        return best, best_fn
+        return best, best_fn, (search.top_solutions, search.top_solutions_scores)
 
     def _build_generator_and_fn(
         self, X, y, X_test, y_test, classifiers, scores, maximized, pre_caching

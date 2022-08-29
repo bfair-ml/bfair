@@ -246,7 +246,7 @@ class AutoGoalMitigator:
             **run_kwargs,
             **diversifier_run_kwargs,
         )
-        model, _ = self.ensemble(
+        model, *_ = self.ensemble(
             pipelines,
             scores,
             X,
@@ -299,7 +299,7 @@ class AutoGoalMitigator:
         except KeyError:
             constraint = detriment_constraint
 
-        ensemble, score = self.ensembler(
+        ensemble, score, (top_solutions, top_scores) = self.ensembler(
             X,
             y,
             classifiers,
@@ -310,7 +310,9 @@ class AutoGoalMitigator:
             constraint=constraint,
             **run_kwargs,
         )
-        return ensemble.model, score
+
+        top_models = [solution.model for solution in top_solutions]
+        return ensemble.model, score, (top_models, top_scores)
 
     def _build_constraint_fn(
         self,

@@ -244,7 +244,7 @@ def _run(
         logger=loggers,
         **diversifier_run_kwargs,
     )
-    model, score = mitigator.ensemble(
+    model, score, (top_models, top_scores) = mitigator.ensemble(
         pipelines,
         scores,
         X_train,
@@ -266,6 +266,8 @@ def _run(
     models = OrderedDict()
     for i, base_model in enumerate(base_models):
         models[f"base-model-{i}"] = base_model
+    for i, top_model in enumerate(top_models):
+        models[f"top-ensemble-{i}"] = top_model
     models["ensemble"] = model
     models["best-base-model"] = best_base_model
 
