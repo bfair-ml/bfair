@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from experiments.parse import get_top_ensembles, K_FSCORE
 from autogoal.search import NSPESearch
 
+
 class NonDominatedSorter:
     def __init__(self, maximize):
         self._maximize = maximize
@@ -46,24 +47,26 @@ class NonDominatedSorter:
 
         return fronts[:-1]
 
+
 PATHS = {
-    20: '/home/coder/bfair/output/adult-SP/adult.0.20.txt',
-    50: '/home/coder/bfair/output/adult-SP/adult.0.50.txt'
-    }
+    20: "/home/coder/bfair/output/adult-SP/adult.0.20.txt",
+    50: "/home/coder/bfair/output/adult-SP/adult.0.50.txt",
+}
 
 KEYS = ["DSP", "accuracy"]
+
 
 def get_data(path, keys, tag):
     with open(path) as fd:
         text = fd.read()
 
-    fns = [ top.get(K_FSCORE) for top in get_top_ensembles(text) ]
+    fns = [top.get(K_FSCORE) for top in get_top_ensembles(text)]
 
     nsorter = NonDominatedSorter(maximize=(False, True))
     fronts = nsorter.non_dominated_sort(fns)
     front_0 = [fns[i] for i in fronts[0]]
 
-    data = [ {k: v for k, v in zip(keys, values) }  for values in front_0]
+    data = [{k: v for k, v in zip(keys, values)} for values in front_0]
 
     df = pd.DataFrame.from_dict(data)
     df = df[df["accuracy"] >= 0.7]
@@ -73,8 +76,11 @@ def get_data(path, keys, tag):
 
     return df
 
+
 df = pd.concat([get_data(path, KEYS, tag) for tag, path in PATHS.items()])
 
 plt.figure()
-sns.lmplot(x="DSP",  y="accuracy", hue="ensemble size", aspect=1.8, data=df, order=2).fig.suptitle("Pareto Front")
+sns.lmplot(
+    x="DSP", y="accuracy", hue="ensemble size", aspect=1.8, data=df, order=2
+).fig.suptitle("Pareto Front")
 plt.savefig("pareto-front.pdf")
