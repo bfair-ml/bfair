@@ -11,6 +11,8 @@ RUN pip install -U streamlit==0.83
 
 RUN pip install sklearn
 
+RUN pip install seaborn
+
 WORKDIR /home/coder/bfair
 
 CMD [ "make", "dashboard"]
