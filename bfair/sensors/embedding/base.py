@@ -1,17 +1,23 @@
+from typing import Sequence
 from autogoal.kb import SemanticType, Text
 from bfair.sensors import Sensor
-from bfair.sensors.embedding.tokenizers import TextTokenizer
+from bfair.sensors.embedding.tokenizers import TextTokenizer, Tokenizer
 from bfair.sensors.embedding.filters import (
-    LargeEnoughFilter,
+    Filter,
     RelativeDifferenceFilter,
     NonEmptyFilter,
 )
-from bfair.sensors.embedding.word import EmbeddingLoader
+from bfair.sensors.embedding.aggregators import Aggregator, ActivationAggregator
+from bfair.sensors.embedding.word import EmbeddingLoader, WordEmbedding
 
 
 class EmbeddingBasedSensor(Sensor):
     def __init__(
-        self, embedding, tokenization_pipeline, filtering_pipeline, aggregation_pipeline
+        self,
+        embedding: WordEmbedding,
+        tokenization_pipeline: Sequence[Tokenizer],
+        filtering_pipeline: Sequence[Filter],
+        aggregation_pipeline: Sequence[Aggregator],
     ):
         self.embedding = embedding
         self.tokenization_pipeline = tokenization_pipeline
@@ -47,28 +53,70 @@ class EmbeddingBasedSensor(Sensor):
             **kwargs,
         )
 
+    @classmethod
+    def _apply_over_leaves(cls, func, collection, *args, **kargs):
+        if not isinstance(collection, list):  # DO NOT ADD TUPLE
+            return func(collection)
+        return [
+            cls._apply_over_leaves(func, item, *args, **kargs) for item in collection
+        ]
+
+    @classmethod
+    def _apply_in_last_level(cls, func, collection, *args, **kargs):
+        if any(not isinstance(item, list) for item in collection):  # DO NOT ADD TUPLE
+            return func(collection, *args, **kargs)
+        return [
+            cls._apply_in_last_level(func, item, *args, **kargs) for item in collection
+        ]
+
     def __call__(self, text, attributes):
-        tokens = [text]
+        def add_attributes(token, attributes):
+            return (token, attributes)
+
+        def add_score(attr_token, embedding):
+            word, attributes = attr_token
+            return tuple(
+                (attr, embedding.u_similarity(word, attr)) for attr in attributes
+            )  # do not change to list
+
         embedding = self.embedding
         attributes = tuple(attributes)
 
+        tokens = [text]
+
+        # TOKENIZATION_PIPELINE:    tokens = component(tokens)
         for component in self.tokenization_pipeline:
-            tokens = component(tokens)
-
-        attributed_words = [(word, attributes) for word in tokens]
-
-        for component in self.filtering_pipeline:
-            attributed_words = component(attributed_words, embedding)
-
-        for component in self.aggregation_pipeline:
-            attributed_words = component(attributed_words, embedding)
-
-        if len(attributed_words) != 1:
-            raise RuntimeError(
-                f"The `aggregation_pipeline` failed to aggregate all input. Items remaining: {len(attributed_words)}."
+            tokens = self._apply_over_leaves(
+                component,
+                tokens,
             )
 
-        _, labels = attributed_words[0]
+        attributed_tokens = self._apply_over_leaves(add_attributes, tokens, attributes)
+
+        # FILTERING_PIPELINE:   attributed_words = component(attributed_words, embedding)
+        for component in self.filtering_pipeline:
+            attributed_tokens = self._apply_in_last_level(
+                component,
+                attributed_tokens,
+                embedding,
+            )
+
+        scored_tokens = self._apply_over_leaves(add_score, attributed_tokens, embedding)
+
+        # AGGREGATION_PIPELINE: scored_tokens = component(scored_tokens)
+        for component in self.aggregation_pipeline:
+            scored_tokens = self._apply_in_last_level(
+                component,
+                scored_tokens,
+            )
+
+        if len(scored_tokens) != 1:
+            raise RuntimeError(
+                f"The `aggregation_pipeline` failed to aggregate all input. Items remaining: {len(attributed_tokens)}."
+            )
+
+        syntesis = scored_tokens[0]
+        labels = [attr for attr, _ in syntesis]
         return labels
 
     def _get_input_type(self) -> SemanticType:
@@ -82,6 +130,7 @@ class DefaultEmbeddingBasedSensor(EmbeddingBasedSensor):
         *,
         norm_threshold=0.5,
         relative_threshold=0.75,
+        activation_threshold=0.6,
         embedding=None,
         language=None,
         source=None,
@@ -98,6 +147,6 @@ class DefaultEmbeddingBasedSensor(EmbeddingBasedSensor):
                 NonEmptyFilter(),
             ],
             aggregation_pipeline=[
-                # TODO
+                ActivationAggregator(activation_threshold, activation_func=max)
             ],
         )
