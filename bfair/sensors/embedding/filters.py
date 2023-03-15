@@ -1,24 +1,21 @@
-from typing import List, Tuple, Sequence
-from bfair.sensors.embedding.word import WordEmbedding
+from typing import Tuple, Sequence
 
 
 class Filter:
     def __call__(
         self,
-        attributed_words: List[Tuple[str, Sequence[str]]],
-        embedding: WordEmbedding,
-    ) -> List[Tuple[str, Sequence[str]]]:
+        attributed_tokens: Sequence[Tuple[str, Sequence[Tuple[str, float]]]],
+    ) -> Sequence[Tuple[str, Sequence[Tuple[str, float]]]]:
         raise NotImplementedError()
 
 
 class NonEmptyFilter(Filter):
     def __call__(
         self,
-        attributed_words: List[Tuple[str, Sequence[str]]],
-        embedding: WordEmbedding,
-    ) -> List[Tuple[str, Sequence[str]]]:
+        attributed_tokens: Sequence[Tuple[str, Sequence[Tuple[str, float]]]],
+    ) -> Sequence[Tuple[str, Sequence[Tuple[str, float]]]]:
         return [
-            (word, attributes) for word, attributes in attributed_words if attributes
+            (token, attributes) for token, attributes in attributed_tokens if attributes
         ]
 
 
@@ -28,19 +25,14 @@ class LargeEnoughFilter(Filter):
 
     def __call__(
         self,
-        attributed_words: List[Tuple[str, Sequence[str]]],
-        embedding: WordEmbedding,
-    ) -> List[Tuple[str, Sequence[str]]]:
+        attributed_tokens: Sequence[Tuple[str, Sequence[Tuple[str, float]]]],
+    ) -> Sequence[Tuple[str, Sequence[Tuple[str, float]]]]:
         return [
             (
-                word,
-                tuple(
-                    attr
-                    for attr in attributes
-                    if embedding.u_similarity(word, attr) > self.threshold
-                ),
+                token,
+                [(attr, score) for attr, score in attributes if score > self.threshold],
             )
-            for word, attributes in attributed_words
+            for token, attributes in attributed_tokens
         ]
 
 
@@ -51,26 +43,21 @@ class RelativeDifferenceFilter(Filter):
 
     def __call__(
         self,
-        attributed_words: List[Tuple[str, Sequence[str]]],
-        embedding: WordEmbedding,
-    ) -> List[Tuple[str, Sequence[str]]]:
+        attributed_tokens: Sequence[Tuple[str, Sequence[Tuple[str, float]]]],
+    ) -> Sequence[Tuple[str, Sequence[Tuple[str, float]]]]:
         output = []
-        for word, attributes in attributed_words:
-            similarities = [embedding.u_similarity(word, attr) for attr in attributes]
-            max_similarity = max(similarities)
+        for token, attributes in attributed_tokens:
+            max_score = max(score for _, score in attributes)
             selected_attributes = [
-                attr
-                for attr, similarity in zip(attributes, similarities)
-                if self._is_close_enough(similarity, max_similarity)
+                (attr, score)
+                for attr, score in attributes
+                if self._is_close_enough(score, max_score)
             ]
-            output.append((word, selected_attributes))
+            output.append((token, selected_attributes))
         return output
 
-    def _is_close_enough(self, similarity, max_similarity):
-        return (
-            max_similarity > self.zero_threshold
-            and similarity / max_similarity > self.threshold
-        )
+    def _is_close_enough(self, score, max_score):
+        return max_score > self.zero_threshold and score / max_score > self.threshold
 
 
 class NoStopWordsFilter(Filter):
@@ -79,11 +66,10 @@ class NoStopWordsFilter(Filter):
 
     def __call__(
         self,
-        attributed_words: List[Tuple[str, Sequence[str]]],
-        embedding: WordEmbedding,
-    ) -> List[Tuple[str, Sequence[str]]]:
+        attributed_tokens: Sequence[Tuple[str, Sequence[Tuple[str, float]]]],
+    ) -> Sequence[Tuple[str, Sequence[Tuple[str, float]]]]:
         return [
             (word, attributes)
-            for word, attributes in attributed_words
+            for word, attributes in attributed_tokens
             if word not in self.stopwords
         ]

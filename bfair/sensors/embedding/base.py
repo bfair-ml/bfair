@@ -11,6 +11,10 @@ from bfair.sensors.embedding.aggregators import Aggregator, ActivationAggregator
 from bfair.sensors.embedding.word import EmbeddingLoader, WordEmbedding
 
 
+class Level(tuple):
+    pass
+
+
 class EmbeddingBasedSensor(Sensor):
     def __init__(
         self,
@@ -55,34 +59,35 @@ class EmbeddingBasedSensor(Sensor):
 
     @classmethod
     def _apply_over_leaves(cls, func, collection, *args, **kargs):
-        if not isinstance(collection, list):  # DO NOT ADD TUPLE
+        if not isinstance(collection, Level):
             return func(collection)
-        return [
+        return Level(
             cls._apply_over_leaves(func, item, *args, **kargs) for item in collection
-        ]
+        )
 
     @classmethod
     def _apply_in_last_level(cls, func, collection, *args, **kargs):
-        if any(not isinstance(item, list) for item in collection):  # DO NOT ADD TUPLE
+        if any(not isinstance(item, Level) for item in collection):
             return func(collection, *args, **kargs)
-        return [
+        return Level(
             cls._apply_in_last_level(func, item, *args, **kargs) for item in collection
-        ]
+        )
 
     def __call__(self, text, attributes):
-        def add_attributes(token, attributes):
-            return (token, attributes)
+        def add_attributes(token, attributes, embedding):
+            return (
+                token,
+                [(attr, embedding.u_similarity(token, attr)) for attr in attributes],
+            )
 
-        def add_score(attr_token, embedding):
-            word, attributes = attr_token
-            return tuple(
-                (attr, embedding.u_similarity(word, attr)) for attr in attributes
-            )  # do not change to list
+        def select_scores(attr_token):
+            _, attributes = attr_token
+            return attributes
 
         embedding = self.embedding
         attributes = tuple(attributes)
 
-        tokens = [text]
+        tokens = Level([text])
 
         # TOKENIZATION_PIPELINE:    tokens = component(tokens)
         for component in self.tokenization_pipeline:
@@ -91,17 +96,18 @@ class EmbeddingBasedSensor(Sensor):
                 tokens,
             )
 
-        attributed_tokens = self._apply_over_leaves(add_attributes, tokens, attributes)
+        attributed_tokens = self._apply_over_leaves(
+            add_attributes, tokens, attributes, embedding
+        )
 
         # FILTERING_PIPELINE:   attributed_words = component(attributed_words, embedding)
         for component in self.filtering_pipeline:
             attributed_tokens = self._apply_in_last_level(
                 component,
                 attributed_tokens,
-                embedding,
             )
 
-        scored_tokens = self._apply_over_leaves(add_score, attributed_tokens, embedding)
+        scored_tokens = self._apply_over_leaves(select_scores, attributed_tokens)
 
         # AGGREGATION_PIPELINE: scored_tokens = component(scored_tokens)
         for component in self.aggregation_pipeline:

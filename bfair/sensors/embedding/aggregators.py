@@ -1,12 +1,12 @@
 from collections import defaultdict
-from typing import List, Tuple, Sequence, Callable
+from typing import Tuple, Sequence, Callable
 from bfair.sensors.embedding.word import WordEmbedding
 
 
 class Aggregator:
     def __call__(
         self,
-        scored_tokens: List[Sequence[Tuple[str, float]]],
+        scored_tokens: Sequence[Sequence[Tuple[str, float]]],
     ) -> Sequence[Tuple[str, float]]:
         raise NotImplementedError()
 
@@ -17,7 +17,7 @@ class CountAggregator(Aggregator):
 
     def __call__(
         self,
-        scored_tokens: List[Sequence[Tuple[str, float]]],
+        scored_tokens: Sequence[Sequence[Tuple[str, float]]],
     ) -> Sequence[Tuple[str, float]]:
 
         counter = defaultdict(int)
@@ -27,12 +27,12 @@ class CountAggregator(Aggregator):
                 counter[attr] += 1
 
         max_count = max(counter.values())
-        return tuple(
+        return [
             (attr, score)
             for attr, count in counter.items()
             for score in (count / max_count,)
             if score > self.threshold
-        )  # DO NOT CHANGE TUPLE
+        ]
 
 
 class ActivationAggregator(Aggregator):
@@ -46,7 +46,7 @@ class ActivationAggregator(Aggregator):
 
     def __call__(
         self,
-        scored_tokens: List[Sequence[Tuple[str, float]]],
+        scored_tokens: Sequence[Sequence[Tuple[str, float]]],
     ) -> Sequence[Tuple[str, float]]:
 
         activation = defaultdict(float)
@@ -54,8 +54,8 @@ class ActivationAggregator(Aggregator):
             for attr, activation in attributes:
                 activation[attr] = self.activation_func(activation[attr], activation)
 
-        return tuple(
+        return [
             (attr, activation)
             for attr, activation in activation.items()
             if activation > self.threshold
-        )  # DO NOT CHANGE TUPLE
+        ]
