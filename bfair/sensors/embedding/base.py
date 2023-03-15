@@ -136,7 +136,6 @@ class DefaultEmbeddingBasedSensor(EmbeddingBasedSensor):
         *,
         norm_threshold=0.5,
         relative_threshold=0.75,
-        activation_threshold=0.6,
         embedding=None,
         language=None,
         source=None,
@@ -153,6 +152,11 @@ class DefaultEmbeddingBasedSensor(EmbeddingBasedSensor):
                 NonEmptyFilter(),
             ],
             aggregation_pipeline=[
-                ActivationAggregator(activation_threshold, activation_func=max)
+                ActivationAggregator(
+                    activation_func=max,
+                    attr_filter=RelativeDifferenceFilter(
+                        relative_threshold, norm_threshold
+                    ),
+                )
             ],
         )
