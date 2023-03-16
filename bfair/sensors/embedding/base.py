@@ -138,7 +138,7 @@ class EmbeddingBasedSensor(Sensor):
         language=None,
         source=None,
     ):
-        return super().build(
+        return cls.build(
             embedding=embedding,
             language=language,
             source=source,
