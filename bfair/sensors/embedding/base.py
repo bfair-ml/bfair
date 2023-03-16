@@ -1,6 +1,6 @@
 from typing import Sequence
 from autogoal.kb import SemanticType, Text
-from bfair.sensors import Sensor
+from bfair.sensors.base import Sensor
 from bfair.sensors.embedding.tokenizers import TextTokenizer, Tokenizer
 from bfair.sensors.embedding.filters import (
     Filter,
@@ -128,10 +128,7 @@ class EmbeddingBasedSensor(Sensor):
     def _get_input_type(self) -> SemanticType:
         return Text
 
-
-class DefaultEmbeddingBasedSensor(EmbeddingBasedSensor):
-    @classmethod
-    def build(
+    def build_default(
         cls,
         *,
         norm_threshold=0.5,

@@ -1,5 +1,5 @@
 from typing import Sequence, List
-from bfair.sensors import Sensor
+from bfair.sensors.base import Sensor
 from autogoal.kb import SemanticType
 
 
