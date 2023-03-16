@@ -128,6 +128,7 @@ class EmbeddingBasedSensor(Sensor):
     def _get_input_type(self) -> SemanticType:
         return Text
 
+    @classmethod
     def build_default(
         cls,
         *,
