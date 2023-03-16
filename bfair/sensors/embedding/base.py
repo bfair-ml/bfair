@@ -60,7 +60,7 @@ class EmbeddingBasedSensor(Sensor):
     @classmethod
     def _apply_over_leaves(cls, func, collection, *args, **kargs):
         if not isinstance(collection, Level):
-            return func(collection)
+            return func(collection, *args, **kargs)
         return Level(
             cls._apply_over_leaves(func, item, *args, **kargs) for item in collection
         )
