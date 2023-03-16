@@ -78,3 +78,10 @@ class ActivationAggregator(Aggregator):
 
         selected_attributes = self.do_filter(activation.items())
         return selected_attributes
+
+
+class UnionAggregator(ActivationAggregator):
+    def __init__(
+        self,
+    ):
+        super().__init__(activation_func=max, threshold=float("-inf"))

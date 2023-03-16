@@ -1,14 +1,23 @@
 from typing import Sequence
 from autogoal.kb import SemanticType, Text
 from bfair.sensors.base import Sensor
-from bfair.sensors.embedding.tokenizers import TextTokenizer, Tokenizer
+from bfair.sensors.embedding.tokenizers import (
+    TextTokenizer,
+    Tokenizer,
+    TextSplitter,
+    SentenceTokenizer,
+)
 from bfair.sensors.embedding.filters import (
     Filter,
     BestScoreFilter,
     NonEmptyFilter,
     NonNeutralWordsFilter,
 )
-from bfair.sensors.embedding.aggregators import Aggregator, ActivationAggregator
+from bfair.sensors.embedding.aggregators import (
+    Aggregator,
+    ActivationAggregator,
+    UnionAggregator,
+)
 from bfair.sensors.embedding.word import EmbeddingLoader, WordEmbedding
 
 
@@ -136,7 +145,7 @@ class EmbeddingBasedSensor(Sensor):
         return Text
 
     @classmethod
-    def build_default(
+    def build_default_in_plain_mode(
         cls,
         *,
         norm_threshold=0.05,
@@ -164,5 +173,39 @@ class EmbeddingBasedSensor(Sensor):
                         norm_threshold,
                     ),
                 )
+            ],
+        )
+
+    @classmethod
+    def build_default_in_hierarchy_mode(
+        cls,
+        *,
+        norm_threshold=0.05,
+        relative_threshold=0.75,
+        embedding=None,
+        language=None,
+        source=None,
+    ):
+        return cls.build(
+            embedding=embedding,
+            language=language,
+            source=source,
+            tokenization_pipeline=[
+                TextSplitter(),
+                SentenceTokenizer(),
+            ],
+            filtering_pipeline=[
+                NonNeutralWordsFilter(relative_threshold, norm_threshold),
+                NonEmptyFilter(),
+            ],
+            aggregation_pipeline=[
+                ActivationAggregator(
+                    activation_func=max,
+                    attr_filter=BestScoreFilter(
+                        relative_threshold,
+                        norm_threshold,
+                    ),
+                ),
+                UnionAggregator(),
             ],
         )

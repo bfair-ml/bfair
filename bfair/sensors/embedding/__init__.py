@@ -8,7 +8,12 @@ from .filters import (
     NoStopWordsFilter,
     NonNeutralWordsFilter,
 )
-from .aggregators import Aggregator, CountAggregator, ActivationAggregator
+from .aggregators import (
+    Aggregator,
+    CountAggregator,
+    ActivationAggregator,
+    UnionAggregator,
+)
 from .word import WordEmbedding, EmbeddingLoader, register_embedding
 
 from . import wrappers
