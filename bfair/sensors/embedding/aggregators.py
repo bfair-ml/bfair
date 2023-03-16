@@ -73,8 +73,8 @@ class ActivationAggregator(Aggregator):
 
         activation = defaultdict(float)
         for attributes in scored_tokens:
-            for attr, activation in attributes:
-                activation[attr] = self.activation_func(activation[attr], activation)
+            for attr, score in attributes:
+                activation[attr] = self.activation_func(activation[attr], score)
 
         selected_attributes = self.do_filter(activation.items())
         return selected_attributes
