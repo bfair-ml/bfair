@@ -110,6 +110,7 @@ class EmbeddingBasedSensor(Sensor):
             attributed_tokens = self._apply_in_last_level(
                 component,
                 attributed_tokens,
+                keep_level=True,
             )
 
         scored_tokens = self._apply_over_leaves(select_scores, attributed_tokens)
