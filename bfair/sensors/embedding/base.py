@@ -138,7 +138,7 @@ class EmbeddingBasedSensor(Sensor):
     def build_default(
         cls,
         *,
-        norm_threshold=0.5,
+        norm_threshold=0.05,
         relative_threshold=0.75,
         embedding=None,
         language=None,

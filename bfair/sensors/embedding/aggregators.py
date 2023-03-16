@@ -21,7 +21,7 @@ class Aggregator:
                 "Only one between `attr_filter` and `threshold` should be provided."
             )
 
-        self.filter = attr_filter or LargeEnoughFilter(threshold or 0.5)
+        self.filter = attr_filter or LargeEnoughFilter(threshold or 0.05)
 
     def do_filter(
         self,
