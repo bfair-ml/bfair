@@ -18,6 +18,14 @@ class GensimEmbedding(WordEmbedding):
         except KeyError:
             return 0
 
+    def get_ready(self):
+        if self.wv is None:
+            self.wv = self._load_wv()
+        return self
+
+    def _load_wv(self):
+        raise NotImplementedError()
+
 
 class GensimPretrainedEmbedding(GensimEmbedding):
     def __init__(self, name):
@@ -27,10 +35,9 @@ class GensimPretrainedEmbedding(GensimEmbedding):
         self.name = name
         super().__init__()
 
-    def get_ready(self):
+    def _load_wv(self):
         model = api.load(self.name)
-        self.wv = model.wv
-        return self
+        return model.wv
 
 
 @register_embedding("english", "word2vec")
@@ -41,9 +48,8 @@ class Word2VecEmbedding(GensimPretrainedEmbedding):
 
 @register_embedding("english", "word2vec-debiased")
 class DebiasedWord2VecEmbedding(GensimEmbedding):
-    def get_ready(self):
-        self.wv = KeyedVectors.load_word2vec_format(
+    def _load_wv(self):
+        return KeyedVectors.load_word2vec_format(
             DEBIASED_WORD2VEC_PATH,
             binary=True,
         )
-        return self
