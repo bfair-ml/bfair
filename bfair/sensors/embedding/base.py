@@ -58,19 +58,23 @@ class EmbeddingBasedSensor(Sensor):
         )
 
     @classmethod
-    def _apply_over_leaves(cls, func, collection, *args, **kargs):
+    def _apply_over_leaves(cls, func, collection, *args, level_up=False, **kargs):
         if not isinstance(collection, Level):
-            return func(collection, *args, **kargs)
+            leaf = func(collection, *args, **kargs)
+            return Level(leaf) if level_up else leaf
         return Level(
-            cls._apply_over_leaves(func, item, *args, **kargs) for item in collection
+            cls._apply_over_leaves(func, item, *args, level_up=level_up, **kargs)
+            for item in collection
         )
 
     @classmethod
-    def _apply_in_last_level(cls, func, collection, *args, **kargs):
+    def _apply_in_last_level(cls, func, collection, *args, keep_level=False, **kargs):
         if any(not isinstance(item, Level) for item in collection):
-            return func(collection, *args, **kargs)
+            leaf = func(collection, *args, **kargs)
+            return Level(leaf) if keep_level else leaf
         return Level(
-            cls._apply_in_last_level(func, item, *args, **kargs) for item in collection
+            cls._apply_in_last_level(func, item, *args, keep_level=keep_level, **kargs)
+            for item in collection
         )
 
     def __call__(self, text, attributes):
@@ -94,6 +98,7 @@ class EmbeddingBasedSensor(Sensor):
             tokens = self._apply_over_leaves(
                 component,
                 tokens,
+                level_up=True,
             )
 
         attributed_tokens = self._apply_over_leaves(
