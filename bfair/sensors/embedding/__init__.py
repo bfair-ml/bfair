@@ -4,8 +4,9 @@ from .filters import (
     Filter,
     NonEmptyFilter,
     LargeEnoughFilter,
-    RelativeDifferenceFilter,
+    BestScoreFilter,
     NoStopWordsFilter,
+    NonNeutralWordsFilter,
 )
 from .aggregators import Aggregator, CountAggregator, ActivationAggregator
 from .word import WordEmbedding, EmbeddingLoader, register_embedding

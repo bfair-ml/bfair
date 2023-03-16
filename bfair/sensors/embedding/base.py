@@ -4,8 +4,9 @@ from bfair.sensors.base import Sensor
 from bfair.sensors.embedding.tokenizers import TextTokenizer, Tokenizer
 from bfair.sensors.embedding.filters import (
     Filter,
-    RelativeDifferenceFilter,
+    BestScoreFilter,
     NonEmptyFilter,
+    NonNeutralWordsFilter,
 )
 from bfair.sensors.embedding.aggregators import Aggregator, ActivationAggregator
 from bfair.sensors.embedding.word import EmbeddingLoader, WordEmbedding
@@ -152,14 +153,15 @@ class EmbeddingBasedSensor(Sensor):
                 TextTokenizer(),
             ],
             filtering_pipeline=[
-                RelativeDifferenceFilter(relative_threshold, norm_threshold),
+                NonNeutralWordsFilter(relative_threshold, norm_threshold),
                 NonEmptyFilter(),
             ],
             aggregation_pipeline=[
                 ActivationAggregator(
                     activation_func=max,
-                    attr_filter=RelativeDifferenceFilter(
-                        relative_threshold, norm_threshold
+                    attr_filter=BestScoreFilter(
+                        relative_threshold,
+                        norm_threshold,
                     ),
                 )
             ],
