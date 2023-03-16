@@ -13,7 +13,10 @@ class GensimEmbedding(WordEmbedding):
         return self.wv[word]
 
     def similarity(self, word1: str, word2: str):
-        return self.wv.similarity(word1, word2)
+        try:
+            return self.wv.similarity(word1, word2)
+        except KeyError:
+            return 0
 
 
 class GensimPretrainedEmbedding(GensimEmbedding):
