@@ -37,9 +37,9 @@ class Word2VecEmbedding(GensimPretrainedEmbedding):
 
 
 @register_embedding("english", "word2vec-debiased")
-class Word2VecEmbedding(GensimEmbedding):
+class DebiasedWord2VecEmbedding(GensimEmbedding):
     def get_ready(self):
-        self.model = KeyedVectors.load_word2vec_format(
+        self.wv = KeyedVectors.load_word2vec_format(
             DEBIASED_WORD2VEC_PATH,
             binary=True,
         )
