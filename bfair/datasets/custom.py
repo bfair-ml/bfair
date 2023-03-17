@@ -14,6 +14,7 @@ def load_from_file(fd, split_seed=None):
 
 
 class CustomDataset(Dataset):
-    def load(file, split_seed=None):
+    @classmethod
+    def load(cls, file, split_seed=None):
         data = pd.read_csv(file)
         return CustomDataset(data=data, split_seed=split_seed)
