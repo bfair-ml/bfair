@@ -1,8 +1,7 @@
 import gensim.downloader as api
 from gensim.models import KeyedVectors
 from bfair.sensors.embedding.word import WordEmbedding, register_embedding
-
-DEBIASED_WORD2VEC_PATH = "embeddings/GoogleNews-vectors-negative300-hard-debiased.bin"
+from bfair.envs import DEBIASED_WORD2VEC_PATH
 
 
 class GensimEmbedding(WordEmbedding):
