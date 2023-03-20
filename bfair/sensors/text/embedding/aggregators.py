@@ -46,6 +46,9 @@ class CountAggregator(Aggregator):
             for attr, _ in attributes:
                 counter[attr] += 1
 
+        if not len(counter):
+            return []
+
         max_count = max(counter.values())
         scored_attributes = [
             (attr, count / max_count) for attr, count in counter.items()
