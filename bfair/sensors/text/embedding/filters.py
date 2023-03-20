@@ -47,7 +47,7 @@ class BestScoreFilter(Filter):
     ) -> Sequence[Tuple[str, Sequence[Tuple[str, float]]]]:
         output = []
         for token, attributes in attributed_tokens:
-            max_score = max(score for _, score in attributes)
+            max_score = max((score for _, score in attributes), default=float("-inf"))
             best_attributes = [
                 (attr, score)
                 for attr, score in attributes
