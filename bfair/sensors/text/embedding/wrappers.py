@@ -1,6 +1,6 @@
 import gensim.downloader as api
 from gensim.models import KeyedVectors
-from bfair.sensors.embedding.word import WordEmbedding, register_embedding
+from bfair.sensors.text.embedding.word import WordEmbedding, register_embedding
 from bfair.envs import DEBIASED_WORD2VEC_PATH
 
 

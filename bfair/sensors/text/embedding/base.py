@@ -1,24 +1,24 @@
 from typing import Sequence
 from autogoal.kb import SemanticType, Text
 from bfair.sensors.base import Sensor
-from bfair.sensors.embedding.tokenizers import (
+from bfair.sensors.text.embedding.tokenizers import (
     TextTokenizer,
     Tokenizer,
     TextSplitter,
     SentenceTokenizer,
 )
-from bfair.sensors.embedding.filters import (
+from bfair.sensors.text.embedding.filters import (
     Filter,
     BestScoreFilter,
     NonEmptyFilter,
     NonNeutralWordsFilter,
 )
-from bfair.sensors.embedding.aggregators import (
+from bfair.sensors.text.embedding.aggregators import (
     Aggregator,
     ActivationAggregator,
     UnionAggregator,
 )
-from bfair.sensors.embedding.word import EmbeddingLoader, WordEmbedding
+from bfair.sensors.text.embedding.word import EmbeddingLoader, WordEmbedding
 
 
 class Level(tuple):

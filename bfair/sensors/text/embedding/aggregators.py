@@ -1,6 +1,6 @@
 from collections import defaultdict
 from typing import Tuple, Sequence, Callable
-from bfair.sensors.embedding.filters import Filter, LargeEnoughFilter
+from bfair.sensors.text.embedding.filters import Filter, LargeEnoughFilter
 
 
 class Aggregator:
