@@ -79,7 +79,8 @@ class EmbeddingBasedSensor(Sensor):
 
     @classmethod
     def _apply_in_last_level(cls, func, collection, *args, keep_level=False, **kargs):
-        if any(not isinstance(item, Level) for item in collection):
+        is_empty = not any(True for _ in collection)
+        if is_empty or any(not isinstance(item, Level) for item in collection):
             leaf = func(collection, *args, **kargs)
             return Level(leaf) if keep_level else leaf
         return Level(
