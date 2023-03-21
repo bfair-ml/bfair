@@ -1,5 +1,5 @@
 from bfair.datasets import load_review
-from bfair.datasets.reviews import REVIEW_COLUMN
+from bfair.datasets.reviews import REVIEW_COLUMN, GENDER_COLUMN
 from bfair.methods.autogoal.ensembling.sampling import LogSampler, SampleModel
 from bfair.sensors import (
     SensorHandler,
@@ -22,6 +22,12 @@ from autogoal.sampling import Sampler
 from nltk.corpus import stopwords
 
 
+GENDER_VALUES = ["male", "female"]
+PRECISION = "precision"
+RECALL = "recall"
+MACRO_F1 = "macro-f1"
+
+
 def run_all():
     dataset = load_review(split_seed=0)
     sensor = EmbeddingBasedSensor.build_default_in_hierarchy_mode(
@@ -29,9 +35,14 @@ def run_all():
     )
     handler = SensorHandler(sensors=[sensor])
     reviews = dataset.data[REVIEW_COLUMN]
+    predicted = []
     for text in reviews:
-        annotations = handler.annotate(text, Text, ["male", "female"])
-        print(annotations)
+        annotations = handler.annotate(text, Text, GENDER_VALUES)
+        predicted.append(annotations)
+    gold = reviews.data[GENDER_COLUMN]
+    errors = compute_errors(gold, predicted, GENDER_VALUES)
+    scores = compute_scores(errors)
+    print(scores)
 
 
 def generate(sampler: Sampler, language="english"):
@@ -51,7 +62,8 @@ def generate(sampler: Sampler, language="english"):
         filtering_pipeline=filtering_pipeline,
         aggregation_pipeline=aggregation_pipeline,
     )
-    return SampleModel(sampler, sensor)
+    handler = SensorHandler([sensor])
+    return SampleModel(sampler, handler)
 
 
 def get_tokenization_pipeline(sampler: LogSampler):
@@ -167,3 +179,47 @@ def get_aggregation_pipeline(sampler: LogSampler, plain_mode):
         aggregation_pipeline.append(aggregator)
 
     return aggregation_pipeline
+
+
+def build_fn(X_test, y_test, stype, attributes, attr_cls, score_func):
+    def fn(generated: SampleModel):
+        handler: SensorHandler = generated.model
+        y_pred = [
+            handler.annotate(item, stype, attributes, attr_cls) for item in X_test
+        ]
+        score = score_func(y_test, y_pred)
+        return score
+
+    return fn
+
+
+def compute_errors(y_test, y_pred, attributes):
+    counter = {}
+    for value in attributes:
+        correct = 0
+        spurious = 0
+        missing = 0
+
+        for true_ann, pred_ann in zip(y_test, y_pred):
+            if value in true_ann and value not in pred_ann:
+                missing += 1
+            elif value in pred_ann and value not in true_ann:
+                spurious += 1
+            else:
+                correct += 1
+
+        counter[value] = (correct, spurious, missing)
+
+
+def compute_scores(counter):
+    scores = {}
+    for value, (correct, spurious, missing) in counter.items():
+        precision = correct / (correct + spurious)
+        recall = correct / (correct + missing)
+        f1 = 2 * precision * recall / (precision + recall)
+        scores[value] = {
+            PRECISION: precision,
+            RECALL: recall,
+            MACRO_F1: f1,
+        }
+    return scores
