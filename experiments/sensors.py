@@ -20,11 +20,13 @@ from bfair.sensors import (
 from autogoal.kb import Text
 from autogoal.sampling import Sampler
 from nltk.corpus import stopwords
+from statistics import mean
 
 
 GENDER_VALUES = ["male", "female"]
 PRECISION = "precision"
 RECALL = "recall"
+F1 = "f1"
 MACRO_F1 = "macro-f1"
 
 
@@ -221,6 +223,7 @@ def compute_scores(counter):
         scores[value] = {
             PRECISION: precision,
             RECALL: recall,
-            MACRO_F1: f1,
+            F1: f1,
         }
+    scores[MACRO_F1] = mean(group[F1] for group in scores.values())
     return scores
