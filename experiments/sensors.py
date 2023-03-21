@@ -209,6 +209,7 @@ def compute_errors(y_test, y_pred, attributes):
                 correct += 1
 
         counter[value] = (correct, spurious, missing)
+    return counter
 
 
 def compute_scores(counter):
