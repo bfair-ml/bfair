@@ -29,7 +29,7 @@ MACRO_F1 = "macro-f1"
 
 
 def run_all():
-    dataset = load_review(split_seed=0)
+    dataset = load_review(split_seed=None)
     sensor = EmbeddingBasedSensor.build_default_in_hierarchy_mode(
         language="english", source="word2vec-debiased"
     )
@@ -39,7 +39,7 @@ def run_all():
     for text in reviews:
         annotations = handler.annotate(text, Text, GENDER_VALUES)
         predicted.append(annotations)
-    gold = reviews.data[GENDER_COLUMN]
+    gold = dataset.data[GENDER_COLUMN]
     errors = compute_errors(gold, predicted, GENDER_VALUES)
     scores = compute_scores(errors)
     print(scores)
