@@ -2,6 +2,7 @@ from .base import EmbeddingBasedSensor
 from .tokenizers import Tokenizer, TextTokenizer, TextSplitter, SentenceTokenizer
 from .filters import (
     Filter,
+    IdentityFilter,
     NonEmptyFilter,
     LargeEnoughFilter,
     BestScoreFilter,

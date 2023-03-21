@@ -9,6 +9,13 @@ class Filter:
         raise NotImplementedError()
 
 
+class IdentityFilter(Filter):
+    def __call__(
+        self, attributed_tokens: Sequence[Tuple[str, Sequence[Tuple[str, float]]]]
+    ) -> Sequence[Tuple[str, Sequence[Tuple[str, float]]]]:
+        return attributed_tokens
+
+
 class NonEmptyFilter(Filter):
     def __call__(
         self,
