@@ -9,7 +9,7 @@ RUN pip install -U black
 
 RUN pip install -U streamlit==0.83
 
-RUN pip install sklearn
+RUN pip install scikit-learn
 
 RUN pip install seaborn
 
