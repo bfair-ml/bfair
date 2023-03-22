@@ -77,6 +77,7 @@ def optimize(
     telegram_channel=None,
     telegram_title="",
     log_path=None,
+    inspect=False,
 ):
     dataset = load_review(split_seed=0)
     X_train = dataset.data[REVIEW_COLUMN]
@@ -108,7 +109,29 @@ def optimize(
         errors=errors,
     )
     best_solution, best_fn = search.run(generations=search_iterations, logger=loggers)
+
+    if inspect:
+        counter, scores = inspect(best_solution, X_train, y_train)
+        print("Training ....")
+        print(counter)
+        print(scores)
+
+        X_test = dataset.test[REVIEW_COLUMN]
+        y_test = dataset.test[GENDER_COLUMN]
+        counter, scores = inspect(best_solution, X_test, y_test)
+        print("Testing ....")
+        print(counter)
+        print(scores)
+
     return best_solution, best_fn
+
+
+def inspect(solution, X, y):
+    handler: SensorHandler = solution.model
+    y_pred = [handler.annotate(item, Text, GENDER_VALUES, P_GENDER) for item in X]
+    counter = compute_errors(y, y_pred, GENDER_VALUES)
+    scores = compute_scores(counter)
+    return counter, scores
 
 
 def get_loggers(
@@ -338,6 +361,7 @@ if __name__ == "__main__":
         telegram_channel=args.channel,
         telegram_title=args.title,
         log_path=args.output,
+        inspect=True,
     )
 
     print(best_fn)
