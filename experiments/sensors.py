@@ -111,14 +111,14 @@ def optimize(
     best_solution, best_fn = search.run(generations=search_iterations, logger=loggers)
 
     if inspect:
-        counter, scores = inspect(best_solution, X_train, y_train)
+        counter, scores = evaluate(best_solution, X_train, y_train)
         print("Training ....")
         print(counter)
         print(scores)
 
         X_test = dataset.test[REVIEW_COLUMN]
         y_test = dataset.test[GENDER_COLUMN]
-        counter, scores = inspect(best_solution, X_test, y_test)
+        counter, scores = evaluate(best_solution, X_test, y_test)
         print("Testing ....")
         print(counter)
         print(scores)
@@ -126,7 +126,7 @@ def optimize(
     return best_solution, best_fn
 
 
-def inspect(solution, X, y):
+def evaluate(solution, X, y):
     handler: SensorHandler = solution.model
     y_pred = [handler.annotate(item, Text, GENDER_VALUES, P_GENDER) for item in X]
     counter = compute_errors(y, y_pred, GENDER_VALUES)
