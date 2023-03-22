@@ -55,7 +55,7 @@ def setup():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--iterations", type=int, default=10000)
-    parser.add_argument("--memory", type=int, default=4)
+    parser.add_argument("--memory", type=int, default=None)
     parser.add_argument("--popsize", type=int, default=50)
     parser.add_argument("--global-timeout", type=int, default=60 * 60)
     parser.add_argument("--token", default=None)
@@ -327,7 +327,7 @@ if __name__ == "__main__":
     best_solution, best_fn = optimize(
         pop_size=args.popsize,
         search_iterations=args.iterations,
-        memory_limit=args.memory * 1024**3,
+        memory_limit=args.memory * 1024**3 if args.memory else None,
         search_timeout=args.global_timeout,
         errors="warn",
         telegram_token=args.token,
