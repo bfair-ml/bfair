@@ -325,7 +325,7 @@ if __name__ == "__main__":
     best_solution, best_fn = optimize(
         pop_size=args.popsize,
         search_iterations=args.iterations,
-        memory_limit=args.memory,
+        memory_limit=args.memory * 1024**3,
         search_timeout=args.global_timeout,
         errors="warn",
         telegram_token=args.token,
