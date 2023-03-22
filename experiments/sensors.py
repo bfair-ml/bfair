@@ -257,7 +257,7 @@ def get_aggregation_pipeline(sampler: LogSampler, plain_mode):
             if activation_name == "max":
                 activation_func = max
             elif activation_name == "sum":
-                activation_func = sum
+                activation_func = lambda x, y: x + y
             elif activation_name == "mult":
                 activation_func = lambda x, y: x * y
             else:
