@@ -309,9 +309,9 @@ def compute_errors(y_test, y_pred, attributes):
 def compute_scores(counter):
     scores = {}
     for value, (correct, spurious, missing) in counter.items():
-        precision = correct / (correct + spurious)
-        recall = correct / (correct + missing)
-        f1 = 2 * precision * recall / (precision + recall)
+        precision = safe_division(correct, correct + spurious)
+        recall = safe_division(correct, correct + missing)
+        f1 = safe_division(2 * precision * recall, precision + recall)
         scores[value] = {
             PRECISION: precision,
             RECALL: recall,
@@ -319,6 +319,10 @@ def compute_scores(counter):
         }
     scores[MACRO_F1] = mean(group[F1] for group in scores.values())
     return scores
+
+
+def safe_division(numerator, denominator, default=0):
+    return numerator / denominator if denominator else default
 
 
 if __name__ == "__main__":
@@ -337,4 +341,4 @@ if __name__ == "__main__":
     )
 
     print(best_fn)
-    print(best_fn)
+    print(best_solution)
