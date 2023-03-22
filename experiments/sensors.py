@@ -97,7 +97,9 @@ def optimize(
             Text,
             GENDER_VALUES,
             P_GENDER,
-            score_func=lambda x, y: compute_scores(compute_errors(x, y))[MACRO_F1],
+            score_func=lambda x, y: compute_scores(compute_errors(x, y, GENDER_VALUES))[
+                MACRO_F1
+            ],
         ),
         maximize=True,
         pop_size=pop_size,
