@@ -55,7 +55,7 @@ def setup():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--iterations", type=int, default=10000)
-    parser.add_argument("--memory", type=int, default=2)
+    parser.add_argument("--memory", type=int, default=4)
     parser.add_argument("--popsize", type=int, default=50)
     parser.add_argument("--global-timeout", type=int, default=60 * 60)
     parser.add_argument("--token", default=None)
