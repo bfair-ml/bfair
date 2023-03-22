@@ -1,3 +1,5 @@
+import argparse
+
 from bfair.datasets import load_review
 from bfair.datasets.reviews import REVIEW_COLUMN, GENDER_COLUMN
 from bfair.methods.autogoal.ensembling.sampling import LogSampler, SampleModel
@@ -16,9 +18,11 @@ from bfair.sensors import (
     CountAggregator,
     ActivationAggregator,
     UnionAggregator,
+    P_GENDER,
 )
 from autogoal.kb import Text
 from autogoal.sampling import Sampler
+from autogoal.search import PESearch, ConsoleLogger
 from nltk.corpus import stopwords
 from statistics import mean
 
@@ -45,6 +49,92 @@ def run_all():
     errors = compute_errors(gold, predicted, GENDER_VALUES)
     scores = compute_scores(errors)
     print(scores)
+
+
+def setup():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--iterations", type=int, default=10000)
+    parser.add_argument("--memory", type=int, default=2)
+    parser.add_argument("--popsize", type=int, default=50)
+    parser.add_argument("--global-timeout", type=int, default=60 * 60)
+    parser.add_argument("--token", default=None)
+    parser.add_argument("--channel", default=None)
+    parser.add_argument("--output", default="")
+    parser.add_argument("--title", default=None)
+
+    return parser.parse_args()
+
+
+def optimize(
+    *,
+    pop_size,
+    search_iterations,
+    memory_limit,
+    search_timeout,
+    errors="warn",
+    telegram_token=None,
+    telegram_channel=None,
+    telegram_title="",
+    log_path=None,
+):
+    dataset = load_review(split_seed=0)
+    X_train = dataset.data[REVIEW_COLUMN]
+    y_train = dataset.data[GENDER_COLUMN]
+
+    loggers = get_loggers(
+        telegram_token=telegram_token,
+        telegram_channel=telegram_channel,
+        telegram_title=telegram_title,
+        log_path=log_path,
+    )
+
+    search = PESearch(
+        generator_fn=generate,
+        fitness_fn=build_fn(
+            X_train,
+            y_train,
+            Text,
+            GENDER_VALUES,
+            P_GENDER,
+            score_func=lambda x, y: compute_scores(compute_errors(x, y))[MACRO_F1],
+        ),
+        maximize=True,
+        pop_size=pop_size,
+        memory_limit=memory_limit,
+        search_timeout=search_timeout,
+        errors=errors,
+    )
+    best_solution, best_fn = search.run(generations=search_iterations, logger=loggers)
+    return best_solution, best_fn
+
+
+def get_loggers(
+    *,
+    telegram_token=None,
+    telegram_channel=None,
+    telegram_title="",
+    log_path=None,
+):
+    loggers = [ConsoleLogger()]
+
+    if telegram_token:
+        from autogoal.contrib.telegram import TelegramLogger
+
+        telegram = TelegramLogger(
+            token=telegram_token,
+            name=telegram_title.upper(),
+            channel=telegram_channel,
+        )
+        loggers.append(telegram)
+
+    if log_path:
+        from bfair.utils.autogoal import FileLogger
+
+        file_logger = FileLogger(output_path=log_path)
+        loggers.append(file_logger)
+
+    return loggers
 
 
 def generate(sampler: Sampler, language="english"):
@@ -227,3 +317,22 @@ def compute_scores(counter):
         }
     scores[MACRO_F1] = mean(group[F1] for group in scores.values())
     return scores
+
+
+if __name__ == "__main__":
+    args = setup()
+
+    best_solution, best_fn = optimize(
+        pop_size=args.popsize,
+        search_iterations=args.iterations,
+        memory_limit=args.memory,
+        search_timeout=args.global_timeout,
+        errors="warn",
+        telegram_token=args.token,
+        telegram_channel=args.channel,
+        telegram_title=args.title,
+        log_path=args.output,
+    )
+
+    print(best_fn)
+    print(best_fn)
