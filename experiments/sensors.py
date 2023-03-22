@@ -111,17 +111,19 @@ def optimize(
     best_solution, best_fn = search.run(generations=search_iterations, logger=loggers)
 
     if inspect:
-        counter, scores = evaluate(best_solution, X_train, y_train)
+        y_pred, counter, scores = evaluate(best_solution, X_train, y_train)
         print("Training ....")
         print(counter)
         print(scores)
+        print(y_pred)
 
         X_test = dataset.test[REVIEW_COLUMN]
         y_test = dataset.test[GENDER_COLUMN]
-        counter, scores = evaluate(best_solution, X_test, y_test)
+        y_pred, counter, scores = evaluate(best_solution, X_test, y_test)
         print("Testing ....")
         print(counter)
         print(scores)
+        print(y_pred)
 
     return best_solution, best_fn
 
@@ -131,7 +133,7 @@ def evaluate(solution, X, y):
     y_pred = [handler.annotate(item, Text, GENDER_VALUES, P_GENDER) for item in X]
     counter = compute_errors(y, y_pred, GENDER_VALUES)
     scores = compute_scores(counter)
-    return counter, scores
+    return y_pred, counter, scores
 
 
 def get_loggers(
