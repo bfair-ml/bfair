@@ -27,7 +27,7 @@ from nltk.corpus import stopwords
 from statistics import mean
 
 
-GENDER_VALUES = ["male", "female"]
+GENDER_VALUES = ["Male", "Female"]
 PRECISION = "precision"
 RECALL = "recall"
 F1 = "f1"
@@ -299,7 +299,7 @@ def compute_errors(y_test, y_pred, attributes):
                 missing += 1
             elif value in pred_ann and value not in true_ann:
                 spurious += 1
-            else:
+            else:  # if true_ann or pred_ann contains values not in attributes, errors are not detected.
                 correct += 1
 
         counter[value] = (correct, spurious, missing)
