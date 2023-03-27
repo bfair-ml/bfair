@@ -43,7 +43,7 @@ def run_all():
     reviews = dataset.data[REVIEW_COLUMN]
     predicted = []
     for text in reviews:
-        annotations = handler.annotate(text, Text, GENDER_VALUES)
+        annotations = handler.annotate(text, Text, GENDER_VALUES, P_GENDER)
         predicted.append(annotations)
     gold = dataset.data[GENDER_COLUMN]
     errors = compute_errors(gold, predicted, GENDER_VALUES)

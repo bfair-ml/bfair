@@ -1,6 +1,5 @@
 from .base import (
     Sensor,
-    P_ANY,
     P_GENDER,
     P_RACE,
     P_AGE,

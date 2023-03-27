@@ -1,5 +1,5 @@
 from typing import Sequence, List
-from bfair.sensors.base import Sensor, P_ANY
+from bfair.sensors.base import Sensor
 from autogoal.kb import SemanticType
 
 
@@ -8,9 +8,9 @@ class SensorHandler:
         self.sensors = sensors
         self.merge = merge if merge else UnionMerge()
 
-    def annotate(self, data, stype, attributes, attr_cls=P_ANY):
+    def annotate(self, data, stype: SemanticType, attributes: List[str], attr_cls: str):
         sensors = self.select(stype, attr_cls)
-        annotations = [sensor(data, attributes) for sensor in sensors]
+        annotations = [sensor(data, attributes, attr_cls) for sensor in sensors]
         final = self.merge(annotations)
         return final
 

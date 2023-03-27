@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Sequence, List
 from autogoal.kb import SemanticType, Text
 from bfair.sensors.base import Sensor
 from bfair.sensors.text.embedding.tokenizers import (
@@ -88,7 +88,7 @@ class EmbeddingBasedSensor(Sensor):
             for item in collection
         )
 
-    def __call__(self, text, attributes):
+    def __call__(self, text, attributes: List[str], attr_cls: str):
         def add_attributes(token, attributes, embedding):
             return (
                 token,

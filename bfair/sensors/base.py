@@ -1,7 +1,6 @@
 from typing import List
 from autogoal.kb import SemanticType
 
-P_ANY = None
 P_GENDER = "gender"
 P_RACE = "race"
 P_AGE = "age"
@@ -17,7 +16,7 @@ P_BREASTFEEDING = "breastfeeding"
 
 
 class Sensor:
-    def __call__(self, item, attributes: List[str]):
+    def __call__(self, item, attributes: List[str], attr_cls: str):
         raise NotImplementedError()
 
     def match(self, stype: SemanticType, attr_cls: str):
