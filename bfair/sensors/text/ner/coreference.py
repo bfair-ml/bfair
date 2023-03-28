@@ -1,5 +1,5 @@
 import spacy
-import coreference
+import neuralcoref
 
 from typing import List
 from bfair.sensors.base import Sensor, P_GENDER
@@ -38,6 +38,8 @@ class CoreferenceNERSensor(NERBasedSensor):
                 except KeyError:
                     raise ValueError(f'Language "{language}" not supported.')
             model = spacy.load(spacy_model_name)
+
+        neuralcoref.add_to_pipe(model)
 
         if aggregator is not None and (filter is not None and threshold is not None):
             raise ValueError(
