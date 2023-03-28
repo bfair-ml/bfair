@@ -3,11 +3,29 @@ from urllib.parse import quote
 from pathlib import Path
 
 from typing import List, Dict, Any, Tuple
-from bfair.sensors.base import Sensor, P_GENDER
+from bfair.sensors.text.ner.base import NERBasedSensor
 
 
-class DBPediaSensor(Sensor):
-    pass
+class DBPediaSensor(NERBasedSensor):
+    def __init__(self, model):
+        self.dbpedia = DBPediaWrapper()
+        super().__init__(model)
+
+    def extract_attributes(self, entity, attributes: List[str], attr_cls: str):
+        entity_resource = entity.text
+        property_resource = attr_cls.lower()
+
+        values = self.dbpedia.get_property_of(entity_resource, property_resource)
+        standarized_values = set(self._standarize(v) for v in values)
+
+        return [
+            attribute
+            for attribute in attributes
+            if self._standarize(attribute) in standarized_values
+        ]
+
+    def _standarize(self, value):
+        return value.strip().lower()
 
 
 class DBPediaWrapper:
