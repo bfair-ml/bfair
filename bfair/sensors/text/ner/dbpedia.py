@@ -12,8 +12,8 @@ class DBPediaSensor(NERBasedSensor):
         super().__init__(model)
 
     def extract_attributes(self, entity, attributes: List[str], attr_cls: str):
-        entity_resource = entity.text
-        property_resource = attr_cls.lower()
+        entity_resource = self._entity_to_resource(entity)
+        property_resource = self._property_to_resource(attr_cls)
 
         values = self.dbpedia.get_property_of(entity_resource, property_resource)
         standarized_values = set(self._standarize(v) for v in values)
@@ -23,6 +23,15 @@ class DBPediaSensor(NERBasedSensor):
             for attribute in attributes
             if self._standarize(attribute) in standarized_values
         ]
+
+    def _entity_to_resource(self, entity):
+        resource = entity.text
+        resource = resource.replace(" ", "_")
+        return resource
+
+    def _property_to_resource(self, property):
+        resource = property.lower()
+        return resource
 
     def _standarize(self, value):
         return value.strip().lower()
