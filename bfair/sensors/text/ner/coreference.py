@@ -54,6 +54,9 @@ class CoreferenceNERSensor(NERBasedSensor):
 
         return cls(model, aggregator)
 
+    def extract_entities(self, document):
+        return [group.main for group in document._.coref_clusters]
+
     def extract_attributes(self, entity, attributes: List[str], attr_cls: str):
         if not entity._.is_coref:
             return ()
