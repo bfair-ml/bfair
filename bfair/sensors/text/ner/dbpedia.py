@@ -74,7 +74,12 @@ class DBPediaWrapper:
             )
             if not partial:
                 break
-            values.extend(self._get_values(partial, key, *keys))
+
+            partial_values = self._get_values(partial, key, *keys)
+            if not partial_values:
+                break
+
+            values.extend(partial_values)
             offset += 1
         return values
 
