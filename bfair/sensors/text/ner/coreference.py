@@ -69,7 +69,7 @@ class CoreferenceNERSensor(NERBasedSensor):
             ]
             scored_tokens.append(actives)
 
-        syntesis = self.aggregator(scored_tokens)[0]
+        syntesis = self.aggregator(scored_tokens)
         labels = [attr for attr, _ in syntesis]
         return labels
 
