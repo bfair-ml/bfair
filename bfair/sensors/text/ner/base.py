@@ -1,9 +1,17 @@
+import spacy
+
 from bfair.sensors.base import Sensor
 from autogoal.kb import SemanticType, Text
+from collections import namedtuple
 from typing import List
+
+NamedEntity = namedtuple("NamedEntity", ["name", "label"])
 
 
 class NERBasedSensor(Sensor):
+    def __init__(self, model=None):
+        self.model = spacy.load("xx_ent_wiki_sm") if model is None else model
+
     def __call__(self, text, attributes: List[str], attr_cls: str):
         named_entities = self.extract_entities(text)
 
@@ -18,8 +26,9 @@ class NERBasedSensor(Sensor):
     def _get_input_type(self) -> SemanticType:
         return Text
 
-    def extract_entities(self, text):
-        raise NotImplementedError()
+    def extract_entities(self, text) -> List[NamedEntity]:
+        documents = self.model(text)
+        return [NamedEntity(entity.text, entity.label_) for entity in documents.ents]
 
     def extract_attributes(self, entity, attributes: List[str], attr_cls: str):
         raise NotImplementedError()
