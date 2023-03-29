@@ -1,11 +1,15 @@
 import pandas as pd
 import streamlit as st
+
+from collections import OrderedDict
+
 from autogoal.search import ConsoleLogger
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
-from bfair.datasets import load_adult, load_german
+from bfair.datasets import load_adult, load_german, load_review
+from bfair.datasets.reviews import REVIEW_COLUMN, GENDER_COLUMN
 from bfair.datasets.custom import load_from_file
 from bfair.methods import AutoGoalDiversifier, SklearnMitigator, VotingClassifier
 from bfair.metrics import (
@@ -20,8 +24,10 @@ from bfair.metrics import (
     statistical_parity,
 )
 from bfair.utils import ClassifierWrapper, encode_features
+from bfair.sensors import CoreferenceNERSensor, DBPediaSensor, P_GENDER
+from bfair.sensors.optimization import load as load_handler
 
-from bfair.sensors import CoreferenceNERSensor, DBPediaSensor, EmbeddingBasedSensor
+GENDER_VALUES = ["Male", "Female"]
 
 
 def tab(section):
@@ -407,7 +413,44 @@ def mitigation():
 
 @tab("Tasks")
 def protected_attributes_extraction():
-    pass
+    dataset = load_review()
+    X = dataset.data[REVIEW_COLUMN]
+    y = dataset.data[GENDER_COLUMN]
+
+    language = st.sidebar.selectbox("Language", ["english"])
+    ensemble_based_handler_configuration = OrderedDict(
+        {
+            "plain_mode": True,
+            "remove-stopwords": False,
+            "filter-filter": "NonNeutralWordsFilter",
+            "filter-neutral-relative-threshold": 0.6390311558106935,
+            "filter-neutral-norm-threshold": 0.1556742604492079,
+            "aggretator-0": "UnionAggregator",
+            "embedding-source": "word2vec-debiased",
+        }
+    )
+    embedding_sensor = load_handler(
+        list(ensemble_based_handler_configuration.items()),
+        language=language,
+    ).sensors[0]
+
+    sensors = [
+        embedding_sensor,
+        CoreferenceNERSensor.build(language=language, threshold=0),
+        DBPediaSensor.build(language=language),
+    ]
+
+    for sensor in sensors:
+        f"## Sensor: {type(sensor).__name__}"
+        predictions = [sensor(review, GENDER_VALUES, P_GENDER) for review in X]
+        results = pd.concat(
+            (
+                y.str.join(" & "),
+                pd.Series(predictions, name="Predicted").str.join(" & "),
+            ),
+            axis=1,
+        )
+        st.write(results)
 
 
 tab.run("Tasks")
