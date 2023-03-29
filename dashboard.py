@@ -21,6 +21,48 @@ from bfair.metrics import (
 )
 from bfair.utils import ClassifierWrapper, encode_features
 
+from bfair.sensors import CoreferenceNERSensor, DBPediaSensor, EmbeddingBasedSensor
+
+
+def tab(section):
+    """
+    #### Summary
+
+    Creates a streamlit select box that groups all decorated functions that have the same key.
+
+    #### Example:
+    ```
+    @tab('my tabs')
+    def tab1(x):
+        st.show("Im in TAB 1", x)
+
+    @tab('my tabs')
+    def tab2(x):
+        st.show("Im in TAB 2", x)
+
+    tab.run('my tabs', x=42)
+    ```
+    """
+
+    import collections
+
+    if not hasattr(tab, "__tabs__"):
+        tab.__tabs__ = collections.defaultdict(dict)
+
+        def run(sec, *args, **kwargs):
+            func = st.sidebar.selectbox(sec, list(tab.__tabs__[sec]))
+            func = tab.__tabs__[sec][func]
+            func(*args, **kwargs)
+
+        tab.run = run
+
+    def wrapper(func):
+        name = " ".join(s.title() for s in func.__name__.split("_"))
+        tab.__tabs__[section][name] = func
+        return func
+
+    return wrapper
+
 
 # = DATASET =================================================
 @st.cache
@@ -33,91 +75,101 @@ def load_dataset(name):
         raise ValueError(f"Unknown dataset: {name}")
 
 
-dataset_name = st.sidebar.selectbox("Dataset", ["custom", "adult", "german"])
-if dataset_name == "custom":
-    uploaded_file = st.file_uploader("Dataset: Choose a file", type=["csv", "txt"])
-    if uploaded_file is None:
-        st.stop()
-    dataset = load_from_file(uploaded_file)
-else:
-    dataset = load_dataset(dataset_name)
+@tab("Tasks")
+def mitigation():
 
-df: pd.DataFrame = dataset.data
-df_test: pd.DataFrame = dataset.test
+    dataset_name = st.sidebar.selectbox("Dataset", ["custom", "adult", "german"])
+    if dataset_name == "custom":
+        uploaded_file = st.file_uploader("Dataset: Choose a file", type=["csv", "txt"])
+        if uploaded_file is None:
+            st.stop()
+        dataset = load_from_file(uploaded_file)
+    else:
+        dataset = load_dataset(dataset_name)
 
-f"# Dataset: _{dataset_name}_"
-with st.beta_expander("Explore data"):
-    "**Training set**"
-    df
-    "**Test set**"
-    df_test
+    df: pd.DataFrame = dataset.data
+    df_test: pd.DataFrame = dataset.test
 
-# = FEATURES =================================================
-feature_names = df.columns[:-1]
-X = df[feature_names]
+    f"# Dataset: _{dataset_name}_"
+    with st.beta_expander("Explore data"):
+        "**Training set**"
+        df
+        "**Test set**"
+        df_test
 
-with st.beta_expander("Features"):
-    "#### All features"
-    X
-    for feature in feature_names:
-        f"#### {feature}"
-        values = df[feature].unique()
-        values.sort()
-        values
-        f"**Total:** {len(values)}"
+    # = FEATURES =================================================
+    feature_names = df.columns[:-1]
+    X = df[feature_names]
 
-# = TARGET =================================================
-target_name = df.columns[-1]
-y = df[target_name]
+    with st.beta_expander("Features"):
+        "#### All features"
+        X
+        for feature in feature_names:
+            f"#### {feature}"
+            values = df[feature].unique()
+            values.sort()
+            values
+            f"**Total:** {len(values)}"
 
-with st.beta_expander("Target"):
-    y
+    # = TARGET =================================================
+    target_name = df.columns[-1]
+    y = df[target_name]
 
-labels = set(y.unique())
-assert len(labels) == 2
-positive_target = st.sidebar.selectbox("positive_target", list(labels))
-negative_target = (labels - {positive_target}).pop()
+    with st.beta_expander("Target"):
+        y
 
-f"**Positive target:** {positive_target}"
-f"**Negative target:** {negative_target}"
+    labels = set(y.unique())
+    assert len(labels) == 2
+    positive_target = st.sidebar.selectbox("positive_target", list(labels))
+    negative_target = (labels - {positive_target}).pop()
 
-# = CLASSIFIER =================================================
+    f"**Positive target:** {positive_target}"
+    f"**Negative target:** {negative_target}"
 
-X, y, encoders = encode_features(df, target=target_name, feature_names=feature_names)
-encoder = encoders[target_name]
+    # = CLASSIFIER =================================================
 
-X_test, y_test, _ = encode_features(
-    df_test, target=target_name, feature_names=feature_names, source_encoders=encoders
-)
+    X, y, encoders = encode_features(
+        df, target=target_name, feature_names=feature_names
+    )
+    encoder = encoders[target_name]
 
-use_test = not df_test.empty and st.sidebar.checkbox("Test")
-evaluation_df = df_test if use_test else df
-evaluation_X = X_test if use_test else X
-evaluation_y = y_test if use_test else y
+    X_test, y_test, _ = encode_features(
+        df_test,
+        target=target_name,
+        feature_names=feature_names,
+        source_encoders=encoders,
+    )
 
-# = PROTECTED ATTRIBUTES =================================================
+    use_test = not df_test.empty and st.sidebar.checkbox("Test")
+    evaluation_df = df_test if use_test else df
+    evaluation_X = X_test if use_test else X
+    evaluation_y = y_test if use_test else y
 
-metric_mode = st.sidebar.selectbox("Disparity Mode", [DIFFERENCE, RATIO])
-default_metrics = [
-    accuracy_disparity,
-    statistical_parity,
-    equal_opportunity,
-    false_positive_rate,
-    equalized_odds,
-]
-all_metrics = [accuracy] + default_metrics
-selected_metrics = st.sidebar.multiselect(
-    "Metrics",
-    all_metrics,
-    default=default_metrics,
-    format_func=lambda x: x.__name__,
-)
+    # = PROTECTED ATTRIBUTES =================================================
 
-protected_attributes = st.sidebar.selectbox(
-    "Protected Attributes", [None] + list(feature_names)
-)
+    metric_mode = st.sidebar.selectbox("Disparity Mode", [DIFFERENCE, RATIO])
+    default_metrics = [
+        accuracy_disparity,
+        statistical_parity,
+        equal_opportunity,
+        false_positive_rate,
+        equalized_odds,
+    ]
+    all_metrics = [accuracy] + default_metrics
+    selected_metrics = st.sidebar.multiselect(
+        "Metrics",
+        all_metrics,
+        default=default_metrics,
+        format_func=lambda x: x.__name__,
+    )
 
-if protected_attributes:
+    protected_attributes = st.sidebar.selectbox(
+        "Protected Attributes", [None] + list(feature_names)
+    )
+
+    if not protected_attributes:
+        return
+
     "## Disparity Metrics"
 
     metrics = MetricHandler(*selected_metrics)
@@ -351,3 +403,11 @@ if protected_attributes:
                 )
                 measure = metrics.to_df(measure)
                 measure
+
+
+@tab("Tasks")
+def protected_attributes_extraction():
+    pass
+
+
+tab.run("Tasks")
