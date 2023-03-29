@@ -1,4 +1,8 @@
-from bfair.methods.autogoal.ensembling.sampling import LogSampler, SampleModel
+from bfair.methods.autogoal.ensembling.sampling import (
+    LogSampler,
+    SampleModel,
+    LockedSampler,
+)
 from bfair.sensors.handler import SensorHandler
 from bfair.sensors.text import (
     EmbeddingBasedSensor,
@@ -20,6 +24,7 @@ from autogoal.sampling import Sampler
 from autogoal.search import PESearch, ConsoleLogger
 from nltk.corpus import stopwords
 from statistics import mean
+from functools import partial
 
 PRECISION = "precision"
 RECALL = "recall"
@@ -46,6 +51,7 @@ def optimize(
     log_path=None,
     inspect=False,
     output_stream=None,
+    language="english",
 ):
     loggers = get_loggers(
         telegram_token=telegram_token,
@@ -55,7 +61,7 @@ def optimize(
     )
 
     search = PESearch(
-        generator_fn=generate,
+        generator_fn=partial(generate, language=language),
         fitness_fn=build_fn(
             X_train,
             y_train,
@@ -322,3 +328,9 @@ def compute_scores(counter):
 
 def safe_division(numerator, denominator, default=0):
     return numerator / denominator if denominator else default
+
+
+def load(configuration, language="english"):
+    sampler = LockedSampler(configuration, ensure_handle=True)
+    model = generate(sampler, language)
+    return model.model
