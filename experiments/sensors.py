@@ -33,6 +33,7 @@ def setup():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--iterations", type=int, default=10000)
+    parser.add_argument("--eval-timeout", type=int, default=None)
     parser.add_argument("--memory", type=int, default=None)
     parser.add_argument("--popsize", type=int, default=50)
     parser.add_argument("--global-timeout", type=int, default=60 * 60)
@@ -69,6 +70,7 @@ if __name__ == "__main__":
             P_GENDER,
             pop_size=args.popsize,
             search_iterations=args.iterations,
+            evaluation_timeout=args.eval_timeout,
             memory_limit=args.memory * 1024**3 if args.memory else None,
             search_timeout=args.global_timeout,
             errors="warn",
