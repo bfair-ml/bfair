@@ -25,7 +25,10 @@ from bfair.metrics import (
 )
 from bfair.utils import ClassifierWrapper, encode_features
 from bfair.sensors import CoreferenceNERSensor, DBPediaSensor, P_GENDER
-from bfair.sensors.optimization import load as load_handler
+from bfair.sensors.optimization import (
+    load as load_from_config,
+    get_embedding_based_sensor,
+)
 
 GENDER_VALUES = ["Male", "Female"]
 
@@ -415,7 +418,6 @@ def mitigation():
 def load_sensors(language):
     ensemble_based_handler_configuration = OrderedDict(
         {
-            "include-embedding-sensor": True,
             "plain_mode": True,
             "remove-stopwords": False,
             "filter-filter": "NonNeutralWordsFilter",
@@ -425,10 +427,11 @@ def load_sensors(language):
             "embedding-source": "word2vec-debiased",
         }
     )
-    embedding_sensor = load_handler(
+    embedding_sensor = load_from_config(
         list(ensemble_based_handler_configuration.items()),
         language=language,
-    ).sensors[0]
+        root=get_embedding_based_sensor,
+    )
 
     sensors = [
         embedding_sensor,

@@ -18,6 +18,7 @@ from bfair.sensors.text import (
     CountAggregator,
     ActivationAggregator,
     UnionAggregator,
+    CoreferenceNERSensor,
 )
 from autogoal.kb import Text
 from autogoal.sampling import Sampler
@@ -151,6 +152,10 @@ def generate(sampler: Sampler, language="english"):
 
     if sampler.boolean("include-embedding-sensor"):
         sensor = get_embedding_based_sensor(sampler, language)
+        sensors.append(sensor)
+
+    if sampler.boolean("include-coreference-sensor"):
+        sensor = get_coreference_ner_sensor(sampler, language)
         sensors.append(sensor)
 
     if len(sensors) > 1:
@@ -301,6 +306,15 @@ def get_aggregation_pipeline(sampler: LogSampler, plain_mode):
     return aggregation_pipeline
 
 
+def get_coreference_ner_sensor(sampler, language):
+    aggregator = get_aggregation_pipeline(sampler, plain_mode=True)[0]
+    sensor = CoreferenceNERSensor.build(
+        language=language,
+        aggregator=aggregator,
+    )
+    return sensor
+
+
 def build_fn(X_test, y_test, stype, attributes, attr_cls, score_func):
     def fn(generated: SampleModel):
         handler: SensorHandler = generated.model
@@ -351,7 +365,7 @@ def safe_division(numerator, denominator, default=0):
     return numerator / denominator if denominator else default
 
 
-def load(configuration, language="english"):
+def load(configuration, language="english", root=generate):
     sampler = LockedSampler(configuration, ensure_handle=True)
-    model = generate(sampler, language)
+    model = root(sampler, language)
     return model.model
