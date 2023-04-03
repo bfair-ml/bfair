@@ -411,13 +411,8 @@ def mitigation():
                 measure
 
 
-@tab("Tasks")
-def protected_attributes_extraction():
-    dataset = load_review()
-    X = dataset.data[REVIEW_COLUMN]
-    y = dataset.data[GENDER_COLUMN]
-
-    language = st.sidebar.selectbox("Language", ["english"])
+@st.cache(allow_output_mutation=True)
+def load_sensors(language):
     ensemble_based_handler_configuration = OrderedDict(
         {
             "plain_mode": True,
@@ -439,6 +434,27 @@ def protected_attributes_extraction():
         CoreferenceNERSensor.build(language=language, threshold=0),
         DBPediaSensor.build(language=language),
     ]
+    return sensors
+
+
+@tab("Tasks")
+def protected_attributes_extraction():
+    dataset_name = st.sidebar.selectbox("Dataset", ["custom", "reviews"])
+
+    if dataset_name == "reviews":
+        dataset = load_review()
+        X = dataset.data[REVIEW_COLUMN]
+        y = dataset.data[GENDER_COLUMN]
+    else:
+        text = st.text_input("Text")
+        if not text:
+            st.stop()
+
+        X = [text]
+        y = pd.Series([("CUSTOM SENTENCE",)], name=P_GENDER)
+
+    language = st.sidebar.selectbox("Language", ["english"])
+    sensors = load_sensors(language)
 
     for sensor in sensors:
         f"## Sensor: {type(sensor).__name__}"
