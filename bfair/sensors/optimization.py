@@ -19,6 +19,7 @@ from bfair.sensors.text import (
     ActivationAggregator,
     UnionAggregator,
     CoreferenceNERSensor,
+    DBPediaSensor,
 )
 from autogoal.kb import Text
 from autogoal.sampling import Sampler
@@ -156,6 +157,10 @@ def generate(sampler: Sampler, language="english"):
 
     if sampler.boolean("include-coreference-sensor"):
         sensor = get_coreference_ner_sensor(sampler, language)
+        sensors.append(sensor)
+
+    if sampler.boolean("include-dbpedia-sensor"):
+        sensor = get_dbpedia_sensor(sampler, language)
         sensors.append(sensor)
 
     if len(sensors) > 1:
@@ -312,6 +317,11 @@ def get_coreference_ner_sensor(sampler, language):
         language=language,
         aggregator=aggregator,
     )
+    return sensor
+
+
+def get_dbpedia_sensor(sampler, language):
+    sensor = DBPediaSensor.build(language=language)
     return sensor
 
 
