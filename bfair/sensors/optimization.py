@@ -147,6 +147,13 @@ def evaluate(solution, X, y, attributes, attr_cls):
 def generate(sampler: Sampler, language="english"):
     sampler = LogSampler(sampler)
 
+    sensor = get_embedding_based_sensor(sampler, language)
+
+    handler = SensorHandler([sensor])
+    return SampleModel(sampler, handler)
+
+
+def get_embedding_based_sensor(sampler, language):
     tokenization_pipeline, plain_mode = get_tokenization_pipeline(sampler)
     filtering_pipeline = get_filtering_pipeline(sampler, language)
     aggregation_pipeline = get_aggregation_pipeline(sampler, plain_mode)
@@ -161,8 +168,7 @@ def generate(sampler: Sampler, language="english"):
         filtering_pipeline=filtering_pipeline,
         aggregation_pipeline=aggregation_pipeline,
     )
-    handler = SensorHandler([sensor])
-    return SampleModel(sampler, handler)
+    return sensor
 
 
 def get_tokenization_pipeline(sampler: LogSampler):
