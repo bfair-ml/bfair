@@ -415,6 +415,7 @@ def mitigation():
 def load_sensors(language):
     ensemble_based_handler_configuration = OrderedDict(
         {
+            "include-embedding-sensor": True,
             "plain_mode": True,
             "remove-stopwords": False,
             "filter-filter": "NonNeutralWordsFilter",

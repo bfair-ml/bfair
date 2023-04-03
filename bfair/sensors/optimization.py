@@ -3,7 +3,7 @@ from bfair.methods.autogoal.ensembling.sampling import (
     SampleModel,
     LockedSampler,
 )
-from bfair.sensors.handler import SensorHandler
+from bfair.sensors.handler import SensorHandler, UnionMerge, IntersectionMerge
 from bfair.sensors.text import (
     EmbeddingBasedSensor,
     TextTokenizer,
@@ -147,9 +147,24 @@ def evaluate(solution, X, y, attributes, attr_cls):
 def generate(sampler: Sampler, language="english"):
     sampler = LogSampler(sampler)
 
-    sensor = get_embedding_based_sensor(sampler, language)
+    sensors = []
 
-    handler = SensorHandler([sensor])
+    if sampler.boolean("include-embedding-sensor"):
+        sensor = get_embedding_based_sensor(sampler, language)
+        sensors.append(sensor)
+
+    if len(sensors) > 1:
+        merge_mode = sampler.choice(["union", "intersection"], handle="merge-mode")
+        if merge_mode == "union":
+            merge = UnionMerge()
+        elif merge_mode == "intersection":
+            merge = IntersectionMerge()
+        else:
+            raise ValueError(merge_mode)
+    else:
+        merge = None
+
+    handler = SensorHandler(sensors, merge)
     return SampleModel(sampler, handler)
 
 
