@@ -181,9 +181,20 @@ def generate(sampler: Sampler, language="english"):
 
 
 def get_embedding_based_sensor(sampler, language):
-    tokenization_pipeline, plain_mode = get_tokenization_pipeline(sampler)
-    filtering_pipeline = get_filtering_pipeline(sampler, language)
-    aggregation_pipeline = get_aggregation_pipeline(sampler, plain_mode)
+    tokenization_pipeline, plain_mode = get_tokenization_pipeline(
+        sampler,
+        prefix="embedding-s-",
+    )
+    filtering_pipeline = get_filtering_pipeline(
+        sampler,
+        language,
+        prefix="embedding-s-",
+    )
+    aggregation_pipeline = get_aggregation_pipeline(
+        sampler,
+        plain_mode,
+        prefix="embedding-s-",
+    )
 
     source = sampler.choice(
         ["word2vec", "word2vec-debiased"], handle="embedding-source"
@@ -198,10 +209,10 @@ def get_embedding_based_sensor(sampler, language):
     return sensor
 
 
-def get_tokenization_pipeline(sampler: LogSampler):
+def get_tokenization_pipeline(sampler: LogSampler, prefix=""):
     return (
         ([TextTokenizer()], True)
-        if sampler.boolean("plain_mode")
+        if sampler.boolean(f"{prefix}plain_mode")
         else (
             [
                 TextSplitter(),
@@ -212,15 +223,15 @@ def get_tokenization_pipeline(sampler: LogSampler):
     )
 
 
-def get_filtering_pipeline(sampler: LogSampler, language):
+def get_filtering_pipeline(sampler: LogSampler, language, prefix=""):
     filtering_pipeline = []
 
-    if sampler.boolean("remove-stopwords"):
+    if sampler.boolean(f"{prefix}remove-stopwords"):
         words = stopwords.words(language)
         filter = NoStopWordsFilter(words)
         filtering_pipeline.append(filter)
 
-    filter = get_filter(sampler, allow_none=True, prefix="filter")
+    filter = get_filter(sampler, allow_none=True, prefix=f"{prefix}filter")
     filtering_pipeline.append(filter)
 
     filter = NonEmptyFilter()
@@ -273,24 +284,24 @@ def get_filter(sampler: LogSampler, allow_none: bool, prefix: str):
         raise ValueError(filter_name)
 
 
-def get_aggregation_pipeline(sampler: LogSampler, plain_mode):
+def get_aggregation_pipeline(sampler: LogSampler, plain_mode, prefix=""):
     n_iters = 1 if plain_mode else 2
     aggregation_pipeline = []
 
     for i in range(n_iters):
         aggregator_name = sampler.choice(
             ["CountAggregator", "ActivationAggregator", "UnionAggregator"],
-            handle=f"aggretator-{i}",
+            handle=f"{prefix}aggretator-{i}",
         )
         if aggregator_name == "CountAggregator":
-            filter = get_filter(sampler, allow_none=True, prefix="count")
+            filter = get_filter(sampler, allow_none=True, prefix=f"{prefix}count")
             aggregator = CountAggregator(attr_filter=filter)
 
         if aggregator_name == "ActivationAggregator":
-            filter = get_filter(sampler, allow_none=True, prefix="activation")
+            filter = get_filter(sampler, allow_none=True, prefix=f"{prefix}activation")
 
             activation_name = sampler.choice(
-                ["max", "sum", "mult"], handle="activation-function"
+                ["max", "sum", "mult"], handle=f"{prefix}activation-function"
             )
             if activation_name == "max":
                 activation_func = max
@@ -314,7 +325,11 @@ def get_aggregation_pipeline(sampler: LogSampler, plain_mode):
 
 
 def get_coreference_ner_sensor(sampler, language):
-    aggregator = get_aggregation_pipeline(sampler, plain_mode=True)[0]
+    aggregator = get_aggregation_pipeline(
+        sampler,
+        plain_mode=True,
+        prefix="coreference-s-",
+    )[0]
     sensor = CoreferenceNERSensor.build(
         language=language,
         aggregator=aggregator,
