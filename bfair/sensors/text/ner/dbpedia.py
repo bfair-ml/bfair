@@ -155,7 +155,7 @@ class DBPediaSensor(NERBasedSensor):
         return [
             attribute
             for attribute in attributes
-            for value in self._standarize(attribute)
+            for value in standarizer(attribute)
             if value in standarized_values
         ]
 
