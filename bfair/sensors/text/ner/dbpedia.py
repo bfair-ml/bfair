@@ -85,8 +85,15 @@ class GenderStandarizer:
 class DBPediaSensor(NERBasedSensor):
     DEFAULT_STANDARIZERS = {P_GENDER: GenderStandarizer()}
 
-    def __init__(self, model, fuzzy_cutoff=0.6, aggregator=None, **standarizers):
-        self.dbpedia = FuzzyDBPediaWrapper(cutoff=fuzzy_cutoff, aggregator=aggregator)
+    def __init__(
+        self,
+        model,
+        fuzzy_cutoff=0.6,
+        aggregator: Aggregator = None,
+        **standarizers,
+    ):
+        self.dbpedia = FuzzyDBPediaWrapper(cutoff=fuzzy_cutoff)
+        self.aggregator = aggregator
         self.standarizers = dict(self.DEFAULT_STANDARIZERS, **standarizers)
         super().__init__(model)
 
@@ -147,16 +154,24 @@ class DBPediaSensor(NERBasedSensor):
         entity_resource = self._entity_to_resource(entity)
         property_resource = self._property_to_resource(attr_cls)
 
-        values = self.dbpedia.get_property_of(entity_resource, property_resource)
+        matches = self.dbpedia.get_scored_matches_for(
+            entity_resource, property_resource
+        )
 
         standarizer = self.standarizers.get(attr_cls, self._standarize)
-        standarized_values = set(s for v in values for s in standarizer(v))
+        standarized_values = [
+            [(std_value, score) for std_value in standarizer(value)]
+            for _, value, score in matches
+        ]
+
+        selected = self.aggregator(standarized_values)
+        values = {value for value, _ in selected}
 
         return [
             attribute
             for attribute in attributes
             for value in standarizer(attribute)
-            if value in standarized_values
+            if value in values
         ]
 
     def _entity_to_resource(self, entity):
@@ -289,19 +304,13 @@ class DBPediaWrapper:
 
 
 class FuzzyDBPediaWrapper(DBPediaWrapper):
-    def __init__(self, cutoff=0.6, aggregator: Aggregator = None):
+    def __init__(self, cutoff=0.6):
         self.cutoff = cutoff
-        self.aggregator = aggregator
         super().__init__()
 
     def get_property_of(self, entity, property):
         matches = self.get_scored_matches_for(entity, property)
-        if self.aggregator is None:
-            return {value for _, value, _ in matches if value}
-        else:
-            scored_tokens = [((value, score),) for _, value, score in matches]
-            selected = self.aggregator(scored_tokens)
-            return {value for value, _ in selected}
+        return {value for _, value, _ in matches if value}
 
     def get_scored_matches_for(self, entity, property):
         people_with_property = self._get_candidate_matches(property)
