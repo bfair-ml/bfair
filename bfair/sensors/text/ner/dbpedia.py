@@ -6,24 +6,108 @@ from difflib import SequenceMatcher
 
 from typing import List, Dict, Any, Tuple
 from bfair.sensors.text.ner.base import NERBasedSensor
+from bfair.sensors.base import P_GENDER
+
+
+class GenderStandarizer:
+    MALE_KEYS = {
+        "Male",
+        "Feminine & Masculine",
+        "M",
+        "Female , Male",
+        "Male ♂",
+        "Male And Female",
+        "Men'S",
+        "Coeducational",
+        "Man'S High School",
+        "Co-Educational",
+        "Males And Females",
+        "Coeducation",
+        "Male9",
+        'Androgynous, But Can Choose To Be Male Or Female, Or "Both Or Neither"',
+        "Simulated Male",
+        "Male\nNickname = The Rigg",
+        "Mixed-Sex_Education",
+        "Female, Unisex",
+        "Boys",
+        "Males",
+        "All-Male",
+        "Mixed",
+        "Boy",
+        "All Boy",
+        "Masculine",
+        "Boys And Girls",
+        "Co-Ed",
+    }
+
+    FEMALE_KEYS = {
+        "Feminine & Masculine",
+        "Female , Male",
+        "Male And Female",
+        "Coeducational",
+        "Co-Educational",
+        "Males And Females",
+        "Coeducation",
+        "Women",
+        'Androgynous, But Can Choose To Be Male Or Female, Or "Both Or Neither"',
+        "F",
+        "Female",
+        "Girls",
+        "Mixed-Sex_Education",
+        "Female, Unisex",
+        "Mixed",
+        "Girl",
+        "Women'S",
+        "W",
+        "Boys And Girls",
+        "Co-Ed",
+    }
+
+    IGNORE_KEYS = {
+        "Director",
+        "Unknown",
+        "Single-Sex_Education",
+        "D",
+        "Dog",
+    }
+
+    MAP = {"male": MALE_KEYS, "female": FEMALE_KEYS}
+
+    def __call__(self, value: str) -> Tuple[str]:
+        return tuple(gender for gender, keys in self.MAP.items() if value in keys)
 
 
 class DBPediaSensor(NERBasedSensor):
-    def __init__(self, model):
-        self.dbpedia = DBPediaWrapper()
+    DEFAULT_STANDARIZERS = {P_GENDER: GenderStandarizer()}
+
+    def __init__(self, model, fuzzy_cutoff=0.6, **standarizers):
+        self.dbpedia = FuzzyDBPediaWrapper(cutoff=fuzzy_cutoff)
+        self.standarizers = dict(self.DEFAULT_STANDARIZERS, **standarizers)
         super().__init__(model)
+
+    @classmethod
+    def build(cls, *, model=None, language="english", fuzzy_cutoff=0.6, **standarizers):
+        return super().build(
+            model=model,
+            language=language,
+            fuzzy_cutoff=fuzzy_cutoff,
+            **standarizers,
+        )
 
     def extract_attributes(self, entity, attributes: List[str], attr_cls: str):
         entity_resource = self._entity_to_resource(entity)
         property_resource = self._property_to_resource(attr_cls)
 
         values = self.dbpedia.get_property_of(entity_resource, property_resource)
-        standarized_values = set(self._standarize(v) for v in values)
+
+        standarizer = self.standarizers.get(attr_cls, self._standarize)
+        standarized_values = set(s for v in values for s in standarizer(v))
 
         return [
             attribute
             for attribute in attributes
-            if self._standarize(attribute) in standarized_values
+            for value in self._standarize(attribute)
+            if value in standarized_values
         ]
 
     def _entity_to_resource(self, entity):
@@ -35,8 +119,8 @@ class DBPediaSensor(NERBasedSensor):
         resource = property.lower()
         return resource
 
-    def _standarize(self, value):
-        return value.strip().lower()
+    def _standarize(self, value: str) -> Tuple[str]:
+        return (value.strip().lower(),)
 
 
 class DBPediaWrapper:

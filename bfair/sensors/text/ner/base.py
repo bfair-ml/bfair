@@ -10,10 +10,10 @@ class NERBasedSensor(Sensor):
         self.model = model
 
     @classmethod
-    def build(cls, *, model=None, language="english"):
+    def build(cls, *, model=None, language="english", **kwargs):
         if model is None:
             model = spacy.load("xx_ent_wiki_sm")
-        return cls(model)
+        return cls(model, **kwargs)
 
     def __call__(self, text, attributes: List[str], attr_cls: str):
         document = self.model(text)
