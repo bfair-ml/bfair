@@ -181,23 +181,14 @@ def generate(sampler: Sampler, language="english"):
 
 
 def get_embedding_based_sensor(sampler, language):
-    tokenization_pipeline, plain_mode = get_tokenization_pipeline(
-        sampler,
-        prefix="embedding-s-",
-    )
-    filtering_pipeline = get_filtering_pipeline(
-        sampler,
-        language,
-        prefix="embedding-s-",
-    )
-    aggregation_pipeline = get_aggregation_pipeline(
-        sampler,
-        plain_mode,
-        prefix="embedding-s-",
-    )
+    prefix = "embedding-sensor."
+
+    tokenization_pipeline, plain_mode = get_tokenization_pipeline(sampler, prefix)
+    filtering_pipeline = get_filtering_pipeline(sampler, language, prefix)
+    aggregation_pipeline = get_aggregation_pipeline(sampler, plain_mode, prefix)
 
     source = sampler.choice(
-        ["word2vec", "word2vec-debiased"], handle="embedding-source"
+        ["word2vec", "word2vec-debiased"], handle=f"{prefix}embedding-source"
     )
     sensor = EmbeddingBasedSensor.build(
         language=language,
@@ -325,10 +316,12 @@ def get_aggregation_pipeline(sampler: LogSampler, plain_mode, prefix=""):
 
 
 def get_coreference_ner_sensor(sampler, language):
+    prefix = "coreference-sensor."
+
     aggregator = get_aggregation_pipeline(
         sampler,
         plain_mode=True,
-        prefix="coreference-s-",
+        prefix=prefix,
     )[0]
     sensor = CoreferenceNERSensor.build(
         language=language,
