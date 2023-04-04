@@ -1,6 +1,8 @@
 import requests
 from urllib.parse import quote
 from pathlib import Path
+from functools import lru_cache
+from difflib import SequenceMatcher
 
 from typing import List, Dict, Any, Tuple
 from bfair.sensors.text.ner.base import NERBasedSensor
@@ -151,3 +153,34 @@ class DBPediaWrapper:
         )
         values = self._merge_at_index(values)
         return set(values)
+
+
+class FuzzyDBPediaWrapper(DBPediaWrapper):
+    def __init__(self, cutoff=0.6):
+        self.cutoff = cutoff
+        super().__init__()
+
+    def get_property_of(self, entity, property):
+        people_with_property = self._get_candidate_matches(property)
+        matches = self._fuzzy_match(entity, people_with_property)
+        return {value for _, value in matches if value}
+
+    @lru_cache()
+    def _get_candidate_matches(self, property):
+        return self.get_people_with_property(property, include_property=True)
+
+    def _fuzzy_match(self, entity, people_with_property):
+        matches = set()
+
+        s = SequenceMatcher()
+        s.set_seq2(entity)
+        for person, property in people_with_property:
+            s.set_seq1(person)
+            if (
+                s.real_quick_ratio() > self.cutoff
+                and s.quick_ratio() >= self.cutoff
+                and s.ratio() >= self.cutoff
+            ):
+                matches.add((person, property))
+
+        return matches
