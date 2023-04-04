@@ -92,13 +92,19 @@ class DBPediaWrapper:
             offset += 1
         return values
 
-    def _merge_at_index(self, values, index=0):
-        return [
-            value
-            for row in values
-            for value in (self._default_transformation(row[index]),)
-            if value
-        ]
+    def _merge_at_index(self, values, *indexes, size=1):
+        if not indexes:
+            indexes = range(size)
+
+        merged = []
+        for row in values:
+            value = tuple(self._default_transformation(row[i]) for i in indexes)
+            if len(value) == 1:
+                value = value[0]
+            if value:
+                merged.append(value)
+
+        return merged
 
     def _default_transformation(self, value):
         return Path(value.title()).name
@@ -116,7 +122,7 @@ class DBPediaWrapper:
         values = self._merge_at_index(values)
         return set(values)
 
-    def get_people_with_property(self, property):
+    def get_people_with_property(self, property, include_property=False):
         var_name = "who"
         values = self._do_large_query_and_merge_values(
             f"""
@@ -127,9 +133,10 @@ class DBPediaWrapper:
             }}
             """,
             var_name,
+            property,
         )
 
-        values = self._merge_at_index(values)
+        values = self._merge_at_index(values, size=(2 if include_property else 1))
         return set(values)
 
     def get_all_of_type(self, type_name):
