@@ -6,6 +6,11 @@ from difflib import SequenceMatcher
 
 from typing import List, Dict, Any, Tuple
 from bfair.sensors.text.ner.base import NERBasedSensor
+from bfair.sensors.text.embedding import (
+    Aggregator,
+    ActivationAggregator,
+    BestScoreFilter,
+)
 from bfair.sensors.base import P_GENDER
 
 
@@ -80,17 +85,61 @@ class GenderStandarizer:
 class DBPediaSensor(NERBasedSensor):
     DEFAULT_STANDARIZERS = {P_GENDER: GenderStandarizer()}
 
-    def __init__(self, model, fuzzy_cutoff=0.6, **standarizers):
-        self.dbpedia = FuzzyDBPediaWrapper(cutoff=fuzzy_cutoff)
+    def __init__(self, model, fuzzy_cutoff=0.6, aggregator=None, **standarizers):
+        self.dbpedia = FuzzyDBPediaWrapper(cutoff=fuzzy_cutoff, aggregator=aggregator)
         self.standarizers = dict(self.DEFAULT_STANDARIZERS, **standarizers)
         super().__init__(model)
 
     @classmethod
-    def build(cls, *, model=None, language="english", fuzzy_cutoff=0.6, **standarizers):
+    def build(
+        cls,
+        *,
+        model=None,
+        language="english",
+        fuzzy_cutoff=0.6,
+        aggregator=None,
+        activation_func=None,
+        filter=None,
+        threshold=None,
+        **standarizers,
+    ):
+
+        if (
+            0
+            + (aggregator is not None)
+            + (filter is not None)
+            + (threshold is not None)
+            > 1
+        ):
+            raise ValueError(
+                "Only one between `aggregator`, `filter` and `threshold` should be provided."
+            )
+
+        if aggregator is not None and activation_func is not None:
+            raise ValueError(
+                "Only one between `aggregator` and `activation_func` should be provided."
+            )
+
+        aggregator = (
+            ActivationAggregator(
+                activation_func=activation_func or max,
+                attr_filter=(
+                    BestScoreFilter(
+                        threshold=threshold or 0.9, zero_threshold=fuzzy_cutoff
+                    )
+                    if filter is None
+                    else filter
+                ),
+            )
+            if aggregator is None
+            else aggregator
+        )
+
         return super().build(
             model=model,
             language=language,
             fuzzy_cutoff=fuzzy_cutoff,
+            aggregator=aggregator,
             **standarizers,
         )
 
@@ -240,14 +289,24 @@ class DBPediaWrapper:
 
 
 class FuzzyDBPediaWrapper(DBPediaWrapper):
-    def __init__(self, cutoff=0.6):
+    def __init__(self, cutoff=0.6, aggregator: Aggregator = None):
         self.cutoff = cutoff
+        self.aggregator = aggregator
         super().__init__()
 
     def get_property_of(self, entity, property):
+        matches = self.get_scored_matches_for(entity, property)
+        if self.aggregator is None:
+            return {value for _, value, _ in matches if value}
+        else:
+            scored_tokens = [((value, score),) for _, value, score in matches]
+            selected = self.aggregator(scored_tokens)
+            return {value for value, _ in selected}
+
+    def get_scored_matches_for(self, entity, property):
         people_with_property = self._get_candidate_matches(property)
         matches = self._fuzzy_match(entity, people_with_property)
-        return {value for _, value in matches if value}
+        return matches
 
     @lru_cache()
     def _get_candidate_matches(self, property):
@@ -265,6 +324,7 @@ class FuzzyDBPediaWrapper(DBPediaWrapper):
                 and s.quick_ratio() >= self.cutoff
                 and s.ratio() >= self.cutoff
             ):
-                matches.add((person, property))
+                # s.ratio() is efficient the second time
+                matches.add((person, property, s.ratio()))
 
         return matches
