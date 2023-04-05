@@ -419,12 +419,12 @@ def load_sensors(language):
     ensemble_based_handler_configuration = OrderedDict(
         {
             "plain_mode": True,
-            "remove-stopwords": False,
-            "filter-filter": "NonNeutralWordsFilter",
-            "filter-neutral-relative-threshold": 0.6390311558106935,
-            "filter-neutral-norm-threshold": 0.1556742604492079,
-            "aggretator-0": "UnionAggregator",
-            "embedding-source": "word2vec-debiased",
+            "embedding-sensor.remove-stopwords": False,
+            "embedding-sensor.filter-filter": "NonNeutralWordsFilter",
+            "embedding-sensor.filter-neutral-relative-threshold": 0.6390311558106935,
+            "embedding-sensor.filter-neutral-norm-threshold": 0.1556742604492079,
+            "embedding-sensor.aggretator-0": "UnionAggregator",
+            "embedding-sensor.embedding-source": "word2vec-debiased",
         }
     )
     embedding_sensor = load_from_config(
@@ -454,8 +454,8 @@ def protected_attributes_extraction():
         if not text:
             st.stop()
 
-        X = [text]
-        y = pd.Series([("CUSTOM SENTENCE",)], name=P_GENDER)
+        X = pd.Series([text], name=REVIEW_COLUMN)
+        y = pd.Series([("CUSTOM SENTENCE",)], name=GENDER_COLUMN)
 
     language = st.sidebar.selectbox("Language", ["english"])
     sensors = load_sensors(language)
@@ -465,6 +465,7 @@ def protected_attributes_extraction():
         predictions = [sensor(review, GENDER_VALUES, P_GENDER) for review in X]
         results = pd.concat(
             (
+                X,
                 y.str.join(" & "),
                 pd.Series(predictions, name="Predicted").str.join(" & "),
             ),

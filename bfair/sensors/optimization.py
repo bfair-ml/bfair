@@ -401,4 +401,4 @@ def safe_division(numerator, denominator, default=0):
 def load(configuration, language="english", root=generate):
     sampler = LockedSampler(configuration, ensure_handle=True)
     model = root(sampler, language)
-    return model.model
+    return model
