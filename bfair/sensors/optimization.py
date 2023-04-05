@@ -180,7 +180,7 @@ def generate(sampler: Sampler, language="english"):
     return SampleModel(sampler, handler)
 
 
-def get_embedding_based_sensor(sampler, language):
+def get_embedding_based_sensor(sampler: LogSampler, language):
     prefix = "embedding-sensor."
 
     tokenization_pipeline, plain_mode = get_tokenization_pipeline(sampler, prefix)
@@ -315,7 +315,7 @@ def get_aggregation_pipeline(sampler: LogSampler, plain_mode, prefix=""):
     return aggregation_pipeline
 
 
-def get_coreference_ner_sensor(sampler, language):
+def get_coreference_ner_sensor(sampler: LogSampler, language):
     prefix = "coreference-sensor."
 
     aggregator = get_aggregation_pipeline(
@@ -330,8 +330,21 @@ def get_coreference_ner_sensor(sampler, language):
     return sensor
 
 
-def get_dbpedia_sensor(sampler, language):
-    sensor = DBPediaSensor.build(language=language)
+def get_dbpedia_sensor(sampler: LogSampler, language):
+    prefix = "dbpedia-sensor."
+
+    cutoff = sampler.continuous(min=0, max=1, handle=f"{prefix}cutoff")
+    aggregator = get_aggregation_pipeline(
+        sampler,
+        plain_mode=True,
+        prefix=prefix,
+    )
+
+    sensor = DBPediaSensor.build(
+        language=language,
+        fuzzy_cutoff=cutoff,
+        aggregator=aggregator,
+    )
     return sensor
 
 
