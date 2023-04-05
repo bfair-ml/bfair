@@ -338,7 +338,7 @@ def get_dbpedia_sensor(sampler: LogSampler, language):
         sampler,
         plain_mode=True,
         prefix=prefix,
-    )
+    )[0]
 
     sensor = DBPediaSensor.build(
         language=language,
