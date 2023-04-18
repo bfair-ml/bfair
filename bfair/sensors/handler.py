@@ -1,10 +1,14 @@
-from typing import Sequence, List
+from typing import Sequence, List, Callable
 from bfair.sensors.base import Sensor
 from autogoal.kb import SemanticType
 
 
 class SensorHandler:
-    def __init__(self, sensors: Sequence[Sensor], merge=None):
+    def __init__(
+        self,
+        sensors: Sequence[Sensor],
+        merge: Callable[[List[Sequence[str]]], Sequence[str]] = None,
+    ):
         self.sensors = sensors
         self.merge = merge if merge else UnionMerge()
 
