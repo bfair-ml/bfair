@@ -24,7 +24,7 @@ from bfair.metrics import (
     statistical_parity,
 )
 from bfair.utils import ClassifierWrapper, encode_features
-from bfair.sensors import CoreferenceNERSensor, DBPediaSensor, P_GENDER
+from bfair.sensors import SensorHandler, CoreferenceNERSensor, DBPediaSensor, P_GENDER
 from bfair.sensors.optimization import (
     load as load_from_config,
     get_embedding_based_sensor,
@@ -415,9 +415,9 @@ def mitigation():
 
 
 @st.cache(allow_output_mutation=True)
-def load_sensors(language):
-    ensemble_based_handler_configuration = OrderedDict(
-        {
+def load_sensors(language, config=None):
+    if config is None:
+        ensemble_based_handler_configuration = {
             "plain_mode": True,
             "embedding-sensor.remove-stopwords": False,
             "embedding-sensor.filter-filter": "NonNeutralWordsFilter",
@@ -426,19 +426,21 @@ def load_sensors(language):
             "embedding-sensor.aggretator-0": "UnionAggregator",
             "embedding-sensor.embedding-source": "word2vec-debiased",
         }
-    )
-    embedding_sensor = load_from_config(
-        list(ensemble_based_handler_configuration.items()),
-        language=language,
-        root=get_embedding_based_sensor,
-    )
-
-    sensors = [
-        embedding_sensor,
-        CoreferenceNERSensor.build(language=language, threshold=0),
-        DBPediaSensor.build(language=language),
-    ]
-    return sensors
+        embedding_sensor = load_from_config(
+            list(ensemble_based_handler_configuration.items()),
+            language=language,
+            root=get_embedding_based_sensor,
+        )
+        sensors = [
+            embedding_sensor,
+            CoreferenceNERSensor.build(language=language, threshold=0),
+            DBPediaSensor.build(language=language),
+        ]
+        return SensorHandler(sensors)
+    else:
+        generated = load_from_config(config, language=language)
+        handler = generated.model
+        return handler
 
 
 @tab("Tasks")
@@ -458,7 +460,29 @@ def protected_attributes_extraction():
         y = pd.Series([("CUSTOM SENTENCE",)], name=GENDER_COLUMN)
 
     language = st.sidebar.selectbox("Language", ["english"])
-    sensors = load_sensors(language)
+
+    handler_type = st.sidebar.selectbox(
+        "Sensors",
+        ["Not selected", "Default", "Custom"],
+    )
+
+    if handler_type == "Default":
+        config = None
+    elif handler_type == "Custom":
+        config_str = st.sidebar.text_area("Custom Handler Configuration")
+        try:
+            config = eval(config_str)
+        except Exception as e:
+            st.error(f"Invalid handler configuration. {e}")
+            st.stop()
+
+        st.write(config)
+        config = list(config.items())
+    else:
+        st.stop()
+
+    handler = load_sensors(language, config)
+    sensors = handler.sensors + [handler]
 
     for sensor in sensors:
         f"## Sensor: {type(sensor).__name__}"
