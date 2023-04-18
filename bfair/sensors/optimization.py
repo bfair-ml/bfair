@@ -285,14 +285,19 @@ def get_aggregation_pipeline(sampler: LogSampler, plain_mode, prefix=""):
             handle=f"{prefix}aggretator-{i}",
         )
         if aggregator_name == "CountAggregator":
-            filter = get_filter(sampler, allow_none=True, prefix=f"{prefix}count")
+            filter = get_filter(sampler, allow_none=True, prefix=f"{prefix}count-{i}")
             aggregator = CountAggregator(attr_filter=filter)
 
         if aggregator_name == "ActivationAggregator":
-            filter = get_filter(sampler, allow_none=True, prefix=f"{prefix}activation")
+            filter = get_filter(
+                sampler,
+                allow_none=True,
+                prefix=f"{prefix}activation-{i}",
+            )
 
             activation_name = sampler.choice(
-                ["max", "sum", "mult"], handle=f"{prefix}activation-function"
+                ["max", "sum", "mult"],
+                handle=f"{prefix}activation-function-{i}",
             )
             if activation_name == "max":
                 activation_func = max
