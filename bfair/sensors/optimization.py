@@ -3,7 +3,14 @@ from bfair.methods.autogoal.ensembling.sampling import (
     SampleModel,
     LockedSampler,
 )
-from bfair.sensors.handler import SensorHandler, UnionMerge, IntersectionMerge
+from bfair.sensors.handler import (
+    SensorHandler,
+    UnionMerge,
+    IntersectionMerge,
+    AggregationMerge,
+    UniformWeighter,
+    ParametricWeighter,
+)
 from bfair.sensors.text import (
     EmbeddingBasedSensor,
     TextTokenizer,
@@ -167,13 +174,7 @@ def generate(sampler: Sampler, language="english"):
         sensors.append(sensor)
 
     if len(sensors) > 1:
-        merge_mode = sampler.choice(["union", "intersection"], handle="merge-mode")
-        if merge_mode == "union":
-            merge = UnionMerge()
-        elif merge_mode == "intersection":
-            merge = IntersectionMerge()
-        else:
-            raise ValueError(merge_mode)
+        merge = get_merger(sampler, len(sensors))
     else:
         merge = None
 
@@ -365,6 +366,42 @@ def get_dbpedia_sensor(sampler: LogSampler, language):
         aggregator=aggregator,
     )
     return sensor
+
+
+def get_merger(sampler: LogSampler, number_of_sensors):
+    prefix = "merger."
+
+    merge_mode = sampler.choice(
+        ["union", "intersection", "aggregation"], handle=f"{prefix}mode"
+    )
+    if merge_mode == "union":
+        return UnionMerge()
+    elif merge_mode == "intersection":
+        return IntersectionMerge()
+    elif merge_mode == "aggregation":
+        aggregator = get_aggregation_pipeline(sampler, True, prefix=prefix)[0]
+
+        weighter_name = sampler.choice(
+            ["uniform", "parametric"], handle=f"{prefix}weighter"
+        )
+        if weighter_name == "uniform":
+            weighter = UniformWeighter()
+        elif weighter_name == "parametric":
+            weights = sampler.multisample(
+                range(number_of_sensors),
+                sampler.continuous,
+                handle=f"{prefix}parametric-weights",
+                min=0,
+                max=1,
+            )
+            weights = [weights[i] for i in range(number_of_sensors)]
+            weighter = ParametricWeighter(weights, normalize=False)
+        else:
+            raise ValueError(weighter_name)
+
+        return AggregationMerge(aggregator, weighter)
+    else:
+        raise ValueError(merge_mode)
 
 
 def build_fn(X_test, y_test, stype, attributes, attr_cls, score_func):

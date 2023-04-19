@@ -96,7 +96,10 @@ class UniformWeighter:
 
 
 class ParametricWeighter:
-    def __init__(self, weights) -> None:
+    def __init__(self, weights, normalize) -> None:
+        if normalize:
+            total = sum(weights)
+            weights = [w / total for w in weights] if total else weights
         self.weights = weights
 
     def __call__(self, values):
