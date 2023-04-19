@@ -88,3 +88,24 @@ class UnionAggregator(ActivationAggregator):
         self,
     ):
         super().__init__(activation_func=max, threshold=float("-inf"))
+
+
+class VotingAggregator(Aggregator):
+    def __call__(
+        self, scored_tokens: Sequence[Sequence[Tuple[str, float]]]
+    ) -> Sequence[Tuple[str, float]]:
+
+        total = 0
+        total_votes = defaultdict(int)
+
+        for attributes in scored_tokens:
+            total += 1
+            for attr, _ in attributes:
+                total_votes[attr] += 1
+
+        if not total:
+            return []
+
+        weights = [(attr, votes / total) for attr, votes in total_votes.items()]
+        selected_attributes = self.do_filter(weights)
+        return selected_attributes

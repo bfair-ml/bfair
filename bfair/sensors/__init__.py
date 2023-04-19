@@ -13,6 +13,13 @@ from .base import (
     P_ETHNIC,
     P_BREASTFEEDING,
 )
-from .handler import SensorHandler, UnionMerge, IntersectionMerge
+from .handler import (
+    SensorHandler,
+    UnionMerge,
+    IntersectionMerge,
+    AggregationMerge,
+    UniformWeighter,
+    ParametricWeighter,
+)
 from .text import *
 from .image import *

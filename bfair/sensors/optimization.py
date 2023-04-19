@@ -18,6 +18,7 @@ from bfair.sensors.text import (
     CountAggregator,
     ActivationAggregator,
     UnionAggregator,
+    VotingAggregator,
     CoreferenceNERSensor,
     DBPediaSensor,
 )
@@ -281,7 +282,12 @@ def get_aggregation_pipeline(sampler: LogSampler, plain_mode, prefix=""):
 
     for i in range(n_iters):
         aggregator_name = sampler.choice(
-            ["CountAggregator", "ActivationAggregator", "UnionAggregator"],
+            [
+                "CountAggregator",
+                "ActivationAggregator",
+                "UnionAggregator",
+                "VotingAggregator",
+            ],
             handle=f"{prefix}aggretator-{i}",
         )
         if aggregator_name == "CountAggregator":
@@ -314,6 +320,14 @@ def get_aggregation_pipeline(sampler: LogSampler, plain_mode, prefix=""):
 
         if aggregator_name == "UnionAggregator":
             aggregator = UnionAggregator()
+
+        if aggregator_name == "VotingAggregator":
+            filter = get_filter(
+                sampler,
+                allow_none=True,
+                prefix=f"{prefix}voting-{i}",
+            )
+            aggregator = VotingAggregator(attr_filter=filter)
 
         aggregation_pipeline.append(aggregator)
 

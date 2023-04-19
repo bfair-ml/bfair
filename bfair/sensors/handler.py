@@ -1,4 +1,4 @@
-from typing import Sequence, List, Callable
+from typing import Sequence, List, Callable, Tuple
 from bfair.sensors.base import Sensor
 from autogoal.kb import SemanticType
 
@@ -67,3 +67,41 @@ class UnionMerge:
 class IntersectionMerge:
     def __call__(self, annotations):
         return set.intersection(*(set(attributes) for attributes in annotations))
+
+
+class AggregationMerge:
+    def __init__(
+        self,
+        aggregator: Callable[
+            [Sequence[Sequence[Tuple[str, float]]]], Sequence[Tuple[str, float]]
+        ],
+        weighter=None,
+    ):
+        self.aggregator = aggregator
+        self.weighter = weighter or UniformWeighter()
+
+    def __call__(self, annotations):
+        scored = [
+            [(attr, weight) for attr in attributes]
+            for attributes, weight in self.weighter(annotations)
+        ]
+        selected = self.aggregator(scored)
+        return {item for item, _ in selected}
+
+
+class UniformWeighter:
+    def __call__(self, values):
+        weight = 1 / len(values)
+        return [(value, weight) for value in values]
+
+
+class ParametricWeighter:
+    def __init__(self, weights) -> None:
+        self.weights = weights
+
+    def __call__(self, values):
+        if len(values) != len(self.weights):
+            raise ValueError(
+                f"Size mismatch. Expected {len(self.weights)} but got {len(values)}."
+            )
+        return [(value, weight) for value, weight in zip(values, self.weights)]
