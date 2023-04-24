@@ -280,3 +280,26 @@ def equalized_odds(
     }
 
     return (value, probs) if return_probs else value
+
+
+def on_compound_columns(metric: base_metric):
+    """
+    The computation of these metrics become more expensive but they can now be used on dataframes whose protected attributes may contain multiple values instead of just one.
+    For example, the review dataset (`bfair.datasets.review`) stores multiple gender values for each record.
+    """
+
+    def work_on_exploded(*, data, protected_attributes, **kwargs):
+        for attr in (
+            protected_attributes
+            if isinstance(protected_attributes, list)
+            else (protected_attributes,)
+        ):
+            data = data.explode(attr)
+        return metric(data=data, protected_attributes=protected_attributes, **kwargs)
+
+    return work_on_exploded
+
+
+exploded_statistical_parity = on_compound_columns(statistical_parity)
+exploded_equal_opportunity = on_compound_columns(equal_opportunity)
+exploded_equalized_odds = on_compound_columns(equalized_odds)
