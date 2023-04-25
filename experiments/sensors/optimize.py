@@ -5,7 +5,7 @@ from pathlib import Path
 from bfair.datasets import load_review
 from bfair.datasets.reviews import REVIEW_COLUMN, GENDER_COLUMN
 from bfair.sensors import SensorHandler, EmbeddingBasedSensor, P_GENDER
-from bfair.sensors.optimization import optimize
+from bfair.sensors.optimization import optimize, compute_errors, compute_scores
 from autogoal.kb import Text
 
 
@@ -44,8 +44,7 @@ def setup():
 
     return parser.parse_args()
 
-
-if __name__ == "__main__":
+def main():
     args = setup()
 
     if args.output:
@@ -100,3 +99,6 @@ if __name__ == "__main__":
     finally:
         if output_stream is not None:
             output_stream.close()
+
+if __name__ == "__main__":
+    main()
