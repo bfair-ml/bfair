@@ -1,4 +1,4 @@
-from typing import Callable, List, Union
+from typing import Callable, List, Union, Sequence
 
 import pandas as pd
 from pandas import DataFrame, Series
@@ -21,7 +21,7 @@ class MetricHandler:
         data: DataFrame,
         protected_attributes: Union[List[str], str],
         target_attribute: str,
-        target_predictions: Series,
+        target_predictions: Union[Series, Sequence],
         positive_target,
         mode: Union[str, Callable[..., float]] = DIFFERENCE,
         return_probs=False,
@@ -82,7 +82,7 @@ def base_metric(
     data: DataFrame,
     protected_attributes: Union[List[str], str],
     target_attribute: str,
-    target_predictions: Series,
+    target_predictions: Union[Series, Sequence],
     positive_target,
     mode: Union[str, Callable[..., float]] = DIFFERENCE,
     return_probs: bool = False,
@@ -117,6 +117,24 @@ def base_metric(
     pass
 
 
+def castparams(func: base_metric) -> base_metric:
+    def wrapper(
+        *args,
+        data: DataFrame,
+        target_predictions: Union[Series, Sequence] = None,
+        **kargs,
+    ):
+        if not (target_predictions is None or isinstance(target_predictions, Series)):
+            target_predictions = Series(
+                target_predictions,
+                name="__prediction__",
+                index=data.index,
+            )
+        return func(*args, data=data, target_predictions=target_predictions, **kargs)
+
+    return wrapper
+
+
 def disparity_metric(func: Callable) -> base_metric:
     def metric(*args, mode=DIFFERENCE, return_probs=False, **kwargs):
         probs = func(*args, mode=mode, **kwargs)
@@ -137,11 +155,12 @@ def disparity_metric(func: Callable) -> base_metric:
     return metric
 
 
+@castparams
 def accuracy(
     *,
     data: DataFrame,
     target_attribute: str,
-    target_predictions: Series,
+    target_predictions: Union[Series, Sequence],
     **kwargs,
 ):
     gold_target = data[target_attribute]
@@ -149,28 +168,40 @@ def accuracy(
     return sum(equals) / len(equals)
 
 
+@castparams
 @disparity_metric
 def accuracy_disparity(
     *,
     data: DataFrame,
     protected_attributes: Union[List[str], str],
     target_attribute: str,
-    target_predictions: Series,
+    target_predictions: Union[Series, Sequence],
     **kwargs,
 ):
     all_data = pd.concat(
-        (data, Series(target_predictions, name="__prediction__")), axis=1
+        (
+            data,
+            Series(
+                target_predictions,
+                name="__prediction__",
+                index=data.index,
+            ),
+        ),
+        axis=1,
     )
 
     scores = {
         key: sum(equals) / len(equals)
-        for key, group in all_data.groupby(protected_attributes)
+        for key, group in all_data.groupby(
+            protected_attributes
+        )  # duplicated indexes are removed here since explode is only being done on `protected attributes`
         for equals in (group[target_attribute] == group["__prediction__"],)
     }
 
     return scores
 
 
+@castparams
 @disparity_metric
 def statistical_parity(
     *,
@@ -178,7 +209,7 @@ def statistical_parity(
     protected_attributes: Union[List[str], str],
     target_attribute: str,
     positive_target,
-    target_predictions: Series = None,
+    target_predictions: Union[Series, Sequence] = None,
     **kwargs,
 ):
     if target_predictions is None:
@@ -188,19 +219,22 @@ def statistical_parity(
 
     probs = {
         key: len(group.index & positives.index) / len(group)
-        for key, group in data.groupby(protected_attributes)
+        for key, group in data.groupby(
+            protected_attributes
+        )  # duplicated indexes are removed here since explode is only being done on `protected attributes`
     }
 
     return probs
 
 
+@castparams
 @disparity_metric
 def equal_opportunity(
     *,
     data: DataFrame,
     protected_attributes: Union[List[str], str],
     target_attribute: str,
-    target_predictions: Series,
+    target_predictions: Union[Series, Sequence],
     positive_target,
     **kwargs,
 ):
@@ -209,19 +243,22 @@ def equal_opportunity(
 
     probs = {
         key: len(group.index & positives.index) / len(group)
-        for key, group in true_positives.groupby(protected_attributes)
+        for key, group in true_positives.groupby(
+            protected_attributes
+        )  # duplicated indexes are removed here since explode is only being done on `protected attributes`
     }
 
     return probs
 
 
+@castparams
 @disparity_metric
 def false_positive_rate(
     *,
     data: DataFrame,
     protected_attributes: Union[List[str], str],
     target_attribute: str,
-    target_predictions: Series,
+    target_predictions: Union[Series, Sequence],
     positive_target,
     **kwargs,
 ):
@@ -230,18 +267,21 @@ def false_positive_rate(
 
     probs = {
         key: len(group.index & positives.index) / len(group)
-        for key, group in true_negatives.groupby(protected_attributes)
+        for key, group in true_negatives.groupby(
+            protected_attributes
+        )  # duplicated indexes are removed here since explode is only being done on `protected attributes`
     }
 
     return probs
 
 
+@castparams
 def equalized_odds(
     *,
     data: DataFrame,
     protected_attributes: Union[List[str], str],
     target_attribute: str,
-    target_predictions: Series,
+    target_predictions: Union[Series, Sequence],
     positive_target,
     mode: Union[str, Callable[..., float]] = DIFFERENCE,
     return_probs: bool = False,
@@ -282,12 +322,13 @@ def equalized_odds(
     return (value, probs) if return_probs else value
 
 
-def on_compound_columns(metric: base_metric):
+def on_compound_columns(metric: base_metric) -> base_metric:
     """
     The computation of these metrics become more expensive but they can now be used on dataframes whose protected attributes may contain multiple values instead of just one.
     For example, the review dataset (`bfair.datasets.review`) stores multiple gender values for each record.
     """
 
+    @castparams  # needed to ensure that index is copied before explode
     def work_on_exploded(*, data, protected_attributes, **kwargs):
         for attr in (
             protected_attributes
@@ -300,6 +341,7 @@ def on_compound_columns(metric: base_metric):
     return work_on_exploded
 
 
+exploded_accuracy_disparity = on_compound_columns(accuracy_disparity)
 exploded_statistical_parity = on_compound_columns(statistical_parity)
 exploded_equal_opportunity = on_compound_columns(equal_opportunity)
 exploded_equalized_odds = on_compound_columns(equalized_odds)
