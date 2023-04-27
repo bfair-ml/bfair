@@ -9,7 +9,7 @@ from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
 from bfair.datasets import load_adult, load_german, load_review
-from bfair.datasets.reviews import REVIEW_COLUMN, GENDER_COLUMN
+from bfair.datasets.reviews import REVIEW_COLUMN, GENDER_COLUMN, GENDER_VALUES
 from bfair.datasets.custom import load_from_file
 from bfair.methods import AutoGoalDiversifier, SklearnMitigator, VotingClassifier
 from bfair.metrics import (
@@ -29,8 +29,6 @@ from bfair.sensors.optimization import (
     load as load_from_config,
     get_embedding_based_sensor,
 )
-
-GENDER_VALUES = ["Male", "Female"]
 
 
 def tab(section):
@@ -491,7 +489,7 @@ def protected_attributes_extraction():
             (
                 X,
                 y.str.join(" & "),
-                pd.Series(predictions, name="Predicted").str.join(" & "),
+                pd.Series(predictions, name="Predicted", index=X.index).str.join(" & "),
             ),
             axis=1,
         )

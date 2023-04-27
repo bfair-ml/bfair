@@ -4,9 +4,14 @@ import pandas as pd
 from bfair.sensors import P_GENDER
 from bfair.sensors.optimization import load, compute_errors, compute_scores
 from bfair.datasets import load_review
-from bfair.datasets.reviews import REVIEW_COLUMN, GENDER_COLUMN
-
-GENDER_VALUES = ["Male", "Female"]
+from bfair.datasets.reviews import (
+    REVIEW_COLUMN,
+    GENDER_COLUMN,
+    SENTIMENT_COLUMN,
+    GENDER_VALUES,
+    SENTIMENT_VALUES,
+)
+from bfair.metrics import exploded_statistical_parity
 
 
 def main():
@@ -44,11 +49,36 @@ def main():
         (
             X,
             y.str.join(" & "),
-            pd.Series(predictions, name="Predicted").str.join(" & "),
+            pd.Series(predictions, name="Predicted", index=X.index).str.join(" & "),
         ),
         axis=1,
     )
     print(results)
+
+    fairness = exploded_statistical_parity(
+        data=dataset.data,
+        protected_attributes=GENDER_COLUMN,
+        target_attribute=SENTIMENT_COLUMN,
+        target_predictions=None,
+        positive_target="positive",
+        return_probs=True,
+    )
+    print(dataset.data)
+    print("True fairness:", fairness)
+
+    auto_annotated = dataset.data.copy()
+    auto_annotated[GENDER_COLUMN] = [list(x) for x in predictions]
+
+    fairness = exploded_statistical_parity(
+        data=auto_annotated,
+        protected_attributes=GENDER_COLUMN,
+        target_attribute=SENTIMENT_COLUMN,
+        target_predictions=None,
+        positive_target="positive",
+        return_probs=True,
+    )
+    print(auto_annotated)
+    print("Estimated fairness:", fairness)
 
 
 if __name__ == "__main__":

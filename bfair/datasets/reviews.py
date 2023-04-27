@@ -7,6 +7,10 @@ from .base import Dataset
 
 REVIEW_COLUMN = "Review"
 GENDER_COLUMN = "Gender"
+SENTIMENT_COLUMN = "Sentiment"
+
+GENDER_VALUES = ["Male", "Female"]
+SENTIMENT_VALUES = ["negative", "positive"]
 
 
 def load_dataset(path=IMDB_REVIEWS_DATASET, split_seed=None):
