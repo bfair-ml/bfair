@@ -52,6 +52,7 @@ def optimize(
     y_test,
     attributes,
     attr_cls,
+    score_key=MACRO_F1,
     *,
     pop_size,
     search_iterations,
@@ -83,7 +84,7 @@ def optimize(
             attributes,
             attr_cls,
             score_func=lambda x, y: compute_scores(compute_errors(x, y, attributes))[
-                MACRO_F1
+                score_key
             ],
         ),
         maximize=True,
