@@ -41,6 +41,9 @@ RECALL = "recall"
 F1 = "f1"
 MACRO_F1 = "macro-f1"
 
+MICRO_ACC = "micro-accuracy"
+MACRO_ACC = "macro-accuracy"
+
 
 def optimize(
     X_train,
@@ -151,9 +154,9 @@ def get_loggers(
 def evaluate(solution, X, y, attributes, attr_cls):
     handler: SensorHandler = solution.model
     y_pred = [handler.annotate(item, Text, attributes, attr_cls) for item in X]
-    counter = compute_errors(y, y_pred, attributes)
-    scores = compute_scores(counter)
-    return y_pred, counter, scores
+    errors = compute_errors(y, y_pred, attributes)
+    scores = compute_scores(errors)
+    return y_pred, errors, scores
 
 
 def generate(sampler: Sampler, language="english"):
@@ -417,7 +420,7 @@ def build_fn(X_test, y_test, stype, attributes, attr_cls, score_func):
 
 
 def compute_errors(y_test, y_pred, attributes):
-    counter = {}
+    ir_counter = {}
     for value in attributes:
         correct = 0
         spurious = 0
@@ -431,13 +434,25 @@ def compute_errors(y_test, y_pred, attributes):
             else:  # if true_ann or pred_ann contains values not in attributes, errors are not detected.
                 correct += 1
 
-        counter[value] = (correct, spurious, missing)
-    return counter
+        ir_counter[value] = (correct, spurious, missing)
+
+    ac_counter = {}
+    for true_ann, pred_ann in zip(y_test, y_pred):
+        true_ann = frozenset(true_ann)
+        pred_ann = frozenset(pred_ann)
+
+        correct, total = ac_counter.get(true_ann, (0, 0))
+        equal = int(true_ann == pred_ann)
+        ac_counter[true_ann] = (correct + equal, total + 1)
+
+    return ir_counter, ac_counter
 
 
-def compute_scores(counter):
+def compute_scores(errors):
+    ir_counter, ac_counter = errors
+
     scores = {}
-    for value, (correct, spurious, missing) in counter.items():
+    for value, (correct, spurious, missing) in ir_counter.items():
         precision = safe_division(correct, correct + spurious)
         recall = safe_division(correct, correct + missing)
         f1 = safe_division(2 * precision * recall, precision + recall)
@@ -447,6 +462,18 @@ def compute_scores(counter):
             F1: f1,
         }
     scores[MACRO_F1] = mean(group[F1] for group in scores.values())
+
+    total_correct = 0
+    total_total = 0
+    total_accuracy = 0
+    for value, (correct, total) in ac_counter.items():
+        total_correct += correct
+        total_total += total
+        total_accuracy += safe_division(correct, total)
+
+    scores[MICRO_ACC] = safe_division(total_correct, total_total)
+    scores[MACRO_ACC] = safe_division(total_accuracy, len(ac_counter))
+
     return scores
 
 
