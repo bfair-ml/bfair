@@ -25,6 +25,8 @@ RUN cd /usr/lib/python3/dist-packages/ \
 
 RUN python -m spacy download en_core_web_sm
 
+RUN pip install datasets
+
 WORKDIR /home/coder/bfair
 
 CMD [ "make", "dashboard"]
