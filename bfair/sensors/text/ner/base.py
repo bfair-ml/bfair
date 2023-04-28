@@ -2,12 +2,13 @@ import spacy
 
 from bfair.sensors.base import Sensor
 from autogoal.kb import SemanticType, Text
-from typing import List
+from typing import List, Set, Union
 
 
 class NERBasedSensor(Sensor):
-    def __init__(self, model):
+    def __init__(self, model, restricted_to: Union[str, Set[str]] = None):
         self.model = model
+        super().__init__(restricted_to)
 
     @classmethod
     def build(cls, *, model=None, language="english", **kwargs):

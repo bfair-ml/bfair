@@ -1,7 +1,7 @@
 import spacy
 import neuralcoref
 
-from typing import List
+from typing import List, Set
 from bfair.sensors.base import Sensor, P_GENDER
 from bfair.sensors.text.ner.base import NERBasedSensor
 from bfair.sensors.text.embedding.aggregators import Aggregator, CountAggregator
@@ -18,7 +18,7 @@ class CoreferenceNERSensor(NERBasedSensor):
 
     def __init__(self, model, aggregator: Aggregator):
         self.aggregator = aggregator
-        super().__init__(model)
+        super().__init__(model, restricted_to=P_GENDER)
 
     @classmethod
     def build(
@@ -75,6 +75,3 @@ class CoreferenceNERSensor(NERBasedSensor):
         syntesis = self.aggregator(scored_tokens)
         labels = [attr for attr, _ in syntesis]
         return labels
-
-    def _extracts(self, attr_cls: str) -> bool:
-        return attr_cls == P_GENDER

@@ -4,7 +4,7 @@ from pathlib import Path
 from functools import lru_cache
 from difflib import SequenceMatcher
 
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Set, Union
 from bfair.sensors.text.ner.base import NERBasedSensor
 from bfair.sensors.text.embedding import (
     Aggregator,
@@ -90,12 +90,13 @@ class DBPediaSensor(NERBasedSensor):
         model,
         fuzzy_cutoff=0.6,
         aggregator: Aggregator = None,
+        restricted_to: Union[str, Set[str]] = None,
         **standarizers,
     ):
         self.dbpedia = FuzzyDBPediaWrapper(cutoff=fuzzy_cutoff)
         self.aggregator = aggregator
         self.standarizers = dict(self.DEFAULT_STANDARIZERS, **standarizers)
-        super().__init__(model)
+        super().__init__(model, restricted_to)
 
     @classmethod
     def build(

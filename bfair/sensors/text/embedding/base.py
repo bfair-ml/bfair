@@ -1,4 +1,4 @@
-from typing import Sequence, List
+from typing import Sequence, List, Set, Union
 from autogoal.kb import SemanticType, Text
 from bfair.sensors.base import Sensor
 from bfair.sensors.text.embedding.tokenizers import (
@@ -32,11 +32,13 @@ class EmbeddingBasedSensor(Sensor):
         tokenization_pipeline: Sequence[Tokenizer],
         filtering_pipeline: Sequence[Filter],
         aggregation_pipeline: Sequence[Aggregator],
+        restricted_to: Union[str, Set[str]] = None,
     ):
         self.embedding = embedding
         self.tokenization_pipeline = tokenization_pipeline
         self.filtering_pipeline = filtering_pipeline
         self.aggregation_pipeline = aggregation_pipeline
+        super().__init__(restricted_to)
 
     @classmethod
     def build(

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Set, Union
 from autogoal.kb import SemanticType
 
 P_GENDER = "gender"
@@ -16,6 +16,9 @@ P_BREASTFEEDING = "breastfeeding"
 
 
 class Sensor:
+    def __init__(self, restricted_to: Union[str, Set[str]] = None):
+        self.restricted_to = restricted_to
+
     def __call__(self, item, attributes: List[str], attr_cls: str):
         raise NotImplementedError()
 
@@ -27,4 +30,8 @@ class Sensor:
         raise NotImplementedError()
 
     def _extracts(self, attr_cls: str) -> bool:
-        return True
+        return (
+            self.restricted_to is None
+            or attr_cls == self.restricted_to
+            or attr_cls in self.restricted_to
+        )
