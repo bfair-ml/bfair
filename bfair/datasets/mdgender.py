@@ -1,7 +1,7 @@
 from .base import Dataset
 
 import pandas as pd
-from datasets import load_dataset
+import datasets as db
 
 TEXT_COLUMN = "Text"
 GENDER_COLUMN = "Gender"
@@ -34,7 +34,7 @@ def load_dataset(split_seed=None, **kwargs):
 class MDGender(Dataset):
     @classmethod
     def load(cls, just_about=True, split_seed=None):
-        source = load_dataset("md_gender_bias", "new_data", split="train")
+        source = db.load_dataset("md_gender_bias", "new_data", split="train")
 
         df = pd.DataFrame.from_dict(source)
         if just_about:
