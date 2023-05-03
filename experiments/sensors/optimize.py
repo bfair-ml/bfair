@@ -2,8 +2,16 @@ import argparse
 import traceback
 from pathlib import Path
 
-from bfair.datasets import load_review
-from bfair.datasets.reviews import REVIEW_COLUMN, GENDER_COLUMN, GENDER_VALUES
+from bfair.datasets import load_review, load_mdgender
+from bfair.datasets.reviews import (
+    REVIEW_COLUMN,
+    GENDER_COLUMN as GENDER_COLUMN_REVIEW,
+    GENDER_VALUES,
+)
+from bfair.datasets.mdgender import (
+    TEXT_COLUMN,
+    GENDER_COLUMN as GENDER_COLUMN_MDGENDER,
+)
 from bfair.sensors import SensorHandler, EmbeddingBasedSensor, P_GENDER
 from bfair.sensors.optimization import (
     optimize,
@@ -14,6 +22,10 @@ from bfair.sensors.optimization import (
     MICRO_ACC,
 )
 from autogoal.kb import Text
+
+
+DB_REVIEWS = "reviews"
+DB_MDGENDER = "mdgender"
 
 
 def run_all():
@@ -51,6 +63,12 @@ def setup():
         choices=[MACRO_F1, MACRO_ACC, MICRO_ACC],
         default=MACRO_F1,
     )
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        choices=[DB_REVIEWS, DB_MDGENDER],
+        default=DB_REVIEWS,
+    )
 
     return parser.parse_args()
 
@@ -65,11 +83,20 @@ def main():
         output_stream = None
 
     try:
-        dataset = load_review(split_seed=0)
-        X_train = dataset.data[REVIEW_COLUMN]
-        y_train = dataset.data[GENDER_COLUMN]
-        X_test = dataset.test[REVIEW_COLUMN]
-        y_test = dataset.test[GENDER_COLUMN]
+        if args.dataset == DB_REVIEWS:
+            load_dataset_func = load_review
+            text_column, sensitive_column = REVIEW_COLUMN, GENDER_COLUMN_REVIEW
+        elif args.dataset == DB_MDGENDER:
+            load_dataset_func = load_mdgender
+            text_column, sensitive_column = TEXT_COLUMN, GENDER_COLUMN_MDGENDER
+        else:
+            raise ValueError(f'Invalid dataset: "{args.dataset}"')
+
+        dataset = load_dataset_func(split_seed=0)
+        X_train = dataset.data[text_column]
+        y_train = dataset.data[sensitive_column]
+        X_test = dataset.test[text_column]
+        y_test = dataset.test[sensitive_column]
 
         best_solution, best_fn = optimize(
             X_train,
