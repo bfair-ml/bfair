@@ -26,6 +26,8 @@ RUN cd /usr/lib/python3/dist-packages/ \
 RUN python -m spacy download en_core_web_sm
 
 RUN pip install datasets
+RUN mkdir -p /home/coder/huggingface_data/
+ENV HF_HOME="/home/coder/huggingface_data/"
 
 WORKDIR /home/coder/bfair
 
