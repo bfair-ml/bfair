@@ -53,6 +53,9 @@ def optimize(
     attributes,
     attr_cls,
     score_key=MACRO_F1,
+    consider_embedding_sensors=True,
+    consider_coreference_sensor=True,
+    consider_dbpedia_sensor=True,
     *,
     pop_size,
     search_iterations,
@@ -76,7 +79,13 @@ def optimize(
     )
 
     search = PESearch(
-        generator_fn=partial(generate, language=language),
+        generator_fn=partial(
+            generate,
+            language=language,
+            consider_embedding_sensors=consider_embedding_sensors,
+            consider_coreference_sensor=consider_coreference_sensor,
+            consider_dbpedia_sensor=consider_dbpedia_sensor,
+        ),
         fitness_fn=build_fn(
             X_train,
             y_train,
@@ -160,20 +169,26 @@ def evaluate(solution, X, y, attributes, attr_cls):
     return y_pred, errors, scores
 
 
-def generate(sampler: Sampler, language="english"):
+def generate(
+    sampler: Sampler,
+    language="english",
+    consider_embedding_sensors=True,
+    consider_coreference_sensor=True,
+    consider_dbpedia_sensor=True,
+):
     sampler = LogSampler(sampler)
 
     sensors = []
 
-    if sampler.boolean("include-embedding-sensor"):
+    if consider_embedding_sensors and sampler.boolean("include-embedding-sensor"):
         sensor = get_embedding_based_sensor(sampler, language)
         sensors.append(sensor)
 
-    if sampler.boolean("include-coreference-sensor"):
+    if consider_coreference_sensor and sampler.boolean("include-coreference-sensor"):
         sensor = get_coreference_ner_sensor(sampler, language)
         sensors.append(sensor)
 
-    if sampler.boolean("include-dbpedia-sensor"):
+    if consider_dbpedia_sensor and sampler.boolean("include-dbpedia-sensor"):
         sensor = get_dbpedia_sensor(sampler, language)
         sensors.append(sensor)
 
