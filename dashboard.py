@@ -8,8 +8,10 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
-from bfair.datasets import load_adult, load_german, load_review
+from bfair.datasets import load_adult, load_german, load_review, load_mdgender
 from bfair.datasets.reviews import REVIEW_COLUMN, GENDER_COLUMN, GENDER_VALUES
+from bfair.datasets.mdgender import TEXT_COLUMN, GENDER_COLUMN as GENDER_COLUMN_MDGENDER
+
 from bfair.datasets.custom import load_from_file
 from bfair.methods import AutoGoalDiversifier, SklearnMitigator, VotingClassifier
 from bfair.metrics import (
@@ -443,12 +445,16 @@ def load_sensors(language, config=None):
 
 @tab("Tasks")
 def protected_attributes_extraction():
-    dataset_name = st.sidebar.selectbox("Dataset", ["custom", "reviews"])
+    dataset_name = st.sidebar.selectbox("Dataset", ["custom", "reviews", "mdgender"])
 
     if dataset_name == "reviews":
         dataset = load_review()
         X = dataset.data[REVIEW_COLUMN]
         y = dataset.data[GENDER_COLUMN]
+    elif dataset_name == "mdgender":
+        dataset = load_mdgender()
+        X = dataset.data[TEXT_COLUMN]
+        y = dataset.data[GENDER_COLUMN_MDGENDER]
     else:
         text = st.text_input("Text")
         if not text:
