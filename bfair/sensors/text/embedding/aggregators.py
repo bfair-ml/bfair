@@ -90,6 +90,23 @@ class UnionAggregator(ActivationAggregator):
         super().__init__(activation_func=max, threshold=float("-inf"))
 
 
+class SumAggregator(ActivationAggregator):
+    def __init__(
+        self,
+        *,
+        attr_filter: Filter = None,
+        threshold: float = None,
+    ):
+        super().__init__(
+            activation_func=self.add,
+            attr_filter=attr_filter,
+            threshold=threshold,
+        )
+
+    def add(self, x, y):
+        return x + y
+
+
 class VotingAggregator(Aggregator):
     def __call__(
         self, scored_tokens: Sequence[Sequence[Tuple[str, float]]]

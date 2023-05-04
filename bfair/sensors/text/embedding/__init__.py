@@ -14,6 +14,7 @@ from .aggregators import (
     CountAggregator,
     ActivationAggregator,
     UnionAggregator,
+    SumAggregator,
     VotingAggregator,
 )
 from .word import WordEmbedding, EmbeddingLoader, register_embedding

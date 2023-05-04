@@ -6,3 +6,4 @@ from .dbpedia import (
     FuzzyDBPediaWrapper,
     GenderStandarizer,
 )
+from .names import NameGenderSensor
