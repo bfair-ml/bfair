@@ -56,6 +56,9 @@ def optimize(
     consider_embedding_sensors=True,
     consider_coreference_sensor=True,
     consider_dbpedia_sensor=True,
+    force_embedding_sensors=False,
+    force_coreference_sensor=False,
+    force_dbpedia_sensor=False,
     *,
     pop_size,
     search_iterations,
@@ -85,6 +88,9 @@ def optimize(
             consider_embedding_sensors=consider_embedding_sensors,
             consider_coreference_sensor=consider_coreference_sensor,
             consider_dbpedia_sensor=consider_dbpedia_sensor,
+            force_embedding_sensors=force_embedding_sensors,
+            force_coreference_sensor=force_coreference_sensor,
+            force_dbpedia_sensor=force_dbpedia_sensor,
         ),
         fitness_fn=build_fn(
             X_train,
@@ -175,20 +181,29 @@ def generate(
     consider_embedding_sensors=True,
     consider_coreference_sensor=True,
     consider_dbpedia_sensor=True,
+    force_embedding_sensors=True,
+    force_coreference_sensor=True,
+    force_dbpedia_sensor=True,
 ):
     sampler = LogSampler(sampler)
 
     sensors = []
 
-    if consider_embedding_sensors and sampler.boolean("include-embedding-sensor"):
+    if force_embedding_sensors or (
+        consider_embedding_sensors and sampler.boolean("include-embedding-sensor")
+    ):
         sensor = get_embedding_based_sensor(sampler, language)
         sensors.append(sensor)
 
-    if consider_coreference_sensor and sampler.boolean("include-coreference-sensor"):
+    if force_coreference_sensor or (
+        consider_coreference_sensor and sampler.boolean("include-coreference-sensor")
+    ):
         sensor = get_coreference_ner_sensor(sampler, language)
         sensors.append(sensor)
 
-    if consider_dbpedia_sensor and sampler.boolean("include-dbpedia-sensor"):
+    if force_dbpedia_sensor or (
+        consider_dbpedia_sensor and sampler.boolean("include-dbpedia-sensor")
+    ):
         sensor = get_dbpedia_sensor(sampler, language)
         sensors.append(sensor)
 

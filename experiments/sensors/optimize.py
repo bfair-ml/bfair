@@ -27,9 +27,9 @@ from autogoal.kb import Text
 DB_REVIEWS = "reviews"
 DB_MDGENDER = "mdgender"
 
-SKIP_EMBEDDING = "embedding"
-SKIP_COREFERENCE = "coreference"
-SKIP_DBPEDIA = "dbpedia"
+SENSOR_EMBEDDING = "embedding"
+SENSOR_COREFERENCE = "coreference"
+SENSOR_DBPEDIA = "dbpedia"
 
 
 def run_all():
@@ -76,7 +76,13 @@ def setup():
     parser.add_argument(
         "--skip",
         action="append",
-        choices=[SKIP_EMBEDDING, SKIP_COREFERENCE, SKIP_DBPEDIA],
+        choices=[SENSOR_EMBEDDING, SENSOR_COREFERENCE, SENSOR_DBPEDIA],
+        default=[],
+    )
+    parser.add_argument(
+        "--force",
+        action="append",
+        choices=[SENSOR_EMBEDDING, SENSOR_COREFERENCE, SENSOR_DBPEDIA],
         default=[],
     )
 
@@ -116,9 +122,12 @@ def main():
             GENDER_VALUES,
             P_GENDER,
             score_key=args.metric,
-            consider_embedding_sensors=SKIP_EMBEDDING not in args.skip,
-            consider_coreference_sensor=SKIP_COREFERENCE not in args.skip,
-            consider_dbpedia_sensor=SKIP_DBPEDIA not in args.skip,
+            consider_embedding_sensors=SENSOR_EMBEDDING not in args.skip,
+            consider_coreference_sensor=SENSOR_COREFERENCE not in args.skip,
+            consider_dbpedia_sensor=SENSOR_DBPEDIA not in args.skip,
+            force_embedding_sensors=SENSOR_EMBEDDING in args.force,
+            force_coreference_sensor=SENSOR_COREFERENCE in args.force,
+            force_dbpedia_sensor=SENSOR_DBPEDIA in args.force,
             pop_size=args.popsize,
             search_iterations=args.iterations,
             evaluation_timeout=args.eval_timeout,
