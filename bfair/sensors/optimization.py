@@ -419,7 +419,7 @@ def get_dbpedia_sensor(sampler: LogSampler, language):
 
 
 def get_name_gender_sensor(sampler: LogSampler, language):
-    prefix = "name-gender-sensor"
+    prefix = "name-gender-sensor."
 
     attention_step = sampler.continuous(min=0, max=1, handle=f"{prefix}attention-step")
     aggregator = get_aggregation_pipeline(
