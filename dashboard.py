@@ -1,6 +1,7 @@
 import pandas as pd
 import streamlit as st
 
+from functools import partial
 from collections import OrderedDict
 
 from autogoal.search import ConsoleLogger
@@ -30,6 +31,7 @@ from bfair.sensors import SensorHandler, CoreferenceNERSensor, DBPediaSensor, P_
 from bfair.sensors.optimization import (
     load as load_from_config,
     get_embedding_based_sensor,
+    generate,
 )
 
 
@@ -415,7 +417,18 @@ def mitigation():
 
 
 @st.cache(allow_output_mutation=True)
-def load_sensors(language, config=None):
+def load_sensors(
+    language,
+    config=None,
+    consider_embedding_sensor=True,
+    consider_coreference_sensor=True,
+    consider_dbpedia_sensor=True,
+    consider_name_gender_sensor=True,
+    force_embedding_sensors=False,
+    force_coreference_sensor=False,
+    force_dbpedia_sensor=False,
+    force_name_gender_sensor=False,
+):
     if config is None:
         ensemble_based_handler_configuration = {
             "plain_mode": True,
@@ -438,7 +451,21 @@ def load_sensors(language, config=None):
         ]
         return SensorHandler(sensors)
     else:
-        generated = load_from_config(config, language=language)
+        generated = load_from_config(
+            config,
+            language=language,
+            root=partial(
+                generate,
+                consider_embedding_sensor=consider_embedding_sensor,
+                consider_coreference_sensor=consider_coreference_sensor,
+                consider_dbpedia_sensor=consider_dbpedia_sensor,
+                consider_name_gender_sensor=consider_name_gender_sensor,
+                force_embedding_sensors=force_embedding_sensors,
+                force_coreference_sensor=force_coreference_sensor,
+                force_dbpedia_sensor=force_dbpedia_sensor,
+                force_name_gender_sensor=force_name_gender_sensor,
+            ),
+        )
         handler = generated.model
         return handler
 
@@ -474,6 +501,16 @@ def protected_attributes_extraction():
         config = None
     elif handler_type == "Custom":
         config_str = st.sidebar.text_area("Custom Handler Configuration")
+
+        consider_embedding = st.sidebar.checkbox("Consider EmbeddingSensors", True)
+        consider_coreference = st.sidebar.checkbox("Consider CoreferenceSensor", True)
+        consider_dbpedia = st.sidebar.checkbox("Consider DBPediaSensor", True)
+        consider_names = st.sidebar.checkbox("Consider NameGenderSensor", True)
+        force_embedding = st.sidebar.checkbox("Force EmbeddingSensors", False)
+        force_coreference = st.sidebar.checkbox("Force CoreferenceSensor", False)
+        force_dbpedia = st.sidebar.checkbox("Force DBPediaSensor", False)
+        force_names = st.sidebar.checkbox("Force NameGenderSensor", False)
+
         try:
             config = eval(config_str)
         except Exception as e:
@@ -485,7 +522,18 @@ def protected_attributes_extraction():
     else:
         st.stop()
 
-    handler = load_sensors(language, config)
+    handler = load_sensors(
+        language,
+        config,
+        consider_embedding_sensor=consider_embedding,
+        consider_coreference_sensor=consider_coreference,
+        consider_dbpedia_sensor=consider_dbpedia,
+        consider_name_gender_sensor=consider_names,
+        force_embedding_sensors=force_embedding,
+        force_coreference_sensor=force_coreference,
+        force_dbpedia_sensor=force_dbpedia,
+        force_name_gender_sensor=force_names,
+    )
     sensors = handler.sensors + [handler]
 
     for sensor in sensors:
