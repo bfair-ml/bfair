@@ -30,10 +30,10 @@ _GENDER_MAP = {
 
 
 def load_dataset(split_seed=None, **kwargs):
-    return MDGender.load(split_seed=split_seed)
+    return MDGenderDataset.load(split_seed=split_seed)
 
 
-class MDGender(Dataset):
+class MDGenderDataset(Dataset):
     @classmethod
     def load(cls, just_about=True, just_certain=True, split_seed=None):
         source = db.load_dataset("md_gender_bias", "new_data", split="train")
@@ -57,7 +57,7 @@ class MDGender(Dataset):
             axis=1,
         )
 
-        return MDGender(
+        return MDGenderDataset(
             data=data,
             split_seed=split_seed,
             stratify_by=GENDER_COLUMN,

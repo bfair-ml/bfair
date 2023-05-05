@@ -6,6 +6,8 @@ class Dataset:
     def __init__(
         self,
         data: pd.DataFrame,
+        *,
+        validation: pd.DataFrame = None,
         test: pd.DataFrame = None,
         split_seed=None,
         stratify_by=None,
@@ -17,6 +19,7 @@ class Dataset:
             if split_seed is None
             else self._split(data, split_seed, stratify_by)
         )
+        self.validation = self._empty(data) if validation is None else validation
 
     @property
     def columns(self):
