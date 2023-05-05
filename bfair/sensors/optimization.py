@@ -388,6 +388,7 @@ def get_aggregation_pipeline(sampler: LogSampler, plain_mode, prefix=""):
 def get_coreference_ner_sensor(sampler: LogSampler, language):
     prefix = "coreference-sensor."
 
+    just_people = sampler.boolean(f"{prefix}just-people")
     aggregator = get_aggregation_pipeline(
         sampler,
         plain_mode=True,
@@ -395,6 +396,7 @@ def get_coreference_ner_sensor(sampler: LogSampler, language):
     )[0]
     sensor = CoreferenceNERSensor.build(
         language=language,
+        just_people=just_people,
         aggregator=aggregator,
     )
     return sensor
@@ -403,6 +405,7 @@ def get_coreference_ner_sensor(sampler: LogSampler, language):
 def get_dbpedia_sensor(sampler: LogSampler, language):
     prefix = "dbpedia-sensor."
 
+    just_people = sampler.boolean(f"{prefix}just-people")
     cutoff = sampler.continuous(min=0, max=1, handle=f"{prefix}cutoff")
     aggregator = get_aggregation_pipeline(
         sampler,
@@ -412,6 +415,7 @@ def get_dbpedia_sensor(sampler: LogSampler, language):
 
     sensor = DBPediaSensor.build(
         language=language,
+        just_people=just_people,
         fuzzy_cutoff=cutoff,
         aggregator=aggregator,
     )
@@ -421,6 +425,7 @@ def get_dbpedia_sensor(sampler: LogSampler, language):
 def get_name_gender_sensor(sampler: LogSampler, language):
     prefix = "name-gender-sensor."
 
+    just_people = sampler.boolean(f"{prefix}just-people")
     attention_step = sampler.continuous(min=0, max=1, handle=f"{prefix}attention-step")
     aggregator = get_aggregation_pipeline(
         sampler,
@@ -431,6 +436,7 @@ def get_name_gender_sensor(sampler: LogSampler, language):
     sensor = NameGenderSensor.build(
         attention_step=attention_step,
         language=language,
+        just_people=just_people,
         aggregator=aggregator,
     )
     return sensor
