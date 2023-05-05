@@ -28,6 +28,7 @@ from bfair.sensors.text import (
     VotingAggregator,
     CoreferenceNERSensor,
     DBPediaSensor,
+    NameGenderSensor,
 )
 from autogoal.kb import Text
 from autogoal.sampling import Sampler
@@ -53,12 +54,14 @@ def optimize(
     attributes,
     attr_cls,
     score_key=MACRO_F1,
-    consider_embedding_sensors=True,
+    consider_embedding_sensor=True,
     consider_coreference_sensor=True,
     consider_dbpedia_sensor=True,
+    consider_name_gender_sensor=True,
     force_embedding_sensors=False,
     force_coreference_sensor=False,
     force_dbpedia_sensor=False,
+    force_name_gender_sensor=False,
     *,
     pop_size,
     search_iterations,
@@ -85,12 +88,14 @@ def optimize(
         generator_fn=partial(
             generate,
             language=language,
-            consider_embedding_sensors=consider_embedding_sensors,
+            consider_embedding_sensor=consider_embedding_sensor,
             consider_coreference_sensor=consider_coreference_sensor,
             consider_dbpedia_sensor=consider_dbpedia_sensor,
+            consider_name_gender_sensor=consider_name_gender_sensor,
             force_embedding_sensors=force_embedding_sensors,
             force_coreference_sensor=force_coreference_sensor,
             force_dbpedia_sensor=force_dbpedia_sensor,
+            force_name_gender_sensor=force_name_gender_sensor,
         ),
         fitness_fn=build_fn(
             X_train,
@@ -178,19 +183,21 @@ def evaluate(solution, X, y, attributes, attr_cls):
 def generate(
     sampler: Sampler,
     language="english",
-    consider_embedding_sensors=True,
+    consider_embedding_sensor=True,
     consider_coreference_sensor=True,
     consider_dbpedia_sensor=True,
-    force_embedding_sensors=True,
-    force_coreference_sensor=True,
-    force_dbpedia_sensor=True,
+    consider_name_gender_sensor=True,
+    force_embedding_sensors=False,
+    force_coreference_sensor=False,
+    force_dbpedia_sensor=False,
+    force_name_gender_sensor=False,
 ):
     sampler = LogSampler(sampler)
 
     sensors = []
 
     if force_embedding_sensors or (
-        consider_embedding_sensors and sampler.boolean("include-embedding-sensor")
+        consider_embedding_sensor and sampler.boolean("include-embedding-sensor")
     ):
         sensor = get_embedding_based_sensor(sampler, language)
         sensors.append(sensor)
@@ -205,6 +212,12 @@ def generate(
         consider_dbpedia_sensor and sampler.boolean("include-dbpedia-sensor")
     ):
         sensor = get_dbpedia_sensor(sampler, language)
+        sensors.append(sensor)
+
+    if force_name_gender_sensor or (
+        consider_name_gender_sensor and sampler.boolean("include-name-gender-sensor")
+    ):
+        sensor = get_name_gender_sensor(sampler, language)
         sensors.append(sensor)
 
     if len(sensors) > 1:
@@ -329,7 +342,7 @@ def get_aggregation_pipeline(sampler: LogSampler, plain_mode, prefix=""):
             filter = get_filter(sampler, allow_none=True, prefix=f"{prefix}count-{i}")
             aggregator = CountAggregator(attr_filter=filter)
 
-        if aggregator_name == "ActivationAggregator":
+        elif aggregator_name == "ActivationAggregator":
             filter = get_filter(
                 sampler,
                 allow_none=True,
@@ -353,16 +366,19 @@ def get_aggregation_pipeline(sampler: LogSampler, plain_mode, prefix=""):
                 activation_func=activation_func, attr_filter=filter
             )
 
-        if aggregator_name == "UnionAggregator":
+        elif aggregator_name == "UnionAggregator":
             aggregator = UnionAggregator()
 
-        if aggregator_name == "VotingAggregator":
+        elif aggregator_name == "VotingAggregator":
             filter = get_filter(
                 sampler,
                 allow_none=True,
                 prefix=f"{prefix}voting-{i}",
             )
             aggregator = VotingAggregator(attr_filter=filter)
+
+        else:
+            raise ValueError(aggregator_name)
 
         aggregation_pipeline.append(aggregator)
 
@@ -397,6 +413,24 @@ def get_dbpedia_sensor(sampler: LogSampler, language):
     sensor = DBPediaSensor.build(
         language=language,
         fuzzy_cutoff=cutoff,
+        aggregator=aggregator,
+    )
+    return sensor
+
+
+def get_name_gender_sensor(sampler: LogSampler, language):
+    prefix = "name-gender-sensor"
+
+    attention_step = sampler.continuous(min=0, max=1, handle=f"{prefix}attention-step")
+    aggregator = get_aggregation_pipeline(
+        sampler,
+        plain_mode=True,
+        prefix=prefix,
+    )[0]
+
+    sensor = NameGenderSensor.build(
+        attention_step=attention_step,
+        language=language,
         aggregator=aggregator,
     )
     return sensor
