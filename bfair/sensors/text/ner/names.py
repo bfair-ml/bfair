@@ -17,13 +17,29 @@ _GENDER_MAP = {
 
 
 class NameGenderSensor(NERBasedSensor):
-    def __init__(self, model, aggregator: Aggregator = None, attention_step=0.75):
-        source = db.load_dataset("md_gender_bias", "name_genders", split="yob2018")
+    dataset = None
 
-        self.dataset = source.to_pandas()
+    def __init__(
+        self,
+        model,
+        aggregator: Aggregator = None,
+        attention_step=0.75,
+        entity_labels=None,
+    ):
+        self.dataset = self._load_dataset_of_names()
         self.aggregator = aggregator
         self.attention_step = attention_step
-        super().__init__(model, restricted_to=P_GENDER)
+        super().__init__(model, entity_labels, restricted_to=P_GENDER)
+
+    @classmethod
+    def _load_dataset_of_names(cls):
+        if cls.dataset is None:
+            level = db.logging.get_verbosity()
+            db.logging.set_verbosity_error()
+            source = db.load_dataset("md_gender_bias", "name_genders", split="yob2018")
+            db.logging.set_verbosity(level)
+            cls.dataset = source.to_pandas()
+        return cls.dataset
 
     def extract_attributes(self, entity, attributes: List[str], attr_cls: str):
         df = self.dataset
@@ -53,9 +69,11 @@ class NameGenderSensor(NERBasedSensor):
     def build(
         cls,
         *,
-        attention_step=0.75,
         model=None,
         language="english",
+        entity_labels=None,
+        just_people=True,
+        attention_step=0.75,
         aggregator=None,
         filter=None,
         threshold=None,
@@ -76,6 +94,8 @@ class NameGenderSensor(NERBasedSensor):
         return super().build(
             model=model,
             language=language,
+            entity_labels=entity_labels,
+            just_people=just_people,
             aggregator=aggregator,
             attention_step=attention_step,
         )

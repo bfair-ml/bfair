@@ -8,7 +8,7 @@ from bfair.sensors.text.embedding.aggregators import Aggregator, CountAggregator
 
 
 class CoreferenceNERSensor(NERBasedSensor):
-    LANGUAGE_TO_MODEL = {
+    LANGUAGE_TO_MODEL = {  # duplicated because `neuralcoref`` is more restrictive
         "english": "en_core_web_sm",
     }
     GENDER_PRONOUNS = {
@@ -16,28 +16,30 @@ class CoreferenceNERSensor(NERBasedSensor):
         "male": ["he", "him", "his"],
     }
 
-    def __init__(self, model, aggregator: Aggregator):
+    def __init__(self, model, aggregator: Aggregator, entity_labels=None):
         self.aggregator = aggregator
-        super().__init__(model, restricted_to=P_GENDER)
+        super().__init__(model, entity_labels, restricted_to=P_GENDER)
 
     @classmethod
     def build(
         cls,
         *,
         model=None,
-        spacy_model_name=None,
         language="english",
+        entity_labels=None,
+        just_people=True,
         aggregator=None,
         filter=None,
         threshold=None,
     ):
         if model is None:
-            if spacy_model_name is None:
-                try:
-                    spacy_model_name = cls.LANGUAGE_TO_MODEL[language]
-                except KeyError:
-                    raise ValueError(f'Language "{language}" not supported.')
-            model = spacy.load(spacy_model_name)
+            try:
+                model = cls.LANGUAGE_TO_MODEL[language]
+            except KeyError:
+                raise ValueError(f'Language "{language}" not supported.')
+
+        if isinstance(model, str):
+            model = spacy.load(model)
 
         neuralcoref.add_to_pipe(model)
 
@@ -52,7 +54,13 @@ class CoreferenceNERSensor(NERBasedSensor):
             else aggregator
         )
 
-        return cls(model, aggregator)
+        return super().build(
+            model=model,
+            language=language,
+            entity_labels=entity_labels,
+            just_people=just_people,
+            aggregator=aggregator,
+        )
 
     def extract_entities(self, document):
         return [group.main for group in document._.coref_clusters]

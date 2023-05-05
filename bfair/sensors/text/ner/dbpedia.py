@@ -90,13 +90,14 @@ class DBPediaSensor(NERBasedSensor):
         model,
         fuzzy_cutoff=0.6,
         aggregator: Aggregator = None,
+        entity_labels=None,
         restricted_to: Union[str, Set[str]] = None,
         **standarizers,
     ):
         self.dbpedia = FuzzyDBPediaWrapper(cutoff=fuzzy_cutoff)
         self.aggregator = aggregator
         self.standarizers = dict(self.DEFAULT_STANDARIZERS, **standarizers)
-        super().__init__(model, restricted_to)
+        super().__init__(model, entity_labels, restricted_to)
 
     @classmethod
     def build(
@@ -104,6 +105,8 @@ class DBPediaSensor(NERBasedSensor):
         *,
         model=None,
         language="english",
+        entity_labels=None,
+        just_people=True,
         fuzzy_cutoff=0.6,
         aggregator=None,
         activation_func=None,
@@ -146,6 +149,8 @@ class DBPediaSensor(NERBasedSensor):
         return super().build(
             model=model,
             language=language,
+            entity_labels=entity_labels,
+            just_people=just_people,
             fuzzy_cutoff=fuzzy_cutoff,
             aggregator=aggregator,
             **standarizers,
