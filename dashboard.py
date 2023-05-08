@@ -9,9 +9,28 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
-from bfair.datasets import load_adult, load_german, load_review, load_mdgender
-from bfair.datasets.reviews import REVIEW_COLUMN, GENDER_COLUMN, GENDER_VALUES
-from bfair.datasets.mdgender import TEXT_COLUMN, GENDER_COLUMN as GENDER_COLUMN_MDGENDER
+from bfair.datasets import (
+    load_adult,
+    load_german,
+    load_review,
+    load_mdgender,
+    load_image_chat,
+)
+from bfair.datasets.reviews import (
+    REVIEW_COLUMN as TEXT_COLUMN_REVIEW,
+    GENDER_COLUMN as GENDER_COLUMN_REVIEW,
+    GENDER_VALUES as GENDER_VALUES_REVIEW,
+)
+from bfair.datasets.mdgender import (
+    TEXT_COLUMN as TEXT_COLUMN_MDGENDER,
+    GENDER_COLUMN as GENDER_COLUMN_MDGENDER,
+    GENDER_VALUES as GENDER_VALUES_MDGENDER,
+)
+from bfair.datasets.imagechat import (
+    TEXT_COLUMN as TEXT_COLUMN_IMAGECHAT,
+    GENDER_COLUMN as GENDER_COLUMN_IMAGECHAT,
+    GENDER_VALUES as GENDER_VALUES_IMAGECHAT,
+)
 
 from bfair.datasets.custom import load_from_file
 from bfair.methods import AutoGoalDiversifier, SklearnMitigator, VotingClassifier
@@ -472,23 +491,33 @@ def load_sensors(
 
 @tab("Tasks")
 def protected_attributes_extraction():
-    dataset_name = st.sidebar.selectbox("Dataset", ["custom", "reviews", "mdgender"])
+    dataset_name = st.sidebar.selectbox(
+        "Dataset", ["custom", "reviews", "mdgender", "imagechat"]
+    )
 
     if dataset_name == "reviews":
         dataset = load_review()
-        X = dataset.data[REVIEW_COLUMN]
-        y = dataset.data[GENDER_COLUMN]
+        X = dataset.data[TEXT_COLUMN_REVIEW]
+        y = dataset.data[GENDER_COLUMN_REVIEW]
+        gender_values = GENDER_VALUES_REVIEW
     elif dataset_name == "mdgender":
         dataset = load_mdgender()
-        X = dataset.data[TEXT_COLUMN]
+        X = dataset.data[TEXT_COLUMN_MDGENDER]
         y = dataset.data[GENDER_COLUMN_MDGENDER]
+        gender_values = GENDER_VALUES_MDGENDER
+    elif dataset_name == "imagechat":
+        dataset = load_image_chat()
+        X = dataset.data[TEXT_COLUMN_IMAGECHAT]
+        y = dataset.data[GENDER_COLUMN_IMAGECHAT]
+        gender_values = GENDER_VALUES_IMAGECHAT
     else:
         text = st.text_input("Text")
         if not text:
             st.stop()
 
-        X = pd.Series([text], name=REVIEW_COLUMN)
-        y = pd.Series([("CUSTOM SENTENCE",)], name=GENDER_COLUMN)
+        X = pd.Series([text], name="Text")
+        y = pd.Series([("CUSTOM SENTENCE",)], name="Gender")
+        gender_values = ["Male", "Female"]
 
     language = st.sidebar.selectbox("Language", ["english"])
 
@@ -538,7 +567,7 @@ def protected_attributes_extraction():
 
     for sensor in sensors:
         f"## Sensor: {type(sensor).__name__}"
-        predictions = [sensor(review, GENDER_VALUES, P_GENDER) for review in X]
+        predictions = [sensor(review, gender_values, P_GENDER) for review in X]
         results = pd.concat(
             (
                 X,
