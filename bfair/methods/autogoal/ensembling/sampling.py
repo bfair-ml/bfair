@@ -68,19 +68,27 @@ class LogSampler:
         return self._log_sample(handle, value, log=log)
 
     def multichoice(self, options, k, handle=None, log=True):
-        values = []
-        candidates = list(options)
-        for _ in range(k):
-            value = self._sampler.choice(candidates)
-            candidates.remove(value)
-            values.append(value)
+        if hasattr(self._sampler, "multichoice"):
+            values = self._sampler.multichoice(options=options, k=k, handle=handle)
+        else:
+            values = []
+            candidates = list(options)
+            for _ in range(k):
+                value = self._sampler.choice(candidates)
+                candidates.remove(value)
+                values.append(value)
         return self._log_sample(handle, values, log=log)
 
     def multisample(self, labels, func, handle=None, log=True, **kargs):
-        values = {
-            label: func(handle=f"{handle}-{label}", log=False, **kargs)
-            for label in labels
-        }
+        if hasattr(self._sampler, "multisample"):
+            values = self._sampler.multisample(
+                labels=labels, func=func, handle=handle, **kargs
+            )
+        else:
+            values = {
+                label: func(handle=f"{handle}-{label}", log=False, **kargs)
+                for label in labels
+            }
         return self._log_sample(handle, values, log=log)
 
     def __iter__(self):
