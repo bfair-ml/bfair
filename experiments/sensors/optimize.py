@@ -2,7 +2,7 @@ import argparse
 import traceback
 from pathlib import Path
 
-from bfair.datasets import load_review, load_mdgender
+from bfair.datasets import load_review, load_mdgender, load_image_chat
 from bfair.datasets.reviews import (
     REVIEW_COLUMN as TEXT_COLUMN_REVIEW,
     GENDER_COLUMN as GENDER_COLUMN_REVIEW,
@@ -124,6 +124,7 @@ def main():
                 P_GENDER,
             )
         elif args.dataset == DB_IMAGECHAT:
+            load_dataset_func = load_image_chat
             text_column, sensitive_column, sensitive_values, attr_cls = (
                 TEXT_COLUMN_IMAGECHAT,
                 GENDER_COLUMN_IMAGECHAT,
