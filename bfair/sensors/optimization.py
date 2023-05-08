@@ -62,6 +62,7 @@ def optimize(
     force_coreference_sensor=False,
     force_dbpedia_sensor=False,
     force_name_gender_sensor=False,
+    force_union_merge=False,
     *,
     pop_size,
     search_iterations,
@@ -96,6 +97,7 @@ def optimize(
             force_coreference_sensor=force_coreference_sensor,
             force_dbpedia_sensor=force_dbpedia_sensor,
             force_name_gender_sensor=force_name_gender_sensor,
+            force_union_merge=force_union_merge,
         ),
         fitness_fn=build_fn(
             X_train,
@@ -191,6 +193,7 @@ def generate(
     force_coreference_sensor=False,
     force_dbpedia_sensor=False,
     force_name_gender_sensor=False,
+    force_union_merge=False,
 ):
     sampler = LogSampler(sampler)
 
@@ -221,7 +224,10 @@ def generate(
         sensors.append(sensor)
 
     if len(sensors) > 1:
-        merge = get_merger(sampler, len(sensors))
+        if force_union_merge:
+            merge = UnionMerge()
+        else:
+            merge = get_merger(sampler, len(sensors))
     else:
         merge = None
 

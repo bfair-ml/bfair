@@ -39,6 +39,8 @@ SENSOR_COREFERENCE = "coreference"
 SENSOR_DBPEDIA = "dbpedia"
 SENSOR_NAMES = "names"
 
+UNION_MERGE = "union"
+
 
 def run_all():
     dataset = load_review(split_seed=None)
@@ -90,7 +92,13 @@ def setup():
     parser.add_argument(
         "--force",
         action="append",
-        choices=[SENSOR_EMBEDDING, SENSOR_COREFERENCE, SENSOR_DBPEDIA, SENSOR_NAMES],
+        choices=[
+            SENSOR_EMBEDDING,
+            SENSOR_COREFERENCE,
+            SENSOR_DBPEDIA,
+            SENSOR_NAMES,
+            UNION_MERGE,
+        ],
         default=[],
     )
 
@@ -156,6 +164,7 @@ def main():
             force_coreference_sensor=SENSOR_COREFERENCE in args.force,
             force_dbpedia_sensor=SENSOR_DBPEDIA in args.force,
             force_name_gender_sensor=SENSOR_NAMES in args.force,
+            force_union_merge=UNION_MERGE in args.force,
             pop_size=args.popsize,
             search_iterations=args.iterations,
             evaluation_timeout=args.eval_timeout,
