@@ -5,6 +5,7 @@ import datasets as db
 
 MALE_VALUE = "Male"
 FEMALE_VALUE = "Female"
+GENDER_VALUES = [MALE_VALUE, FEMALE_VALUE]
 
 TEXT_COLUMN = "Text"
 GENDER_COLUMN = "Gender"

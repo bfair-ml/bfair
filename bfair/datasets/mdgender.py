@@ -10,6 +10,7 @@ TYPE_COLUMN = "Annotation Type"
 
 MALE_VALUE = "Male"
 FEMALE_VALUE = "Female"
+GENDER_VALUES = [MALE_VALUE, FEMALE_VALUE]
 
 _TEXT_COLUMN = "text"
 _LABELS_COLUMN = "labels"
