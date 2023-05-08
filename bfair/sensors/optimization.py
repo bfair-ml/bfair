@@ -40,6 +40,8 @@ from functools import partial
 PRECISION = "precision"
 RECALL = "recall"
 F1 = "f1"
+MACRO_PRECISION = "macro-precision"
+MACRO_RECALL = "macro-recall"
 MACRO_F1 = "macro-f1"
 
 MICRO_ACC = "micro-accuracy"
@@ -533,16 +535,21 @@ def compute_scores(errors):
     ir_counter, ac_counter = errors
 
     scores = {}
+    per_group = []
     for value, (correct_hit, spurious, missing, _) in ir_counter.items():
         precision = safe_division(correct_hit, correct_hit + spurious)
         recall = safe_division(correct_hit, correct_hit + missing)
         f1 = safe_division(2 * precision * recall, precision + recall)
-        scores[value] = {
+        scores[value] = group = {
             PRECISION: precision,
             RECALL: recall,
             F1: f1,
         }
-    scores[MACRO_F1] = mean(group[F1] for group in scores.values())
+        per_group.append(group)
+
+    scores[MACRO_PRECISION] = mean(group[PRECISION] for group in per_group)
+    scores[MACRO_RECALL] = mean(group[RECALL] for group in per_group)
+    scores[MACRO_F1] = mean(group[F1] for group in per_group)
 
     total_correct = 0
     total_total = 0

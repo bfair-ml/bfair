@@ -23,6 +23,8 @@ from bfair.sensors.optimization import (
     optimize,
     compute_errors,
     compute_scores,
+    MACRO_PRECISION,
+    MACRO_RECALL,
     MACRO_F1,
     MACRO_ACC,
     MICRO_ACC,
@@ -74,7 +76,7 @@ def setup():
     parser.add_argument(
         "--metric",
         type=str,
-        choices=[MACRO_F1, MACRO_ACC, MICRO_ACC],
+        choices=[MACRO_F1, MACRO_PRECISION, MACRO_RECALL, MACRO_ACC, MICRO_ACC],
         default=MACRO_F1,
     )
     parser.add_argument(
