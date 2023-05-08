@@ -4,13 +4,19 @@ from pathlib import Path
 
 from bfair.datasets import load_review, load_mdgender
 from bfair.datasets.reviews import (
-    REVIEW_COLUMN,
+    REVIEW_COLUMN as TEXT_COLUMN_REVIEW,
     GENDER_COLUMN as GENDER_COLUMN_REVIEW,
-    GENDER_VALUES,
+    GENDER_VALUES as GENDER_VALUES_REVIEW,
 )
 from bfair.datasets.mdgender import (
-    TEXT_COLUMN,
+    TEXT_COLUMN as TEXT_COLUMN_MDGENDER,
     GENDER_COLUMN as GENDER_COLUMN_MDGENDER,
+    GENDER_VALUES as GENDER_VALUES_MDGENDER,
+)
+from bfair.datasets.imagechat import (
+    TEXT_COLUMN as TEXT_COLUMN_IMAGECHAT,
+    GENDER_COLUMN as GENDER_COLUMN_IMAGECHAT,
+    GENDER_VALUES as GENDER_VALUES_IMAGECHAT,
 )
 from bfair.sensors import SensorHandler, EmbeddingBasedSensor, P_GENDER
 from bfair.sensors.optimization import (
@@ -26,6 +32,7 @@ from autogoal.kb import Text
 
 DB_REVIEWS = "reviews"
 DB_MDGENDER = "mdgender"
+DB_IMAGECHAT = "imagechat"
 
 SENSOR_EMBEDDING = "embedding"
 SENSOR_COREFERENCE = "coreference"
@@ -71,7 +78,7 @@ def setup():
     parser.add_argument(
         "--dataset",
         type=str,
-        choices=[DB_REVIEWS, DB_MDGENDER],
+        choices=[DB_REVIEWS, DB_MDGENDER, DB_IMAGECHAT],
         default=DB_REVIEWS,
     )
     parser.add_argument(
@@ -102,10 +109,27 @@ def main():
     try:
         if args.dataset == DB_REVIEWS:
             load_dataset_func = load_review
-            text_column, sensitive_column = REVIEW_COLUMN, GENDER_COLUMN_REVIEW
+            text_column, sensitive_column, sensitive_values, attr_cls = (
+                TEXT_COLUMN_REVIEW,
+                GENDER_COLUMN_REVIEW,
+                GENDER_VALUES_REVIEW,
+                P_GENDER,
+            )
         elif args.dataset == DB_MDGENDER:
             load_dataset_func = load_mdgender
-            text_column, sensitive_column = TEXT_COLUMN, GENDER_COLUMN_MDGENDER
+            text_column, sensitive_column, sensitive_values, attr_cls = (
+                TEXT_COLUMN_MDGENDER,
+                GENDER_COLUMN_MDGENDER,
+                GENDER_VALUES_MDGENDER,
+                P_GENDER,
+            )
+        elif args.dataset == DB_IMAGECHAT:
+            text_column, sensitive_column, sensitive_values, attr_cls = (
+                TEXT_COLUMN_IMAGECHAT,
+                GENDER_COLUMN_IMAGECHAT,
+                GENDER_VALUES_IMAGECHAT,
+                P_GENDER,
+            )
         else:
             raise ValueError(f'Invalid dataset: "{args.dataset}"')
 
@@ -120,8 +144,8 @@ def main():
             y_train,
             X_test,
             y_test,
-            GENDER_VALUES,
-            P_GENDER,
+            sensitive_values,
+            attr_cls,
             score_key=args.metric,
             consider_embedding_sensor=SENSOR_EMBEDDING not in args.skip,
             consider_coreference_sensor=SENSOR_COREFERENCE not in args.skip,
