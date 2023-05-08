@@ -499,19 +499,23 @@ def build_fn(X_test, y_test, stype, attributes, attr_cls, score_func):
 def compute_errors(y_test, y_pred, attributes):
     ir_counter = {}
     for value in attributes:
-        correct = 0
+        correct_hit = 0
         spurious = 0
         missing = 0
+        correct_rejection = 0
 
+        # if true_ann or pred_ann contains values not in attributes, errors are not detected.
         for true_ann, pred_ann in zip(y_test, y_pred):
             if value in true_ann and value not in pred_ann:
                 missing += 1
             elif value in pred_ann and value not in true_ann:
                 spurious += 1
-            else:  # if true_ann or pred_ann contains values not in attributes, errors are not detected.
-                correct += 1
+            elif value in true_ann:
+                correct_hit += 1
+            else:
+                correct_rejection += 1
 
-        ir_counter[value] = (correct, spurious, missing)
+        ir_counter[value] = (correct_hit, spurious, missing, correct_rejection)
 
     ac_counter = {}
     for true_ann, pred_ann in zip(y_test, y_pred):
@@ -529,9 +533,9 @@ def compute_scores(errors):
     ir_counter, ac_counter = errors
 
     scores = {}
-    for value, (correct, spurious, missing) in ir_counter.items():
-        precision = safe_division(correct, correct + spurious)
-        recall = safe_division(correct, correct + missing)
+    for value, (correct_hit, spurious, missing, _) in ir_counter.items():
+        precision = safe_division(correct_hit, correct_hit + spurious)
+        recall = safe_division(correct_hit, correct_hit + missing)
         f1 = safe_division(2 * precision * recall, precision + recall)
         scores[value] = {
             PRECISION: precision,
