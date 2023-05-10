@@ -49,6 +49,7 @@ def main():
         exit()
 
     config = list(config.items())
+    print(config)
 
     generated = load(config)
     handler = generated.model
