@@ -110,7 +110,7 @@ class LockedSampler:
         self.method = self._check if ensure_handle else self._next
 
     def _check(self, *args, **kargs):
-        value = self._next()
+        value = self._next(*args, **kargs)
         if "handle" in kargs:
             received = kargs["handle"]
             expected = self.log[self.pointer][0]
