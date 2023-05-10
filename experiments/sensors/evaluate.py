@@ -2,6 +2,8 @@ import argparse
 import pandas as pd
 import datasets as db
 
+from pathlib import Path
+
 from bfair.sensors import P_GENDER
 from bfair.sensors.optimization import load, compute_errors, compute_scores
 from bfair.datasets import load_review, load_mdgender, load_image_chat
@@ -32,8 +34,12 @@ def main():
     # - SETUP ---
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True)
+    parser.add_argument("--eval-all", action="store_true")
+    parser.add_argument("--dump-path", default=None)
     args = parser.parse_args()
     config_str = args.config
+    eval_all = args.eval_all
+    dump_path = Path(args.dump_path)
 
     # - Load CONFIG ---
     try:
@@ -101,15 +107,29 @@ def main():
         scores = compute_scores(errors)
         print(scores)
 
+        all_predictions = [("Hander", predictions)]
+        if eval_all:
+            for sensor in handler.sensors:
+                pred = [sensor(text, gender_values, P_GENDER) for text in X]
+                all_predictions.append((type(sensor).__name__, pred))
+
         results = pd.concat(
             (
                 X,
                 y.str.join(" & "),
-                pd.Series(predictions, name="Predicted", index=X.index).str.join(" & "),
+                *[
+                    pd.Series(pred, name=name, index=X.index)
+                    .apply(sorted)
+                    .str.join(" & ")
+                    for name, pred in all_predictions
+                ],
             ),
             axis=1,
         )
         print(results)
+
+        if dump_path is not None:
+            results.to_csv((dump_path / dataset_name).with_suffix(".csv"))
 
         if target_column is None:
             continue
