@@ -50,13 +50,13 @@ def run_all():
         language="english", source="word2vec-debiased"
     )
     handler = SensorHandler(sensors=[sensor])
-    reviews = dataset.data[REVIEW_COLUMN]
+    reviews = dataset.data[TEXT_COLUMN_REVIEW]
     predicted = []
     for text in reviews:
-        annotations = handler.annotate(text, Text, GENDER_VALUES, P_GENDER)
+        annotations = handler.annotate(text, Text, GENDER_VALUES_REVIEW, P_GENDER)
         predicted.append(annotations)
-    gold = dataset.data[GENDER_COLUMN]
-    errors = compute_errors(gold, predicted, GENDER_VALUES)
+    gold = dataset.data[GENDER_COLUMN_REVIEW]
+    errors = compute_errors(gold, predicted, GENDER_VALUES_REVIEW)
     scores = compute_scores(errors)
     print(scores)
 
