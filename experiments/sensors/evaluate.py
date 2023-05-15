@@ -39,7 +39,7 @@ def main():
     args = parser.parse_args()
     config_str = args.config
     eval_all = args.eval_all
-    dump_path = Path(args.dump_path)
+    dump_path = Path(args.dump_path) if args.dump_path is not None else None
 
     # - Load CONFIG ---
     print(config_str)
