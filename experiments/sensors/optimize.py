@@ -1,5 +1,6 @@
 import argparse
 import traceback
+import pandas as pd
 from pathlib import Path
 
 from bfair.datasets import load_review, load_mdgender, load_image_chat
@@ -81,9 +82,9 @@ def setup():
     )
     parser.add_argument(
         "--dataset",
-        type=str,
+        action="append",
         choices=[DB_REVIEWS, DB_MDGENDER, DB_IMAGECHAT],
-        default=DB_REVIEWS,
+        default=[DB_REVIEWS],
     )
     parser.add_argument(
         "--skip",
@@ -117,38 +118,38 @@ def main():
         output_stream = None
 
     try:
-        if args.dataset == DB_REVIEWS:
-            load_dataset_func = load_review
-            text_column, sensitive_column, sensitive_values, attr_cls = (
-                TEXT_COLUMN_REVIEW,
-                GENDER_COLUMN_REVIEW,
-                GENDER_VALUES_REVIEW,
-                P_GENDER,
-            )
-        elif args.dataset == DB_MDGENDER:
-            load_dataset_func = load_mdgender
-            text_column, sensitive_column, sensitive_values, attr_cls = (
-                TEXT_COLUMN_MDGENDER,
-                GENDER_COLUMN_MDGENDER,
-                GENDER_VALUES_MDGENDER,
-                P_GENDER,
-            )
-        elif args.dataset == DB_IMAGECHAT:
-            load_dataset_func = load_image_chat
-            text_column, sensitive_column, sensitive_values, attr_cls = (
-                TEXT_COLUMN_IMAGECHAT,
-                GENDER_COLUMN_IMAGECHAT,
-                GENDER_VALUES_IMAGECHAT,
-                P_GENDER,
-            )
-        else:
-            raise ValueError(f'Invalid dataset: "{args.dataset}"')
+        texts_for_training = []
+        annotations_for_training = []
+        texts_for_testing = []
+        annotations_for_testing = []
+        attr_cls = P_GENDER
+        sensitive_values = ["Male", "Female"]
 
-        dataset = load_dataset_func(split_seed=0)
-        X_train = dataset.data[text_column]
-        y_train = dataset.data[sensitive_column]
-        X_test = dataset.test[text_column]
-        y_test = dataset.test[sensitive_column]
+        if DB_REVIEWS in args.dataset:
+            dataset = load_review(split_seed=0)
+            texts_for_training.append(dataset.data[TEXT_COLUMN_REVIEW])
+            annotations_for_training.append(dataset.data[GENDER_COLUMN_REVIEW])
+            texts_for_testing.append(dataset.test[TEXT_COLUMN_REVIEW])
+            annotations_for_testing.append(dataset.test[GENDER_COLUMN_REVIEW])
+
+        if DB_MDGENDER in args.dataset:
+            dataset = load_mdgender(split_seed=0)
+            texts_for_training.append(dataset.data[TEXT_COLUMN_MDGENDER])
+            annotations_for_training.append(dataset.data[GENDER_COLUMN_MDGENDER])
+            texts_for_testing.append(dataset.test[TEXT_COLUMN_MDGENDER])
+            annotations_for_testing.append(dataset.test[GENDER_COLUMN_MDGENDER])
+
+        if DB_IMAGECHAT in args.dataset:
+            dataset = load_image_chat()
+            texts_for_training.append(dataset.data[TEXT_COLUMN_IMAGECHAT])
+            annotations_for_training.append(dataset.data[GENDER_COLUMN_IMAGECHAT])
+            texts_for_testing.append(dataset.test[TEXT_COLUMN_IMAGECHAT])
+            annotations_for_testing.append(dataset.test[GENDER_COLUMN_IMAGECHAT])
+
+        X_train = pd.concat(texts_for_training)
+        y_train = pd.concat(annotations_for_training)
+        X_test = pd.concat(texts_for_testing)
+        y_test = pd.concat(annotations_for_testing)
 
         best_solution, best_fn = optimize(
             X_train,
