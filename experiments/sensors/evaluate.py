@@ -42,6 +42,7 @@ def main():
     dump_path = Path(args.dump_path)
 
     # - Load CONFIG ---
+    print(config_str)
     try:
         config = eval(config_str)
     except Exception as e:
@@ -49,7 +50,8 @@ def main():
         exit()
 
     config = list(config.items())
-    print(config)
+    for key, value in config:
+        print(key, value)
 
     generated = load(config)
     handler = generated.model
