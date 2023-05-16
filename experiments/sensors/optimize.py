@@ -76,9 +76,9 @@ def setup():
     parser.add_argument("--title", default=None)
     parser.add_argument(
         "--metric",
-        type=str,
+        action="append",
         choices=[MACRO_F1, MACRO_PRECISION, MACRO_RECALL, MACRO_ACC, MICRO_ACC],
-        default=MACRO_F1,
+        default=[],
     )
     parser.add_argument(
         "--dataset",
@@ -151,14 +151,14 @@ def main():
         X_test = pd.concat(texts_for_testing)
         y_test = pd.concat(annotations_for_testing)
 
-        best_solution, best_fn = optimize(
+        best_solution, best_fn, search = optimize(
             X_train,
             y_train,
             X_test,
             y_test,
             sensitive_values,
             attr_cls,
-            score_key=args.metric,
+            score_key=args.metric if args.metric else [MACRO_F1],
             consider_embedding_sensor=SENSOR_EMBEDDING not in args.skip,
             consider_coreference_sensor=SENSOR_COREFERENCE not in args.skip,
             consider_dbpedia_sensor=SENSOR_DBPEDIA not in args.skip,
@@ -182,8 +182,14 @@ def main():
             output_stream=output_stream,
         )
 
+        print("Best solution", file=output_stream)
         print(best_fn, file=output_stream)
         print(best_solution, file=output_stream, flush=True)
+
+        print("Other solutions", file=output_stream)
+        for model, fn in zip(search.top_solutions, search.top_solutions_scores):
+            print(fn, file=output_stream)
+            print(model, file=output_stream, flush=True)
 
     except Exception as e:
         print(

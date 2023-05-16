@@ -32,7 +32,7 @@ from bfair.sensors.text import (
 )
 from autogoal.kb import Text
 from autogoal.sampling import Sampler
-from autogoal.search import PESearch, ConsoleLogger
+from autogoal.search import NSPESearch, ConsoleLogger
 from nltk.corpus import stopwords
 from statistics import mean
 from functools import partial
@@ -80,6 +80,8 @@ def optimize(
     output_stream=None,
     language="english",
 ):
+    score_key = score_key if isinstance(score_key, (list, tuple)) else [score_key]
+
     loggers = get_loggers(
         telegram_token=telegram_token,
         telegram_channel=telegram_channel,
@@ -87,7 +89,7 @@ def optimize(
         log_path=log_path,
     )
 
-    search = PESearch(
+    search = NSPESearch(
         generator_fn=partial(
             generate,
             language=language,
@@ -107,11 +109,9 @@ def optimize(
             Text,
             attributes,
             attr_cls,
-            score_func=lambda x, y: compute_scores(compute_errors(x, y, attributes))[
-                score_key
-            ],
+            score_func=build_score_fn(attributes, score_key),
         ),
-        maximize=True,
+        maximize=[True] * len(score_key),
         pop_size=pop_size,
         evaluation_timeout=evaluation_timeout,
         memory_limit=memory_limit,
@@ -145,7 +145,7 @@ def optimize(
         print(scores, file=output_stream)
         print(y_pred, file=output_stream, flush=True)
 
-    return best_solution, best_fn
+    return best_solution, best_fn, search
 
 
 def get_loggers(
@@ -496,6 +496,15 @@ def build_fn(X_test, y_test, stype, attributes, attr_cls, score_func):
         return score
 
     return fn
+
+
+def build_score_fn(attributes, score_keys):
+    def score_fn(X, y):
+        errors = compute_errors(X, y, attributes)
+        scores = compute_scores(errors)
+        return tuple(scores[key] for key in score_keys)
+
+    return score_fn
 
 
 def compute_errors(y_test, y_pred, attributes):
