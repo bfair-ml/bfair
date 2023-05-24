@@ -50,8 +50,9 @@ def main():
         exit()
 
     config = list(config.items())
+    print("\nConfiguration:")
     for key, value in config:
-        print(key, value)
+        print(f"- {key}: {value}")
 
     generated = load(config)
     handler = generated.model
@@ -60,8 +61,24 @@ def main():
     # - Load DATASETS ---
     datasets = [
         (
-            DB_REVIEWS,
-            load_review,
+            f"{DB_REVIEWS} (complete)",
+            lambda: load_review().data,
+            TEXT_COLUMN_REVIEW,
+            GENDER_COLUMN_REVIEW,
+            GENDER_VALUES_REVIEW,
+            TARGET_COLUMN_REVIEW,
+        ),
+        (
+            f"{DB_REVIEWS} (training)",
+            lambda: load_review(split_seed=0).data,
+            TEXT_COLUMN_REVIEW,
+            GENDER_COLUMN_REVIEW,
+            GENDER_VALUES_REVIEW,
+            TARGET_COLUMN_REVIEW,
+        ),
+        (
+            f"{DB_REVIEWS} (testing)",
+            lambda: load_review(split_seed=0).test,
             TEXT_COLUMN_REVIEW,
             GENDER_COLUMN_REVIEW,
             GENDER_VALUES_REVIEW,
@@ -69,15 +86,23 @@ def main():
         ),
         (
             DB_MDGENDER,
-            load_mdgender,
+            lambda: load_mdgender().data,
             TEXT_COLUMN_MDGENDER,
             GENDER_COLUMN_MDGENDER,
             GENDER_VALUES_MDGENDER,
             None,
         ),
         (
-            DB_IMAGECHAT,
-            load_image_chat,
+            f"{DB_IMAGECHAT} (training)",
+            lambda: load_image_chat().data,
+            TEXT_COLUMN_IMAGECHAT,
+            GENDER_COLUMN_IMAGECHAT,
+            GENDER_VALUES_IMAGECHAT,
+            None,
+        ),
+        (
+            f"{DB_IMAGECHAT} (testing)",
+            lambda: load_image_chat().test,
             TEXT_COLUMN_IMAGECHAT,
             GENDER_COLUMN_IMAGECHAT,
             GENDER_VALUES_IMAGECHAT,
@@ -96,11 +121,11 @@ def main():
         target_column,
     ) in datasets:
 
-        print(f"# {dataset_name}")
-        dataset = load_dataset()
+        print(f"\n# {dataset_name}")
+        data = load_dataset()
 
-        X = dataset.data[text_column]
-        y = dataset.data[gender_column]
+        X = data[text_column]
+        y = data[gender_column]
 
         predictions = [handler(text, gender_values, P_GENDER) for text in X]
 
@@ -110,45 +135,43 @@ def main():
         scores = compute_scores(errors)
         print(scores)
 
-        all_predictions = [("Hander", predictions)]
-        if eval_all:
-            for sensor in handler.sensors:
-                pred = [sensor(text, gender_values, P_GENDER) for text in X]
-                all_predictions.append((type(sensor).__name__, pred))
-
-        results = pd.concat(
-            (
-                X,
-                y.str.join(" & "),
-                *[
-                    pd.Series(pred, name=name, index=X.index)
-                    .apply(sorted)
-                    .str.join(" & ")
-                    for name, pred in all_predictions
-                ],
-            ),
-            axis=1,
-        )
-        print(results)
-
         if dump_path is not None:
+            all_predictions = [("Hander", predictions)]
+
+            if eval_all:
+                for sensor in handler.sensors:
+                    pred = [sensor(text, gender_values, P_GENDER) for text in X]
+                    all_predictions.append((type(sensor).__name__, pred))
+
+            results = pd.concat(
+                (
+                    X,
+                    y.str.join(" & "),
+                    *[
+                        pd.Series(pred, name=name, index=X.index)
+                        .apply(sorted)
+                        .str.join(" & ")
+                        for name, pred in all_predictions
+                    ],
+                ),
+                axis=1,
+            )
             results.to_csv((dump_path / dataset_name).with_suffix(".csv"))
 
         if target_column is None:
             continue
 
         fairness = exploded_statistical_parity(
-            data=dataset.data,
+            data=data,
             protected_attributes=gender_column,
             target_attribute=target_column,
             target_predictions=None,
             positive_target="positive",
             return_probs=True,
         )
-        print(dataset.data)
-        print("True fairness:", fairness)
+        print("## True fairness:", fairness)
 
-        auto_annotated = dataset.data.copy()
+        auto_annotated = data.copy()
         auto_annotated[gender_column] = [list(x) for x in predictions]
 
         fairness = exploded_statistical_parity(
@@ -159,8 +182,7 @@ def main():
             positive_target="positive",
             return_probs=True,
         )
-        print(auto_annotated)
-        print("Estimated fairness:", fairness)
+        print("## Estimated fairness:", fairness)
 
 
 if __name__ == "__main__":
