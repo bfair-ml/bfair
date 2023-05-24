@@ -4,8 +4,9 @@ import datasets as db
 
 from pathlib import Path
 
-from bfair.sensors import P_GENDER
+from bfair.sensors import P_GENDER, SensorHandler
 from bfair.sensors.optimization import load, compute_errors, compute_scores
+from bfair.sensors.mocks import FixValueSensor, RandomValueSensor
 from bfair.datasets import load_review, load_mdgender, load_image_chat
 from bfair.datasets.reviews import (
     REVIEW_COLUMN as TEXT_COLUMN_REVIEW,
@@ -43,20 +44,28 @@ def main():
 
     # - Load CONFIG ---
     print(config_str)
-    try:
-        config = eval(config_str)
-    except Exception as e:
-        print(f"Invalid handler configuration. {e}")
-        exit()
 
-    config = list(config.items())
-    print("\nConfiguration:")
-    for key, value in config:
-        print(f"- {key}: {value}")
+    if config_str == "always-male":
+        handler = SensorHandler(sensors=[FixValueSensor("Male")])
+    elif config_str == "always-female":
+        handler = SensorHandler(sensors=[FixValueSensor("Female")])
+    elif config_str == "random-uniform":
+        handler = SensorHandler(sensors=[RandomValueSensor(seed=0)])
+    else:
+        try:
+            config = eval(config_str)
+        except Exception as e:
+            print(f"Invalid handler configuration. {e}")
+            exit()
 
-    generated = load(config)
-    handler = generated.model
-    print("Loaded!")
+        config = list(config.items())
+        print("\nConfiguration:")
+        for key, value in config:
+            print(f"- {key}: {value}")
+
+        generated = load(config)
+        handler = generated.model
+        print("Loaded!")
 
     # - Load DATASETS ---
     datasets = [
