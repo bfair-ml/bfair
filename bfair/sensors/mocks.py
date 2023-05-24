@@ -24,11 +24,19 @@ class RandomValueSensor(MockSensor):
     ):
         super().__init__(restricted_to)
         self.rng = random.Random(seed)
-        self.distribution = distribution if distribution is not None else {}
+        self.distribution = distribution
 
     def __call__(self, item, attributes: List[str], attr_cls: str):
         return [
             attr
             for attr in attributes
-            if self.rng.random() > self.distribution.get(attr, 0.5)
+            if self.rng.random() > self._get_from_distribution(attr)
         ]
+
+    def _get_from_distribution(self, attribute):
+        if self.distribution is None:
+            return 0.5
+        try:
+            return self.distribution[attribute]
+        except KeyError:
+            raise ValueError(f"Invalid distribution. Missing value {attribute}.")
