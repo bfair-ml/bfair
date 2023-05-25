@@ -51,6 +51,14 @@ def main():
         handler = SensorHandler(sensors=[FixValueSensor("Female")])
     elif config_str == "random-uniform":
         handler = SensorHandler(sensors=[RandomValueSensor(seed=0)])
+    elif config_str == "random-for-review-training":
+        handler = SensorHandler(
+            sensors=[
+                RandomValueSensor(
+                    seed=1, distribution={"Female": 24 / 49, "Male": 33 / 49}
+                )
+            ]
+        )
     else:
         try:
             config = eval(config_str)
