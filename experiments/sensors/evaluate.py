@@ -34,46 +34,54 @@ DB_IMAGECHAT = "imagechat"
 def main():
     # - SETUP ---
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", required=True)
+    parser.add_argument("--config", action="append", required=True)
     parser.add_argument("--eval-all", action="store_true")
     parser.add_argument("--dump-path", default=None)
     args = parser.parse_args()
-    config_str = args.config
     eval_all = args.eval_all
     dump_path = Path(args.dump_path) if args.dump_path is not None else None
 
-    # - Load CONFIG ---
-    print(config_str)
+    handlers = []
+    for config_str in args.config:
+        # - Load CONFIG ---
 
-    if config_str == "always-male":
-        handler = SensorHandler(sensors=[FixValueSensor("Male")])
-    elif config_str == "always-female":
-        handler = SensorHandler(sensors=[FixValueSensor("Female")])
-    elif config_str == "random-uniform":
-        handler = SensorHandler(sensors=[RandomValueSensor(seed=0)])
-    elif config_str == "random-for-review-training":
-        handler = SensorHandler(
-            sensors=[
-                RandomValueSensor(
-                    seed=1, distribution={"Female": 24 / 49, "Male": 33 / 49}
+        if config_str == "always-male":
+            handler = SensorHandler(sensors=[FixValueSensor("Male")])
+        elif config_str == "always-female":
+            handler = SensorHandler(sensors=[FixValueSensor("Female")])
+        elif config_str.startswith("random-"):
+            config = config_str.split("#")
+            seed = 0 if len(config) < 2 else config[-1]
+            if config_str.startswith("random-uniform"):
+                handler = SensorHandler(sensors=[RandomValueSensor(seed=seed)])
+            elif config_str.startswith("random-for-review-training"):
+                handler = SensorHandler(
+                    sensors=[
+                        RandomValueSensor(
+                            seed=seed, distribution={"Female": 24 / 49, "Male": 33 / 49}
+                        )
+                    ]
                 )
-            ]
-        )
-    else:
-        try:
-            config = eval(config_str)
-        except Exception as e:
-            print(f"Invalid handler configuration. {e}")
-            exit()
+            else:
+                print(f"Invalid handler configuration. {config_str}")
+                exit()
+        else:
+            try:
+                config = eval(config_str)
+            except Exception as e:
+                print(f"Invalid handler configuration. {e}")
+                exit()
 
-        config = list(config.items())
-        print("\nConfiguration:")
-        for key, value in config:
-            print(f"- {key}: {value}")
+            config = list(config.items())
+            print("\nConfiguration:")
+            for key, value in config:
+                print(f"- {key}: {value}")
 
-        generated = load(config)
-        handler = generated.model
-        print("Loaded!")
+            generated = load(config)
+            handler = generated.model
+            print("Loaded!")
+
+        handlers.append((config_str, handler))
 
     # - Load DATASETS ---
     datasets = [
@@ -129,77 +137,81 @@ def main():
 
     db.logging.set_verbosity_error()
 
-    for (
-        dataset_name,
-        load_dataset,
-        text_column,
-        gender_column,
-        gender_values,
-        target_column,
-    ) in datasets:
+    for config_str, handler in handlers:
 
-        print(f"\n# {dataset_name}")
-        data = load_dataset()
+        print(repr(config_str))
 
-        X = data[text_column]
-        y = data[gender_column]
+        for (
+            dataset_name,
+            load_dataset,
+            text_column,
+            gender_column,
+            gender_values,
+            target_column,
+        ) in datasets:
 
-        predictions = [handler(text, gender_values, P_GENDER) for text in X]
+            print(f"\n# {dataset_name}")
+            data = load_dataset()
 
-        errors = compute_errors(y, predictions, gender_values)
-        print(errors)
+            X = data[text_column]
+            y = data[gender_column]
 
-        scores = compute_scores(errors)
-        print(scores)
+            predictions = [handler(text, gender_values, P_GENDER) for text in X]
 
-        if dump_path is not None:
-            all_predictions = [("Hander", predictions)]
+            errors = compute_errors(y, predictions, gender_values)
+            print(errors)
 
-            if eval_all:
-                for sensor in handler.sensors:
-                    pred = [sensor(text, gender_values, P_GENDER) for text in X]
-                    all_predictions.append((type(sensor).__name__, pred))
+            scores = compute_scores(errors)
+            print(scores)
 
-            results = pd.concat(
-                (
-                    X,
-                    y.str.join(" & "),
-                    *[
-                        pd.Series(pred, name=name, index=X.index)
-                        .apply(sorted)
-                        .str.join(" & ")
-                        for name, pred in all_predictions
-                    ],
-                ),
-                axis=1,
+            if dump_path is not None:
+                all_predictions = [("Hander", predictions)]
+
+                if eval_all:
+                    for sensor in handler.sensors:
+                        pred = [sensor(text, gender_values, P_GENDER) for text in X]
+                        all_predictions.append((type(sensor).__name__, pred))
+
+                results = pd.concat(
+                    (
+                        X,
+                        y.str.join(" & "),
+                        *[
+                            pd.Series(pred, name=name, index=X.index)
+                            .apply(sorted)
+                            .str.join(" & ")
+                            for name, pred in all_predictions
+                        ],
+                    ),
+                    axis=1,
+                )
+                results.to_csv((dump_path / dataset_name).with_suffix(".csv"))
+
+            if target_column is None:
+                continue
+
+            fairness = exploded_statistical_parity(
+                data=data,
+                protected_attributes=gender_column,
+                target_attribute=target_column,
+                target_predictions=None,
+                positive_target="positive",
+                return_probs=True,
             )
-            results.to_csv((dump_path / dataset_name).with_suffix(".csv"))
+            print("## True fairness:", fairness)
 
-        if target_column is None:
-            continue
+            auto_annotated = data.copy()
+            auto_annotated[gender_column] = [list(x) for x in predictions]
 
-        fairness = exploded_statistical_parity(
-            data=data,
-            protected_attributes=gender_column,
-            target_attribute=target_column,
-            target_predictions=None,
-            positive_target="positive",
-            return_probs=True,
-        )
-        print("## True fairness:", fairness)
-
-        auto_annotated = data.copy()
-        auto_annotated[gender_column] = [list(x) for x in predictions]
-
-        fairness = exploded_statistical_parity(
-            data=auto_annotated,
-            protected_attributes=gender_column,
-            target_attribute=target_column,
-            target_predictions=None,
-            positive_target="positive",
-            return_probs=True,
-        )
-        print("## Estimated fairness:", fairness)
+            fairness = exploded_statistical_parity(
+                data=auto_annotated,
+                protected_attributes=gender_column,
+                target_attribute=target_column,
+                target_predictions=None,
+                positive_target="positive",
+                return_probs=True,
+            )
+            print("## Estimated fairness:", fairness)
 
 
 if __name__ == "__main__":
