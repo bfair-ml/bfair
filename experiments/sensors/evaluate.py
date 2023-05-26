@@ -62,6 +62,15 @@ def main():
                         )
                     ]
                 )
+            elif config_str.startswith("random-for-imagechat-testing"):
+                handler = SensorHandler(
+                    sensors=[
+                        RandomValueSensor(
+                            seed=seed,
+                            distribution={"Female": 468 / 5000, "Male": 998 / 5000},
+                        )
+                    ]
+                )
             else:
                 print(f"Invalid handler configuration. {config_str}")
                 exit()
