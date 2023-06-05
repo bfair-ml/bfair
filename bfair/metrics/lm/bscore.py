@@ -6,7 +6,7 @@ from itertools import repeat
 from functools import partial
 from statistics import mean, stdev
 
-from nltk import ngrams
+from nltk import ngrams, word_tokenize
 from nltk.corpus import stopwords
 
 MALE = "male"
@@ -148,7 +148,7 @@ class BiasScore:
         group_words: Dict[str, Set],
         context,
         scoring_modes,
-        tokenizer=str.split,
+        tokenizer=None,
         remove_stopwords=True,
         remove_groupwords=True,
     ):
@@ -156,9 +156,13 @@ class BiasScore:
         self.group_words = group_words
         self.context = context
         self.scoring_modes = scoring_modes
-        self.tokenizer = tokenizer
         self.remove_stopwords = remove_stopwords
         self.remove_groupwords = remove_groupwords
+        self.tokenizer = (
+            partial(word_tokenize, language=language)
+            if tokenizer is None
+            else tokenizer
+        )
 
         self.stopwords = stopwords.words(language) if remove_stopwords else None
         self.all_group_words = {w for words in group_words.values() for w in words}
