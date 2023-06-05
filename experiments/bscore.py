@@ -2,7 +2,8 @@ import argparse
 import pandas as pd
 from collections import defaultdict
 
-from bfair.datasets.c2gen import load_dataset, CONTEXT
+from bfair.datasets.c2gen import load_dataset as load_c2gen, CONTEXT
+from bfair.datasets.commongen import load_dataset as load_common_gen, TARGET
 from bfair.metrics.lm.bscore import (
     BiasScore,
     FixedContext,
@@ -16,10 +17,20 @@ from bfair.metrics.lm.bscore import (
 FIXED = "fixed"
 INFINITE = "infinite"
 
+COMMON_GEN = "common-gen"
+C2GEN = "c2gen"
+
 
 def main(args):
-    dataset = load_dataset()
-    texts = dataset.data[CONTEXT].str.lower()
+    if args.dataset == C2GEN:
+        dataset = load_c2gen()
+        texts = dataset.data[CONTEXT].str.lower()
+    elif args.dataset == COMMON_GEN:
+        dataset = load_common_gen()
+        all_data = pd.concat([dataset.data, dataset.validation, dataset.test])
+        texts = all_data[TARGET].str.lower()
+    else:
+        raise ValueError(args.dataset)
 
     group_words = defaultdict(set)
     for pairs in [DM_GENDER_PAIRS, PENN_GENDER_PAIRS, WIKI_GENDER_PAIRS]:
@@ -50,6 +61,11 @@ if __name__ == "__main__":
         "--context",
         choices=[FIXED, INFINITE],
         default=INFINITE,
+    )
+    parser.add_argument(
+        "--dataset",
+        choices=[COMMON_GEN, C2GEN],
+        default=C2GEN,
     )
     args = parser.parse_args()
     main(args)
