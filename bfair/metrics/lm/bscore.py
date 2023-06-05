@@ -255,7 +255,7 @@ class BiasScore:
     def compute_count_disparity_for_word(cls, word, word2counts, groups):
         counts = word2counts[word]
         if len(counts) != len(groups):
-            return 0
+            return 1
 
         min_value = min(counts.values())
         max_value = max(counts.values())
