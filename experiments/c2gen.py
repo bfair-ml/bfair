@@ -1,3 +1,4 @@
+import argparse
 from collections import defaultdict
 
 from bfair.datasets.c2gen import load_dataset, CONTEXT
@@ -11,8 +12,11 @@ from bfair.metrics.lm.bscore import (
     WIKI_GENDER_PAIRS,
 )
 
+FIXED = "fixed"
+INFINITE = "infinite"
 
-def main():
+
+def main(args):
     dataset = load_dataset()
     contexts = dataset.data[CONTEXT]
     text = "\n ".join(contexts).lower()
@@ -25,13 +29,13 @@ def main():
     bias_score = BiasScore(
         language="english",
         group_words=group_words,
-        context=FixedContext(),
+        context=FixedContext() if args.context == FIXED else InfiniteContext(),
         scoring_modes=[BiasScore.S_RATIO, BiasScore.S_LOG],
     )
 
     scores = bias_score(text)
     for scoring_mode, (mean, stdev, scores_per_word) in scores.items():
-        print(f"# {scoring_mode}")
+        print(f"# {scoring_mode} ({GERDER_PAIR_ORDER})")
         print("Mean", mean)
         print("Standard Deviation", stdev)
         print("Scores per word")
@@ -42,4 +46,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--context",
+        choices=[FIXED, INFINITE],
+        default=INFINITE,
+    )
+    args = parser.parse_args()
+    main(args)
