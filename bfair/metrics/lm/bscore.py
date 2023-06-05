@@ -138,7 +138,7 @@ class InfiniteContext(FixedContext):
 
 class BiasScore:
 
-    S_RATIO = "count_ratio"
+    S_RATIO = "count_disparity"
     S_LOG = "log_score"
 
     def __init__(
@@ -245,14 +245,14 @@ class BiasScore:
     @classmethod
     def compute_score_for_word(cls, word, word2counts, groups, scoring_mode):
         if cls.S_RATIO == scoring_mode:
-            return cls.compute_count_ratio_for_word(word, word2counts, groups)
+            return cls.compute_count_disparity_for_word(word, word2counts, groups)
         elif cls.S_LOG == scoring_mode:
             return cls.compute_log_score_for_word(word, word2counts, groups)
         else:
             raise ValueError(scoring_mode)
 
     @classmethod
-    def compute_count_ratio_for_word(cls, word, word2counts, groups):
+    def compute_count_disparity_for_word(cls, word, word2counts, groups):
         counts = word2counts[word]
         if len(counts) != len(groups):
             return 0
