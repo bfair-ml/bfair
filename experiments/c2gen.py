@@ -19,8 +19,7 @@ INFINITE = "infinite"
 
 def main(args):
     dataset = load_dataset()
-    contexts = dataset.data[CONTEXT]
-    text = "\n ".join(contexts).lower()
+    texts = dataset.data[CONTEXT].str.lower()
 
     group_words = defaultdict(set)
     for pairs in [DM_GENDER_PAIRS, PENN_GENDER_PAIRS, WIKI_GENDER_PAIRS]:

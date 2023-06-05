@@ -168,13 +168,22 @@ class BiasScore:
         self.stopwords = stopwords.words(language) if remove_stopwords else None
         self.all_group_words = {w for words in group_words.values() for w in words}
 
-    def __call__(self, text):
-        word2counts = self.get_counts(
-            text=text,
-            group_words=self.group_words,
-            context=self.context,
-            tokenizer=self.tokenizer,
-        )
+    def __call__(self, texts):
+        if isinstance(texts, str):
+            texts = [texts]
+
+        word2counts = defaultdict(lambda: defaultdict(int))
+        for text in texts:
+            self._aggregate_counts(
+                word2counts,
+                self.get_counts(
+                    text=text,
+                    group_words=self.group_words,
+                    context=self.context,
+                    tokenizer=self.tokenizer,
+                ),
+            )
+
         if self.remove_stopwords or self.remove_groupwords:
             word2counts = self.drop_words(
                 word2counts,
@@ -186,6 +195,13 @@ class BiasScore:
         return self.compute_scores(
             word2counts, self.group_words.keys(), self.scoring_modes
         )
+
+    @classmethod
+    def _aggregate_counts(cls, total_counts, new_counts):
+        for word, counts in new_counts.items():
+            total_count = total_counts[word]
+            for group, count in counts.items():
+                total_count[group] += count
 
     @classmethod
     def get_counts(
