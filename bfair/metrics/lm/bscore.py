@@ -255,7 +255,7 @@ class BiasScore:
 
         min_value = min(counts.values())
         max_value = max(counts.values())
-        return 1 - min_value / max_value if max_value else 0
+        return 1 - min_value / max_value if max_value else 1
 
     @classmethod
     def compute_log_score_for_word(cls, word, word2counts, groups):
