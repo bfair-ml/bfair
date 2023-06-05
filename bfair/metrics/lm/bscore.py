@@ -9,6 +9,93 @@ from statistics import mean, stdev
 from nltk import ngrams
 from nltk.corpus import stopwords
 
+MALE = "male"
+FEMALE = "female"
+
+GERDER_PAIR_ORDER = [MALE, FEMALE]
+
+DM_GENDER_PAIRS = [
+    ("actor", "actress"),
+    ("boy", "girl"),
+    ("boyfriend", "girlfriend"),
+    ("boys", "girls"),
+    ("father", "mother"),
+    ("fathers", "mothers"),
+    ("gentleman", "lady"),
+    ("gentlemen", "ladies"),
+    ("grandson", "granddaughter"),
+    ("he", "she"),
+    ("him", "her"),
+    ("his", "her"),
+    ("husbands", "wives"),
+    ("kings", "queens"),
+    ("male", "female"),
+    ("males", "females"),
+    ("man", "woman"),
+    ("men", "women"),
+    ("prince", "princess"),
+    ("son", "daughter"),
+    ("sons", "daughters"),
+    ("spokesman", "spokeswoman"),
+    ("stepfather", "stepmother"),
+    ("uncle", "aunt"),
+    ("wife", "husband"),
+    ("king", "queen"),
+    ("brother", "sister"),
+    ("brothers", "sisters"),
+]
+
+PENN_GENDER_PAIRS = [
+    ("actor", "actress"),
+    ("boy", "girl"),
+    ("father", "mother"),
+    ("he", "she"),
+    ("him", "her"),
+    ("his", "her"),
+    ("male", "female"),
+    ("man", "woman"),
+    ("men", "women"),
+    ("son", "daughter"),
+    ("sons", "daughters"),
+    ("spokesman", "spokeswoman"),
+    ("wife", "husband"),
+    ("king", "queen"),
+    ("brother", "sister"),
+]
+
+WIKI_GENDER_PAIRS = [
+    ("actor", "actress"),
+    ("boy", "girl"),
+    ("boyfriend", "girlfriend"),
+    ("boys", "girls"),
+    ("father", "mother"),
+    ("fathers", "mothers"),
+    ("gentleman", "lady"),
+    ("gentlemen", "ladies"),
+    ("grandson", "granddaughter"),
+    ("he", "she"),
+    ("hero", "heroine"),
+    ("him", "her"),
+    ("his", "her"),
+    ("husband", "wife"),
+    ("husbands", "wives"),
+    ("king", "queen"),
+    ("kings", "queens"),
+    ("male", "female"),
+    ("males", "females"),
+    ("man", "woman"),
+    ("men", "women"),
+    ("mr.", "mrs."),
+    ("prince", "princess"),
+    ("son", "daughter"),
+    ("sons", "daughters"),
+    ("spokesman", "spokeswoman"),
+    ("stepfather", "stepmother"),
+    ("uncle", "aunt"),
+    ("wife", "husband"),
+    ("king", "queen"),
+]
+
 
 class FixedContext:
     def __init__(self, window_size=10):
@@ -168,7 +255,7 @@ class BiasScore:
 
         min_value = min(counts.values())
         max_value = max(counts.values())
-        return min_value / max_value if max_value else 0
+        return 1 - min_value / max_value if max_value else 0
 
     @classmethod
     def compute_log_score_for_word(cls, word, word2counts, groups):
