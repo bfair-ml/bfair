@@ -1,4 +1,5 @@
 import argparse
+import pandas as pd
 from collections import defaultdict
 
 from bfair.datasets.c2gen import load_dataset, CONTEXT
@@ -33,16 +34,15 @@ def main(args):
         scoring_modes=[BiasScore.S_RATIO, BiasScore.S_LOG],
     )
 
-    scores = bias_score(text)
-    for scoring_mode, (mean, stdev, scores_per_word) in scores.items():
-        print(f"# {scoring_mode} ({GERDER_PAIR_ORDER})")
-        print("Mean", mean)
-        print("Standard Deviation", stdev)
-        print("Scores per word")
-        print("[")
-        for score in scores_per_word:
-            print(f"    {score}")
-        print("]")
+    scores = bias_score(texts)
+    for scoring_mode, (mean, stdev, _) in scores.items():
+        print(f"## {scoring_mode} ({' then '.join(GERDER_PAIR_ORDER)})")
+        print("- **Mean**", mean)
+        print("- **Standard Deviation**", stdev)
+
+    print("## Scores per word")
+    scores_per_word = pd.concat((df for _, _, df in scores.values()), axis=1)
+    print(scores_per_word.to_markdown())
 
 
 if __name__ == "__main__":

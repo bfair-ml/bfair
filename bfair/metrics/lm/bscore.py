@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 from typing import Dict, Set
 from collections import defaultdict
@@ -238,7 +239,12 @@ class BiasScore:
             result[scoring_mode] = (
                 mean(scores),
                 stdev(scores),
-                list(zip(word2counts, scores)),
+                pd.DataFrame(
+                    {
+                        "words": word2counts.keys(),
+                        scoring_mode: scores,
+                    }
+                ).set_index("words"),
             )
         return result
 
