@@ -49,6 +49,10 @@ def main():
             handler = SensorHandler(sensors=[FixValueSensor("Male")])
         elif config_str == "always-female":
             handler = SensorHandler(sensors=[FixValueSensor("Female")])
+        elif config_str == "always-both":
+            handler = SensorHandler(sensors=[FixValueSensor(["Male", "Female"])])
+        elif config_str == "always-none":
+            handler = SensorHandler(sensors=[FixValueSensor([])])
         elif config_str.startswith("random-"):
             config = config_str.split("#")
             seed = 0 if len(config) < 2 else config[-1]

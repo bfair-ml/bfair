@@ -10,12 +10,14 @@ class MockSensor(Sensor):
 
 
 class FixValueSensor(MockSensor):
-    def __init__(self, value: str, restricted_to: Union[str, Set[str]] = None):
-        self.value = value
+    def __init__(
+        self, value: Union[str, List[str]], restricted_to: Union[str, Set[str]] = None
+    ):
+        self.value = [value] if isinstance(value, str) else value
         super().__init__(restricted_to)
 
     def __call__(self, item, attributes: List[str], attr_cls: str):
-        return [self.value]
+        return self.value
 
 
 class RandomValueSensor(MockSensor):
