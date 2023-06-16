@@ -46,7 +46,9 @@ def main(args):
     scores_per_word["in_keygens"] = in_keygens
     scores_per_word.to_csv(path.with_name(f"{path.stem}-check-keygen{path.suffix}"))
 
-    print("Ratio of matches:", default_mean(bool(matches) for matches in in_keygens))
+    print("## Keygen Matches")
+    print("- Ratio of keygens:", default_mean(bool(matches) for matches in in_keygens))
+    print("- Ratio of gendered keygens:", default_mean(v > 0 for v in gendered_keygens))
 
 
 if __name__ == "__main__":
