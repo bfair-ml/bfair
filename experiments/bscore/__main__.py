@@ -1,3 +1,3 @@
-from .score import main
+from .score import entry_point
 
-main()
+entry_point()

@@ -60,7 +60,7 @@ def main(args):
         print(scores_per_word.to_markdown())
 
 
-if __name__ == "__main__":
+def entry_point():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--context",
@@ -78,3 +78,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     main(args)
+
+
+if __name__ == "__main__":
+    entry_point()

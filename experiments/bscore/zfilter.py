@@ -14,7 +14,9 @@ def main(args):
     selected = scores_per_word[
         (zscores < -args.zscore_threshold) | (zscores > args.zscore_threshold)
     ]
-    selected.to_csv(path.with_name(f"{path.stem}-zfiltered{path.suffix}"))
+    selected.to_csv(
+        path.with_name(f"{path.stem}-z{args.zscore_threshold}filtered{path.suffix}")
+    )
 
 
 if __name__ == "__main__":

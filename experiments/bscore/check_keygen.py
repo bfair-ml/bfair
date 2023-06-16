@@ -52,10 +52,6 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--path")
-    parser.add_argument(
-        "--dataset",
-        choices=[COMMON_GEN, C2GEN],
-        default=C2GEN,
-    )
+    parser.add_argument("--dataset", choices=[COMMON_GEN, C2GEN])
     args = parser.parse_args()
     main(args)
