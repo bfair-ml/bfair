@@ -52,6 +52,7 @@ def main(args):
 
     print("## Scores per word")
     scores_per_word = pd.concat((df for _, _, df in scores.values()), axis=1)
+    scores_per_word = scores_per_word.sort_values(by=BiasScore.S_LOG)
     print(scores_per_word.to_markdown())
 
 
