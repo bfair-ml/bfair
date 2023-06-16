@@ -97,6 +97,14 @@ WIKI_GENDER_PAIRS = [
     ("king", "queen"),
 ]
 
+ALL_GENDER_PAIRS = list(
+    {
+        pair
+        for pairs in [DM_GENDER_PAIRS, PENN_GENDER_PAIRS, WIKI_GENDER_PAIRS]
+        for pair in pairs
+    }
+)
+
 
 class FixedContext:
     def __init__(self, window_size=10):

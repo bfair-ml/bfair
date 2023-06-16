@@ -8,7 +8,7 @@ from bfair.metrics.lm.bscore import BiasScore
 
 def main(args):
     path = Path(args.path)
-    scores_per_word = pd.read_csv(path)
+    scores_per_word = pd.read_csv(path, index_col="words")
     log_scores = scores_per_word[BiasScore.S_LOG]
     zscores = zscore(log_scores)
     selected = scores_per_word[

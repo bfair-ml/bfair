@@ -27,8 +27,7 @@ def main(args):
         texts = dataset.data[CONTEXT].str.lower()
     elif args.dataset == COMMON_GEN:
         dataset = load_common_gen()
-        all_data = pd.concat([dataset.data, dataset.validation, dataset.test])
-        texts = all_data[TARGET].str.lower()
+        texts = dataset.all_data[TARGET].str.lower()
     else:
         raise ValueError(args.dataset)
 

@@ -25,6 +25,10 @@ class Dataset:
     def columns(self):
         return self.data.columns
 
+    @property
+    def all_data(self):
+        return pd.concat([self.data, self.validation, self.test])
+
     @staticmethod
     def _split(data, split_seed=0, stratify_by=None):
         train, test = train_test_split(
