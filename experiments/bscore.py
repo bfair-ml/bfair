@@ -53,7 +53,12 @@ def main(args):
     print("## Scores per word")
     scores_per_word = pd.concat((df for _, _, df in scores.values()), axis=1)
     scores_per_word = scores_per_word.sort_values(by=BiasScore.S_LOG)
-    print(scores_per_word.to_markdown())
+
+    if args.export_csv is not None:
+        print(f"Saving scores per word to {args.export_csv}")
+        scores_per_word.to_csv(args.export_csv)
+    else:
+        print(scores_per_word.to_markdown())
 
 
 if __name__ == "__main__":
@@ -67,6 +72,10 @@ if __name__ == "__main__":
         "--dataset",
         choices=[COMMON_GEN, C2GEN],
         default=C2GEN,
+    )
+    parser.add_argument(
+        "--export-csv",
+        default=None,
     )
     args = parser.parse_args()
     main(args)
