@@ -73,7 +73,7 @@ class NameGenderSensor(NERBasedSensor):
         language="english",
         entity_labels=None,
         just_people=True,
-        attention_step=0.75,
+        attention_step=0,
         aggregator=None,
         filter=None,
         threshold=None,

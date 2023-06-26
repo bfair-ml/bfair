@@ -151,11 +151,11 @@ class EmbeddingBasedSensor(Sensor):
     def build_default_in_plain_mode(
         cls,
         *,
-        norm_threshold=0.05,
-        relative_threshold=0.75,
+        norm_threshold=0.2,
+        relative_threshold=0.7,
         embedding=None,
-        language=None,
-        source=None,
+        language="english",
+        source="word2vec-debiased",
     ):
         return cls.build(
             embedding=embedding,
@@ -169,13 +169,7 @@ class EmbeddingBasedSensor(Sensor):
                 NonEmptyFilter(),
             ],
             aggregation_pipeline=[
-                ActivationAggregator(
-                    activation_func=max,
-                    attr_filter=BestScoreFilter(
-                        relative_threshold,
-                        norm_threshold,
-                    ),
-                )
+                UnionAggregator(),
             ],
         )
 

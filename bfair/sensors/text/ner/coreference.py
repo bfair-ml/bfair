@@ -4,7 +4,7 @@ import neuralcoref
 from typing import List, Set
 from bfair.sensors.base import Sensor, P_GENDER
 from bfair.sensors.text.ner.base import NERBasedSensor
-from bfair.sensors.text.embedding.aggregators import Aggregator, CountAggregator
+from bfair.sensors.text.embedding.aggregators import Aggregator, UnionAggregator
 
 
 class CoreferenceNERSensor(NERBasedSensor):
@@ -27,10 +27,8 @@ class CoreferenceNERSensor(NERBasedSensor):
         model=None,
         language="english",
         entity_labels=None,
-        just_people=True,
+        just_people=False,
         aggregator=None,
-        filter=None,
-        threshold=None,
     ):
         if model is None:
             try:
@@ -43,16 +41,7 @@ class CoreferenceNERSensor(NERBasedSensor):
 
         neuralcoref.add_to_pipe(model)
 
-        if aggregator is not None and (filter is not None and threshold is not None):
-            raise ValueError(
-                "Only one between `aggregator`, `filter` and `threshold` should be provided."
-            )
-
-        aggregator = (
-            CountAggregator(attr_filter=filter, threshold=threshold)
-            if aggregator is None
-            else aggregator
-        )
+        aggregator = UnionAggregator() if aggregator is None else aggregator
 
         return super().build(
             model=model,
