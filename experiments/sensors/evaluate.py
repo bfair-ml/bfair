@@ -4,7 +4,14 @@ import datasets as db
 
 from pathlib import Path
 
-from bfair.sensors import P_GENDER, SensorHandler
+from bfair.sensors import (
+    P_GENDER,
+    SensorHandler,
+    EmbeddingBasedSensor,
+    CoreferenceNERSensor,
+    DBPediaSensor,
+    NameGenderSensor,
+)
 from bfair.sensors.optimization import load, compute_errors, compute_scores
 from bfair.sensors.mocks import FixValueSensor, RandomValueSensor
 from bfair.datasets import load_review, load_mdgender, load_image_chat
@@ -78,6 +85,15 @@ def main():
             else:
                 print(f"Invalid handler configuration. {config_str}")
                 exit()
+        elif config_str == "defaults":
+            handler = SensorHandler(
+                sensors=[
+                    EmbeddingBasedSensor.build_default_in_plain_mode(),
+                    CoreferenceNERSensor.build(),
+                    # DBPediaSensor.build(),
+                    NameGenderSensor.build(),
+                ],
+            )
         else:
             try:
                 config = eval(config_str)
