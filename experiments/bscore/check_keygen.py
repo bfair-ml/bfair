@@ -12,6 +12,9 @@ from bfair.metrics.lm.bscore import ALL_GENDER_PAIRS
 COMMON_GEN = "common-gen"
 C2GEN = "c2gen"
 
+EXACT = "exact"
+FUZZY = "fuzzy"
+
 
 def default_mean(x, default=0):
     try:
@@ -21,10 +24,13 @@ def default_mean(x, default=0):
 
 
 def get_stemmer_with_cache(args):
-    if not args.fuzzy_match:
+    if args.match == EXACT:
         return None
-    stemmer = SnowballStemmer(args.language)
-    return lru_cache(maxsize=None)(stemmer.stem)
+    elif args.match == FUZZY:
+        stemmer = SnowballStemmer(args.language)
+        return lru_cache(maxsize=None)(stemmer.stem)
+    else:
+        raise ValueError(args.match)
 
 
 def main(args):
@@ -85,7 +91,7 @@ if __name__ == "__main__":
         "--dataset",
         help=f"Valid options: {[COMMON_GEN, C2GEN, '<PATH>']}",
     )
-    parser.add_argument("--fuzzy-match", action="store_true")
+    parser.add_argument("--match", choices=[EXACT, FUZZY], default=FUZZY)
     parser.add_argument("--language", default="english")
 
     args = parser.parse_args()
