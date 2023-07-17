@@ -28,6 +28,9 @@ def main(args):
     elif args.dataset == C2GEN:
         dataset = load_c2gen().all_data
         keygens = dataset[KEYWORDS]
+    elif Path(args.dataset).exists():
+        dataset = pd.read_csv(args.dataset, sep="\t", usecols=["concepts"])
+        keygens = dataset[CONCEPTS].apply(eval)
     else:
         raise ValueError(args.dataset)
 
@@ -54,6 +57,9 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--path")
-    parser.add_argument("--dataset", choices=[COMMON_GEN, C2GEN])
+    parser.add_argument(
+        "--dataset",
+        help=f"Valid options: {[COMMON_GEN, C2GEN, '<PATH>']}",
+    )
     args = parser.parse_args()
     main(args)

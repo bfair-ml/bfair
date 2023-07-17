@@ -1,5 +1,6 @@
 import argparse
 import pandas as pd
+from pathlib import Path
 from collections import defaultdict
 
 from bfair.datasets.c2gen import load_dataset as load_c2gen, CONTEXT
@@ -28,6 +29,9 @@ def main(args):
     elif args.dataset == COMMON_GEN:
         dataset = load_common_gen()
         texts = dataset.all_data[TARGET].str.lower()
+    elif Path(args.dataset).exists():
+        dataset = pd.read_csv(args.dataset, sep="\t", usecols=["sentence"])
+        texts = dataset["sentence"].dropna().str.lower()
     else:
         raise ValueError(args.dataset)
 
@@ -69,7 +73,7 @@ def entry_point():
     )
     parser.add_argument(
         "--dataset",
-        choices=[COMMON_GEN, C2GEN],
+        help=f"Valid options: {[COMMON_GEN, C2GEN, '<PATH>']}",
         default=C2GEN,
     )
     parser.add_argument(
