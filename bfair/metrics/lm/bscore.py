@@ -1,3 +1,4 @@
+import spacy
 import numpy as np
 import pandas as pd
 
@@ -146,6 +147,10 @@ class InfiniteContext(FixedContext):
 
 
 class BiasScore:
+    LANGUAGE2MODEL = {
+        "english": "en_core_web_sm",
+        "spanish": "es_core_news_sm",
+    }
 
     S_RATIO = "count_disparity"
     S_LOG = "log_score"
@@ -157,6 +162,7 @@ class BiasScore:
         group_words: Dict[str, Set],
         context,
         scoring_modes,
+        use_root,
         tokenizer=None,
         remove_stopwords=True,
         remove_groupwords=True,
@@ -168,13 +174,28 @@ class BiasScore:
         self.remove_stopwords = remove_stopwords
         self.remove_groupwords = remove_groupwords
         self.tokenizer = (
-            partial(word_tokenize, language=language)
+            self._get_default_tokenizer(language, use_root)
             if tokenizer is None
             else tokenizer
         )
 
         self.stopwords = stopwords.words(language) if remove_stopwords else None
         self.all_group_words = {w for words in group_words.values() for w in words}
+
+    @classmethod
+    def _get_default_tokenizer(cls, language, use_root):
+        if not use_root:
+            return partial(word_tokenize, language=language)
+
+        if language not in cls.LANGUAGE2MODEL:
+            raise ValueError(language)
+
+        nlp = spacy.load(cls.LANGUAGE2MODEL[language])
+
+        def tokenizer(text):
+            return [token.lemma_ for token in nlp(text)]
+
+        return tokenizer
 
     def __call__(self, texts):
         if isinstance(texts, str):

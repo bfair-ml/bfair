@@ -45,6 +45,7 @@ def main(args):
         group_words=group_words,
         context=FixedContext() if args.context == FIXED else InfiniteContext(),
         scoring_modes=[BiasScore.S_RATIO, BiasScore.S_LOG],
+        use_root=args.use_root,
     )
 
     scores = bias_score(texts)
@@ -80,7 +81,13 @@ def entry_point():
         "--export-csv",
         default=None,
     )
+    parser.add_argument(
+        "--use-root",
+        choices=["yes", "no"],
+        required=True,
+    )
     args = parser.parse_args()
+    args.use_root = args.use_root == "yes"
     main(args)
 
 
