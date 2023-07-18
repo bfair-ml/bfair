@@ -193,7 +193,10 @@ class BiasScore:
         nlp = spacy.load(cls.LANGUAGE2MODEL[language])
 
         def tokenizer(text):
-            return [token.lemma_ for token in nlp(text)]
+            return [
+                token.lemma_.lower() if token.lemma_ != "-PRON-" else token.lower_
+                for token in nlp(text)
+            ]
 
         return tokenizer
 
