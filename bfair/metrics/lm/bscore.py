@@ -166,6 +166,7 @@ class BiasScore:
         tokenizer=None,
         remove_stopwords=True,
         remove_groupwords=True,
+        merge_paragraphs=False,
     ):
         self.language = language
         self.group_words = group_words
@@ -173,6 +174,7 @@ class BiasScore:
         self.scoring_modes = scoring_modes
         self.remove_stopwords = remove_stopwords
         self.remove_groupwords = remove_groupwords
+        self.merge_paragraphs = merge_paragraphs
         self.tokenizer = (
             self._get_default_tokenizer(language, use_root)
             if tokenizer is None
@@ -203,6 +205,9 @@ class BiasScore:
     def __call__(self, texts):
         if isinstance(texts, str):
             texts = [texts]
+
+        if not self.merge_paragraphs:
+            texts = [paragraph for text in texts for paragraph in text.splitlines()]
 
         word2counts = defaultdict(lambda: defaultdict(int))
         for text in texts:
