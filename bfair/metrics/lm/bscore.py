@@ -41,7 +41,7 @@ DM_GENDER_PAIRS = [
     ("spokesman", "spokeswoman"),
     ("stepfather", "stepmother"),
     ("uncle", "aunt"),
-    ("wife", "husband"),
+    ("husband", "wife"),
     ("king", "queen"),
     ("brother", "sister"),
     ("brothers", "sisters"),
@@ -60,7 +60,7 @@ PENN_GENDER_PAIRS = [
     ("son", "daughter"),
     ("sons", "daughters"),
     ("spokesman", "spokeswoman"),
-    ("wife", "husband"),
+    ("husband", "wife"),
     ("king", "queen"),
     ("brother", "sister"),
 ]
@@ -94,7 +94,7 @@ WIKI_GENDER_PAIRS = [
     ("spokesman", "spokeswoman"),
     ("stepfather", "stepmother"),
     ("uncle", "aunt"),
-    ("wife", "husband"),
+    # ("wife", "husband"),
     ("king", "queen"),
 ]
 
