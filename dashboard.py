@@ -465,7 +465,7 @@ def load_sensors(
         )
         sensors = [
             embedding_sensor,
-            CoreferenceNERSensor.build(language=language, threshold=0),
+            CoreferenceNERSensor.build(language=language),
             DBPediaSensor.build(language=language),
         ]
         return SensorHandler(sensors)
