@@ -3,6 +3,7 @@ import pandas as pd
 import datasets as db
 
 from pathlib import Path
+from functools import partial
 
 from bfair.sensors import (
     P_GENDER,
@@ -12,9 +13,16 @@ from bfair.sensors import (
     DBPediaSensor,
     NameGenderSensor,
 )
-from bfair.sensors.optimization import load, compute_errors, compute_scores
+from bfair.sensors.optimization import (
+    load,
+    compute_errors,
+    compute_scores,
+    compute_multiclass_scores,
+    compute_multiclass_errors,
+    attributes_to_class,
+)
 from bfair.sensors.mocks import FixValueSensor, RandomValueSensor
-from bfair.datasets import load_review, load_mdgender, load_image_chat
+from bfair.datasets import load_review, load_mdgender, load_image_chat, load_funpedia
 from bfair.datasets.reviews import (
     REVIEW_COLUMN as TEXT_COLUMN_REVIEW,
     GENDER_COLUMN as GENDER_COLUMN_REVIEW,
@@ -31,11 +39,18 @@ from bfair.datasets.imagechat import (
     GENDER_COLUMN as GENDER_COLUMN_IMAGECHAT,
     GENDER_VALUES as GENDER_VALUES_IMAGECHAT,
 )
+from bfair.datasets.funpedia import (
+    TEXT_COLUMN as TEXT_COLUMN_FUNPEDIA,
+    GENDER_COLUMN as GENDER_COLUMN_FUNPEDIA,
+    GENDER_VALUES as GENDER_VALUES_FUNPEDIA,
+    NEUTRAL_VALUE as NEUTRAL_VALUE_FUNPEDIA,
+)
 from bfair.metrics import exploded_statistical_parity
 
 DB_REVIEWS = "reviews"
 DB_MDGENDER = "mdgender"
 DB_IMAGECHAT = "imagechat"
+DB_FUNPEDIA = "funpedia"
 
 
 def main():
@@ -112,6 +127,22 @@ def main():
 
         handlers.append((config_str, handler))
 
+    def multilabel_errors(true_labels, predictions, gender_values):
+        errors = compute_errors(true_labels, predictions, gender_values)
+        print(errors)
+        scores = compute_scores(errors)
+        print(scores)
+
+    def multiclass_error(true_classes, predictions, neutral_value):
+        errors = compute_multiclass_errors(
+            true_classes,
+            predictions,
+            partial(attributes_to_class, neutral=neutral_value),
+        )
+        print(errors)
+        scores = compute_multiclass_scores(errors)
+        print(scores)
+
     # - Load DATASETS ---
     datasets = [
         (
@@ -121,6 +152,7 @@ def main():
             GENDER_COLUMN_REVIEW,
             GENDER_VALUES_REVIEW,
             TARGET_COLUMN_REVIEW,
+            None,
         ),
         (
             f"{DB_REVIEWS} (training)",
@@ -129,6 +161,7 @@ def main():
             GENDER_COLUMN_REVIEW,
             GENDER_VALUES_REVIEW,
             TARGET_COLUMN_REVIEW,
+            None,
         ),
         (
             f"{DB_REVIEWS} (testing)",
@@ -137,6 +170,7 @@ def main():
             GENDER_COLUMN_REVIEW,
             GENDER_VALUES_REVIEW,
             TARGET_COLUMN_REVIEW,
+            None,
         ),
         (
             DB_MDGENDER,
@@ -144,6 +178,7 @@ def main():
             TEXT_COLUMN_MDGENDER,
             GENDER_COLUMN_MDGENDER,
             GENDER_VALUES_MDGENDER,
+            None,
             None,
         ),
         (
@@ -153,6 +188,7 @@ def main():
             GENDER_COLUMN_IMAGECHAT,
             GENDER_VALUES_IMAGECHAT,
             None,
+            None,
         ),
         (
             f"{DB_IMAGECHAT} (testing)",
@@ -161,6 +197,25 @@ def main():
             GENDER_COLUMN_IMAGECHAT,
             GENDER_VALUES_IMAGECHAT,
             None,
+            None,
+        ),
+        (
+            f"{DB_FUNPEDIA} (testing)",
+            lambda: load_funpedia().test,
+            TEXT_COLUMN_FUNPEDIA,
+            GENDER_COLUMN_FUNPEDIA,
+            GENDER_VALUES_FUNPEDIA,
+            None,
+            NEUTRAL_VALUE_FUNPEDIA,
+        ),
+        (
+            f"{DB_FUNPEDIA} (all data)",
+            lambda: load_funpedia().all_data,
+            TEXT_COLUMN_FUNPEDIA,
+            GENDER_COLUMN_FUNPEDIA,
+            GENDER_VALUES_FUNPEDIA,
+            None,
+            NEUTRAL_VALUE_FUNPEDIA,
         ),
     ]
 
@@ -177,6 +232,7 @@ def main():
             gender_column,
             gender_values,
             target_column,
+            neutral_value,
         ) in datasets:
 
             print(f"\n# {dataset_name}")
@@ -187,11 +243,10 @@ def main():
 
             predictions = [handler(text, gender_values, P_GENDER) for text in X]
 
-            errors = compute_errors(y, predictions, gender_values)
-            print(errors)
-
-            scores = compute_scores(errors)
-            print(scores)
+            if neutral_value is None:
+                multilabel_errors(y, predictions, gender_values)
+            else:
+                multiclass_error(y, predictions, neutral_value)
 
             if dump_path is not None:
                 all_predictions = [("Hander", predictions)]
@@ -204,7 +259,7 @@ def main():
                 results = pd.concat(
                     (
                         X,
-                        y.str.join(" & "),
+                        y.str.join(" & ") if neutral_value is None else y,
                         *[
                             pd.Series(pred, name=name, index=X.index)
                             .apply(sorted)
