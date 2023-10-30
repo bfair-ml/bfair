@@ -507,7 +507,7 @@ def build_score_fn(attributes, score_keys):
     return score_fn
 
 
-def compute_errors(y_test, y_pred, attributes):
+def compute_multilabel_errors(y_test, y_pred, attributes):
     ir_counter = {}
     for value in attributes:
         correct_hit = 0
@@ -540,7 +540,10 @@ def compute_errors(y_test, y_pred, attributes):
     return ir_counter, ac_counter
 
 
-def compute_scores(errors):
+compute_errors = compute_multilabel_errors
+
+
+def compute_multilabel_scores(errors):
     ir_counter, ac_counter = errors
 
     scores = {}
@@ -574,6 +577,9 @@ def compute_scores(errors):
     return scores
 
 
+compute_scores = compute_multilabel_scores
+
+
 def safe_division(numerator, denominator, default=0):
     return numerator / denominator if denominator else default
 
@@ -582,3 +588,38 @@ def load(configuration, language="english", root=generate):
     sampler = LockedSampler(configuration, ensure_handle=True)
     model = root(sampler, language)
     return model
+
+
+def attributes_to_class(attributes, neutral="Neutral"):
+    return attributes[0] if len(attributes) == 1 else neutral
+
+
+def compute_multiclass_errors(y_test, y_pred, attributes2class=attributes_to_class):
+    y_pred = [attributes2class(attr) for attr in y_pred]
+
+    ac_counter = {}
+    for true_ann, pred_ann in zip(y_test, y_pred):
+        correct, total = ac_counter.get(true_ann, (0, 0))
+        equal = int(true_ann == pred_ann)
+        ac_counter[true_ann] = (correct + equal, total + 1)
+
+    return ac_counter
+
+
+def compute_multiclass_scores(errors):
+    scores = {}
+
+    total_correct = 0
+    total_total = 0
+    total_accuracy = 0
+    for value, (correct, total) in errors.items():
+        scores[value] = accuracy = safe_division(correct, total)
+
+        total_correct += correct
+        total_total += total
+        total_accuracy += accuracy
+
+    scores[MICRO_ACC] = safe_division(total_correct, total_total)
+    scores[MACRO_ACC] = safe_division(total_accuracy, len(errors))
+
+    return scores
