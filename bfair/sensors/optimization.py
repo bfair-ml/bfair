@@ -591,7 +591,7 @@ def load(configuration, language="english", root=generate):
 
 
 def attributes_to_class(attributes, neutral="Neutral"):
-    return attributes[0] if len(attributes) == 1 else neutral
+    return next(iter(attributes)) if len(attributes) == 1 else neutral
 
 
 def compute_multiclass_errors(y_test, y_pred, attributes2class=attributes_to_class):
