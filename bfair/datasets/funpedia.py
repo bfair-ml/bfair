@@ -13,6 +13,11 @@ GENDER_COLUMN = "Gender"
 
 _TEXT_COLUMN = "text"
 _GENDER_COLUMN = "gender"
+_VALUE2GENDER = {
+    0: NEUTRAL_VALUE,
+    1: FEMALE_VALUE,
+    2: MALE_VALUE,
+}
 
 
 def load_dataset(**kwargs):
@@ -30,7 +35,7 @@ class FunpediaDataset(Dataset):
             data = pd.concat(
                 [
                     df[_TEXT_COLUMN].rename(TEXT_COLUMN),
-                    df[_GENDER_COLUMN].apply(str.title).rename(GENDER_COLUMN),
+                    df[_GENDER_COLUMN].apply(_VALUE2GENDER.get).rename(GENDER_COLUMN),
                 ],
                 axis=1,
             )
