@@ -47,6 +47,7 @@ class ToxicityDataset(Dataset):
                     df[_TEXT_COLUMN].rename(TEXT_COLUMN),
                     gender_list.rename(GENDER_COLUMN),
                 ],
+                join="inner",
                 axis=1,
             )
             collections[split] = data
