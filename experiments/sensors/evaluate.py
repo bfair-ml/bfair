@@ -22,7 +22,13 @@ from bfair.sensors.optimization import (
     attributes_to_class,
 )
 from bfair.sensors.mocks import FixValueSensor, RandomValueSensor
-from bfair.datasets import load_review, load_mdgender, load_image_chat, load_funpedia
+from bfair.datasets import (
+    load_review,
+    load_mdgender,
+    load_image_chat,
+    load_funpedia,
+    load_toxicity,
+)
 from bfair.datasets.reviews import (
     REVIEW_COLUMN as TEXT_COLUMN_REVIEW,
     GENDER_COLUMN as GENDER_COLUMN_REVIEW,
@@ -45,12 +51,18 @@ from bfair.datasets.funpedia import (
     GENDER_VALUES as GENDER_VALUES_FUNPEDIA,
     NEUTRAL_VALUE as NEUTRAL_VALUE_FUNPEDIA,
 )
+from bfair.datasets.toxicity import (
+    TEXT_COLUMN as TEXT_COLUMN_TOXICITY,
+    GENDER_COLUMN as GENDER_COLUMN_TOXICITY,
+    GENDER_VALUES as GENDER_VALUES_TOXICITY,
+)
 from bfair.metrics import exploded_statistical_parity
 
 DB_REVIEWS = "reviews"
 DB_MDGENDER = "mdgender"
 DB_IMAGECHAT = "imagechat"
 DB_FUNPEDIA = "funpedia"
+DB_TOXICITY = "toxicity"
 
 
 def main():
@@ -196,6 +208,24 @@ def main():
             TEXT_COLUMN_IMAGECHAT,
             GENDER_COLUMN_IMAGECHAT,
             GENDER_VALUES_IMAGECHAT,
+            None,
+            None,
+        ),
+        (
+            f"{DB_TOXICITY} (training @ 0.0)",
+            lambda: load_toxicity(threshold=0).data,
+            TEXT_COLUMN_TOXICITY,
+            GENDER_COLUMN_TOXICITY,
+            GENDER_VALUES_TOXICITY,
+            None,
+            None,
+        ),
+        (
+            f"{DB_TOXICITY} (training @ 0.5)",
+            lambda: load_toxicity(threshold=0.5).data,
+            TEXT_COLUMN_TOXICITY,
+            GENDER_COLUMN_TOXICITY,
+            GENDER_VALUES_TOXICITY,
             None,
             None,
         ),
