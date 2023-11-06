@@ -28,15 +28,19 @@ class ToxicityDataset(Dataset):
         path = Path(path)
 
         collections = {}
-        for split in ["train", "test"]:
+        for split in ["train"]:
             df = pd.read_csv(path / f"{split}.csv", engine="python")
-            gender_list = df[_GENDER_COLUMNS].apply(
-                lambda row: [
-                    gender.title()
-                    for gender, score in zip(_GENDER_COLUMNS, row)
-                    if score > threshold
-                ],
-                axis=1,
+            gender_list = (
+                df[_GENDER_COLUMNS]
+                .dropna()
+                .apply(
+                    lambda row: [
+                        gender.title()
+                        for gender, score in zip(_GENDER_COLUMNS, row)
+                        if score > threshold
+                    ],
+                    axis=1,
+                )
             )
             data = pd.concat(
                 [
@@ -49,5 +53,4 @@ class ToxicityDataset(Dataset):
 
         return ToxicityDataset(
             data=collections["train"],
-            test=collections["test"],
         )
