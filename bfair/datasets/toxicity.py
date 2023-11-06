@@ -18,13 +18,13 @@ _FEMALE_COLUMN = "female"
 _GENDER_COLUMNS = [_MALE_COLUMN, _FEMALE_COLUMN]
 
 
-def load_dataset(path=TOXICITY_DATASET):
-    return ToxicityDataset.load(path)
+def load_dataset(path=TOXICITY_DATASET, threshold=0):
+    return ToxicityDataset.load(path, threshold=threshold)
 
 
 class ToxicityDataset(Dataset):
     @classmethod
-    def load(cls, path):
+    def load(cls, path, threshold=0):
         path = Path(path)
 
         collections = {}
@@ -34,7 +34,7 @@ class ToxicityDataset(Dataset):
                 lambda row: [
                     gender.title()
                     for gender, score in zip(_GENDER_COLUMNS, row)
-                    if score > 0
+                    if score > threshold
                 ],
                 axis=1,
             )
