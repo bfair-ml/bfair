@@ -45,14 +45,21 @@ class ClassifierWrapper:
         return repr(self.pipeline)
 
 
+def ignore(path, solution, fitness):
+    pass
+
 class FileLogger(Logger):
-    def __init__(self, output_path: str):
+    def __init__(self, output_path: str, eval_solution=ignore):
         super().__init__()
         self.output_path = Path(output_path)
         self.start_time = None
+        self._eval_solution = eval_solution
 
     def begin(self, generations, pop_size):
         self.start_time = time.time()
+
+    def eval_solution(self, solution, fitness):
+        return self._eval_solution(self.output_path, solution, fitness)
 
     def end(self, best, best_fn):
         current_time = time.time()

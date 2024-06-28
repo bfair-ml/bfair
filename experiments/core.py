@@ -73,6 +73,11 @@ def setup():
         default=DIFFERENCE,
         choices=[DIFFERENCE, RATIO],
     )
+    parser.add_argument(
+        "--fairness-under",
+        type=to_number,
+        default=None,
+    )
 
     return parser.parse_args()
 
@@ -235,7 +240,28 @@ def _run(
     if path:
         from bfair.utils.autogoal import FileLogger
 
-        file_logger = FileLogger(output_path=path)
+        if args.fairness_under is not None:
+            limit = args.fairness_under
+
+            def save_if_under_threshold(path, solution, fitness):
+                selected = fitness[:-1]
+                if any(s > limit for s in selected):
+                    return
+                sampler = solution.sampler_
+                with path.open("a") as fd:
+                    fd.writelines(
+                        (
+                            f"Under threshold: fitness={fitness}, best=\n{repr(sampler)}\n",
+                        )
+                    )
+                # end
+
+            file_logger = FileLogger(
+                output_path=path,
+                eval_solution=save_if_under_threshold,
+            )
+        else:
+            file_logger = FileLogger(output_path=path)
         loggers.append(file_logger)
 
     pipelines, scores = mitigator.diversify(
