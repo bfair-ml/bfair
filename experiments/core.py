@@ -244,7 +244,11 @@ def _run(
             limit = args.fairness_under
 
             def save_if_under_threshold(path, solution, fitness):
-                selected = fitness[:-1]
+                try:
+                    selected = fitness[:-1]
+                except:
+                    return
+
                 if any(s > limit for s in selected):
                     return
                 sampler = solution.sampler_
