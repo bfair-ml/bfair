@@ -24,6 +24,7 @@ RUN cd /usr/lib/python3/dist-packages/ \
  && sudo pip install -e .
 
 RUN python -m spacy download en_core_web_sm
+RUN python -m spacy download es_core_news_sm
 
 RUN pip install datasets
 RUN mkdir -p /home/coder/huggingface_data/

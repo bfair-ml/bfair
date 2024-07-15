@@ -19,3 +19,7 @@ class CommonGen(Dataset):
         validation = source["validation"].to_pandas()
         test = source["test"].to_pandas()
         return CommonGen(data=train, validation=validation, test=test)
+    
+    @staticmethod
+    def language():
+        return "english"

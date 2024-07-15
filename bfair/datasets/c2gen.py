@@ -17,3 +17,7 @@ class C2Gen(Dataset):
         source = db.load_dataset("Non-Residual-Prompting/C2Gen", "c2gen", split="test")
         data = source.to_pandas()
         return C2Gen(data=data, split_seed=split_seed)
+    
+    @staticmethod
+    def language():
+        return "english"

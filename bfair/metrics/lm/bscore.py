@@ -1,3 +1,4 @@
+import math
 import spacy
 import numpy as np
 import pandas as pd
@@ -7,6 +8,7 @@ from collections import defaultdict
 from itertools import repeat
 from functools import partial
 from statistics import mean, stdev
+from tqdm import tqdm
 
 from nltk import ngrams, word_tokenize
 from nltk.corpus import stopwords
@@ -105,6 +107,25 @@ ALL_GENDER_PAIRS = list(
         for pair in pairs
     }
 )
+
+class EnglishGenderedWords:
+    def __init__(
+            self,
+            sources=(DM_GENDER_PAIRS, PENN_GENDER_PAIRS, WIKI_GENDER_PAIRS),
+            order=GERDER_PAIR_ORDER
+    ):
+        group_words = defaultdict(set)
+        for pairs in sources:
+            for i, gender in enumerate(order):
+                group_words[gender].update((p[i] for p in pairs))
+        self.male = group_words[MALE]
+        self.female = group_words[FEMALE]
+
+    def get_male_words(self):
+        return self.male
+    
+    def get_female_words(self):
+        return self.female
 
 
 class FixedContext:
@@ -210,7 +231,7 @@ class BiasScore:
             texts = [paragraph for text in texts for paragraph in text.splitlines()]
 
         word2counts = defaultdict(lambda: defaultdict(int))
-        for text in texts:
+        for text in tqdm(texts, desc="Computing counts"):
             self._aggregate_counts(
                 word2counts,
                 self.get_counts(
@@ -272,7 +293,7 @@ class BiasScore:
     ):
         return {
             word: counts
-            for word, counts in word2counts.items()
+            for word, counts in tqdm(word2counts.items(), desc="Dropping words")
             if not (
                 remove_stopwords
                 and word in stopwords
@@ -287,11 +308,12 @@ class BiasScore:
         for scoring_mode in scoring_modes:
             scores = [
                 cls.compute_score_for_word(word, word2counts, groups, scoring_mode)
-                for word in word2counts
+                for word in tqdm(word2counts, desc=f"Scoring words ({scoring_mode})")
             ]
+            not_infinity = [s for s in scores if not math.isinf(s)]
             result[scoring_mode] = (
-                mean(scores),
-                stdev(scores),
+                mean(not_infinity),
+                stdev(not_infinity),
                 pd.DataFrame(
                     {
                         "words": word2counts.keys(),
@@ -331,9 +353,9 @@ class BiasScore:
         if prob_first and prob_second:
             return np.log2(prob_first / prob_second)  # I am pretty sure it is log 2
         elif prob_first:
-            return 1
+            return float("+inf")
         elif prob_second:
-            return -1
+            return float("-inf")
         else:
             return 0
 

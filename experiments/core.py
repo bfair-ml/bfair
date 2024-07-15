@@ -218,7 +218,7 @@ def _run(
         pop_size=args.popsize,
         search_iterations=args.iterations,
         evaluation_timeout=args.timeout,
-        memory_limit=args.memory * 1024**3,
+        # memory_limit=args.memory * 1024**3,
         search_timeout=args.global_timeout,
         errors="warn",
         #

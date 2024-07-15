@@ -5,43 +5,61 @@ from collections import defaultdict
 
 from bfair.datasets.c2gen import load_dataset as load_c2gen, CONTEXT
 from bfair.datasets.commongen import load_dataset as load_common_gen, TARGET
+from bfair.datasets.victoria import load_dataset as load_victoria, OUTPUT
 from bfair.metrics.lm.bscore import (
     BiasScore,
     FixedContext,
     InfiniteContext,
     GERDER_PAIR_ORDER,
-    DM_GENDER_PAIRS,
-    PENN_GENDER_PAIRS,
-    WIKI_GENDER_PAIRS,
 )
+from bfair.metrics.lm import EnglishGenderedWords, SpanishGenderedWords
 
 FIXED = "fixed"
 INFINITE = "infinite"
 
 COMMON_GEN = "common-gen"
 C2GEN = "c2gen"
+VICTORIA = "victoria"
+VICTORIA_GPT35 = "victoria-GPT3.5"
+VICTORIA_GPT4O = "victoria-GPT4o"
+VICTORIA_LLAMA3 = "victoria-Llama3"
+VICTORIA_GEMINI15 = "victoria-Gemini1.5"
+VICTORIA_MISTRAL8X7B = "victoria-Mistral8x7b"
 
 
 def main(args):
     if args.dataset == C2GEN:
         dataset = load_c2gen()
         texts = dataset.data[CONTEXT].str.lower()
+        language = dataset.language()
     elif args.dataset == COMMON_GEN:
         dataset = load_common_gen()
         texts = dataset.all_data[TARGET].str.lower()
+        language = dataset.language()
+    elif args.dataset.startswith(VICTORIA):
+        model = args.dataset.split("-")[1]
+        dataset = load_victoria(model=model)
+        texts = dataset.data[OUTPUT].str.lower()
+        language = dataset.language()
     elif Path(args.dataset).exists():
         dataset = pd.read_csv(args.dataset, sep="\t", usecols=["sentence"])
         texts = dataset["sentence"].dropna().str.lower()
+        language = "english"
     else:
         raise ValueError(args.dataset)
 
-    group_words = defaultdict(set)
-    for pairs in [DM_GENDER_PAIRS, PENN_GENDER_PAIRS, WIKI_GENDER_PAIRS]:
-        for i, gender in enumerate(GERDER_PAIR_ORDER):
-            group_words[gender].update((p[i] for p in pairs))
+    word_handler = {
+        "english": EnglishGenderedWords(),
+        "spanish": SpanishGenderedWords()
+    }[language]
+    
+    group_words = {
+        "male": word_handler.get_male_words(),
+        "female": word_handler.get_female_words(),
+    }
 
     bias_score = BiasScore(
-        language="english",
+        language=language,
         group_words=group_words,
         context=FixedContext() if args.context == FIXED else InfiniteContext(),
         scoring_modes=[BiasScore.S_RATIO, BiasScore.S_LOG],
@@ -74,7 +92,16 @@ def entry_point():
     )
     parser.add_argument(
         "--dataset",
-        help=f"Valid options: {[COMMON_GEN, C2GEN, '<PATH>']}",
+        help="Valid options: {}".format([
+            COMMON_GEN,
+            C2GEN,
+            VICTORIA_GPT35,
+            VICTORIA_GPT4O,
+            VICTORIA_LLAMA3,
+            VICTORIA_GEMINI15,
+            VICTORIA_MISTRAL8X7B,
+            '<PATH>'
+        ]),
         default=C2GEN,
     )
     parser.add_argument(
