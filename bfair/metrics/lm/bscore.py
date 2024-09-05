@@ -108,11 +108,12 @@ ALL_GENDER_PAIRS = list(
     }
 )
 
+
 class EnglishGenderedWords:
     def __init__(
-            self,
-            sources=(DM_GENDER_PAIRS, PENN_GENDER_PAIRS, WIKI_GENDER_PAIRS),
-            order=GERDER_PAIR_ORDER
+        self,
+        sources=(DM_GENDER_PAIRS, PENN_GENDER_PAIRS, WIKI_GENDER_PAIRS),
+        order=GERDER_PAIR_ORDER,
     ):
         group_words = defaultdict(set)
         for pairs in sources:
@@ -123,7 +124,7 @@ class EnglishGenderedWords:
 
     def get_male_words(self):
         return self.male
-    
+
     def get_female_words(self):
         return self.female
 
@@ -196,17 +197,16 @@ class BiasScore:
         self.remove_stopwords = remove_stopwords
         self.remove_groupwords = remove_groupwords
         self.merge_paragraphs = merge_paragraphs
+        self.all_group_words = {w for words in group_words.values() for w in words}
         self.tokenizer = (
-            self._get_default_tokenizer(language, use_root)
+            self._get_default_tokenizer(language, use_root, self.all_group_words)
             if tokenizer is None
             else tokenizer
         )
-
         self.stopwords = stopwords.words(language) if remove_stopwords else None
-        self.all_group_words = {w for words in group_words.values() for w in words}
 
     @classmethod
-    def _get_default_tokenizer(cls, language, use_root):
+    def _get_default_tokenizer(cls, language, use_root, relevant):
         if not use_root:
             return partial(word_tokenize, language=language)
 
@@ -217,7 +217,13 @@ class BiasScore:
 
         def tokenizer(text):
             return [
-                token.lemma_.lower() if token.lemma_ != "-PRON-" else token.lower_
+                (
+                    token.text
+                    if token.pos_ == "PROPN"
+                    else token.lower_
+                    if token.pos_ in ("PRON", "DET") or token.lower_ in relevant
+                    else token.lemma_.lower()
+                )
                 for token in nlp(text)
             ]
 
