@@ -1,20 +1,28 @@
 import pandas as pd
 from pathlib import Path
 
+
 class SpanishGenderedWords:
-    def __init__(self, path="datasets/victoria"):
+    def __init__(
+        self,
+        path="datasets/victoria/Seeds",
+        male_dir="Masculine",
+        female_dir="Feminine",
+    ):
         path = Path(path)
-        male_path = path / "05_Masc_final.csv"
-        female_path = path / "05_Fem_final.csv"
+        male_path = path / male_dir
+        female_path = path / female_dir
 
-        male_data = pd.read_csv(male_path, names=["words"], header=None)
-        female_data = pd.read_csv(female_path, names=["words"], header=None)
+        self.male = set()
+        self.female = set()
 
-        self.male = set(male_data["words"])
-        self.female = set(female_data["words"])
+        for collection, path in ((self.male, male_path), (self.female, female_path)):
+            for file in path.iterdir():
+                data = pd.read_csv(file, names=["words"], header=None)
+                collection.update(data["words"].str.strip())
 
     def get_male_words(self):
         return self.male
-    
+
     def get_female_words(self):
         return self.female
