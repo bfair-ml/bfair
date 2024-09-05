@@ -313,18 +313,33 @@ class BiasScore:
         result = {}
         for scoring_mode in scoring_modes:
             scores = [
-                cls.compute_score_for_word(word, word2counts, groups, scoring_mode)
+                (
+                    word,
+                    cls.compute_score_for_word(word, word2counts, groups, scoring_mode),
+                )
                 for word in tqdm(word2counts, desc=f"Scoring words ({scoring_mode})")
             ]
-            not_infinity = [s for s in scores if not math.isinf(s)]
+            not_infinity = [s for _, s in scores if not math.isinf(s)]
             result[scoring_mode] = (
                 mean(not_infinity),
                 stdev(not_infinity),
-                pd.DataFrame(
-                    {
-                        "words": word2counts.keys(),
-                        scoring_mode: scores,
-                    }
+                pd.DataFrame.from_records(
+                    scores,
+                    columns=["words", scoring_mode],
+                ).set_index("words"),
+            )
+
+        for group in groups:
+            scoring_mode = f"count ({group})"
+            not_infinity = [
+                c[group] for c in word2counts.values() if not math.isinf(c[group])
+            ]
+            result[scoring_mode] = (
+                mean(not_infinity),
+                stdev(not_infinity),
+                pd.DataFrame.from_records(
+                    [(word, counts[group]) for word, counts in word2counts.items()],
+                    columns=["words", scoring_mode],
                 ).set_index("words"),
             )
         return result
