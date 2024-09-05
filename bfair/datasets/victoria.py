@@ -2,7 +2,7 @@ import pandas as pd
 from pathlib import Path
 
 from .base import Dataset
-
+from bfair.utils import md2text
 
 PROMPT = "prompt"
 OUTPUT = "output"
@@ -24,6 +24,7 @@ class Victoria(Dataset):
         path = Path(path)
         data_path = path / f"{model}.csv"
         data = pd.read_csv(data_path, sep=";")
+        data[OUTPUT] = data[OUTPUT].apply(md2text)
         return Victoria(data=data, split_seed=split_seed, stratify_by=stratify_by)
 
     @staticmethod
