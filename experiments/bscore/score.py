@@ -50,9 +50,9 @@ def main(args):
 
     word_handler = {
         "english": EnglishGenderedWords(),
-        "spanish": SpanishGenderedWords()
+        "spanish": SpanishGenderedWords(),
     }[language]
-    
+
     group_words = {
         "male": word_handler.get_male_words(),
         "female": word_handler.get_female_words(),
@@ -64,6 +64,7 @@ def main(args):
         context=FixedContext() if args.context == FIXED else InfiniteContext(),
         scoring_modes=[BiasScore.S_RATIO, BiasScore.S_LOG],
         use_root=args.use_root,
+        lower_proper_nouns=args.lower_proper_nouns,
     )
 
     scores = bias_score(texts)
@@ -92,16 +93,18 @@ def entry_point():
     )
     parser.add_argument(
         "--dataset",
-        help="Valid options: {}".format([
-            COMMON_GEN,
-            C2GEN,
-            VICTORIA_GPT35,
-            VICTORIA_GPT4O,
-            VICTORIA_LLAMA3,
-            VICTORIA_GEMINI15,
-            VICTORIA_MISTRAL8X7B,
-            '<PATH>'
-        ]),
+        help="Valid options: {}".format(
+            [
+                COMMON_GEN,
+                C2GEN,
+                VICTORIA_GPT35,
+                VICTORIA_GPT4O,
+                VICTORIA_LLAMA3,
+                VICTORIA_GEMINI15,
+                VICTORIA_MISTRAL8X7B,
+                "<PATH>",
+            ]
+        ),
         default=C2GEN,
     )
     parser.add_argument(
@@ -113,8 +116,15 @@ def entry_point():
         choices=["yes", "no"],
         required=True,
     )
+    parser.add_argument(
+        "--lower-proper-nouns",
+        choices=["yes", "no"],
+        required=True,
+    )
+
     args = parser.parse_args()
     args.use_root = args.use_root == "yes"
+    args.lower_proper_nouns = args.lower_proper_nouns == "yes"
     main(args)
 
 

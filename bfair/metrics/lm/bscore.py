@@ -189,6 +189,7 @@ class BiasScore:
         remove_stopwords=True,
         remove_groupwords=True,
         merge_paragraphs=False,
+        lower_proper_nouns=False,
     ):
         self.language = language
         self.group_words = group_words
@@ -199,14 +200,19 @@ class BiasScore:
         self.merge_paragraphs = merge_paragraphs
         self.all_group_words = {w for words in group_words.values() for w in words}
         self.tokenizer = (
-            self._get_default_tokenizer(language, use_root, self.all_group_words)
+            self._get_default_tokenizer(
+                language,
+                use_root,
+                lower_proper_nouns,
+                self.all_group_words,
+            )
             if tokenizer is None
             else tokenizer
         )
         self.stopwords = stopwords.words(language) if remove_stopwords else None
 
     @classmethod
-    def _get_default_tokenizer(cls, language, use_root, relevant):
+    def _get_default_tokenizer(cls, language, use_root, lower_proper_nouns, relevant):
         if not use_root:
             return partial(word_tokenize, language=language)
 
@@ -219,7 +225,7 @@ class BiasScore:
             return [
                 (
                     token.text
-                    if token.pos_ == "PROPN"
+                    if token.pos_ == "PROPN" and not lower_proper_nouns
                     else token.lower_
                     if token.pos_ in ("PRON", "DET") or token.lower_ in relevant
                     else token.lemma_.lower()
