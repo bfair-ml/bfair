@@ -190,6 +190,7 @@ class BiasScore:
         remove_groupwords=True,
         merge_paragraphs=False,
         lower_proper_nouns=False,
+        limit_group_words_pos=("NOUN", "PROPN", "PRON", "DET"),
     ):
         self.language = language
         self.group_words = group_words
@@ -210,12 +211,10 @@ class BiasScore:
             else tokenizer
         )
         self.stopwords = stopwords.words(language) if remove_stopwords else None
+        self.limit_group_words_pos = limit_group_words_pos
 
     @classmethod
     def _get_default_tokenizer(cls, language, use_root, lower_proper_nouns, relevant):
-        if not use_root:
-            return partial(word_tokenize, language=language)
-
         if language not in cls.LANGUAGE2MODEL:
             raise ValueError(language)
 
@@ -224,11 +223,18 @@ class BiasScore:
         def tokenizer(text):
             return [
                 (
+                    # TEXT
                     token.text
                     if token.pos_ == "PROPN" and not lower_proper_nouns
                     else token.lower_
-                    if token.pos_ in ("PRON", "DET") or token.lower_ in relevant
-                    else token.lemma_.lower()
+                    if (
+                        not use_root
+                        or token.pos_ in ("PRON", "DET")
+                        or token.lower_ in relevant
+                    )
+                    else token.lemma_.lower(),
+                    # POS
+                    token.pos_,
                 )
                 for token in nlp(text)
             ]
@@ -251,6 +257,7 @@ class BiasScore:
                     group_words=self.group_words,
                     context=self.context,
                     tokenizer=self.tokenizer,
+                    limit_group_words_pos=self.limit_group_words_pos,
                 ),
             )
 
@@ -281,14 +288,20 @@ class BiasScore:
         group_words: Dict[str, Set],
         context,
         tokenizer=str.split,
+        limit_group_words_pos=None,
     ):
         word2counts = defaultdict(lambda: defaultdict(int))
         tokens = tokenizer(text)
-        for center, get_context in context(tokens):
+        for (center, center_pos), get_context in context(tokens):
+            if (
+                limit_group_words_pos is not None
+                and center_pos not in limit_group_words_pos
+            ):
+                continue
             for group, words in group_words.items():
                 if center not in words:
                     continue
-                for word, weight in get_context():
+                for (word, word_pos), weight in get_context():
                     word2counts[word][group] += weight
 
         return word2counts
