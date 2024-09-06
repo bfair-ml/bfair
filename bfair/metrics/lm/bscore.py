@@ -177,6 +177,8 @@ class BiasScore:
     S_RATIO = "count_disparity"
     S_LOG = "log_score"
 
+    DISCRETE = 0.05
+
     def __init__(
         self,
         *,
@@ -301,8 +303,13 @@ class BiasScore:
             for group, words in group_words.items():
                 if center not in words:
                     continue
+
+                discrete_count = f"discrete[{cls.DISCRETE}] ({group})"
+
                 for (word, word_pos), weight in get_context():
                     word2counts[word][group] += weight
+                    if weight > cls.DISCRETE:
+                        word2counts[word][discrete_count] += 1
 
         return word2counts
 
@@ -350,6 +357,7 @@ class BiasScore:
 
         for group in groups:
             scoring_mode = f"count ({group})"
+            discrete_count = f"discrete[{cls.DISCRETE}] ({group})"
             not_infinity = [
                 c[group] for c in word2counts.values() if not math.isinf(c[group])
             ]
@@ -357,8 +365,11 @@ class BiasScore:
                 mean(not_infinity),
                 stdev(not_infinity),
                 pd.DataFrame.from_records(
-                    [(word, counts[group]) for word, counts in word2counts.items()],
-                    columns=["words", scoring_mode],
+                    [
+                        (word, counts[group], counts[discrete_count])
+                        for word, counts in word2counts.items()
+                    ],
+                    columns=["words", scoring_mode, discrete_count],
                 ).set_index("words"),
             )
         return result

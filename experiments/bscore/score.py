@@ -69,7 +69,7 @@ def main(args):
 
     scores = bias_score(texts)
     for scoring_mode, (mean, stdev, _) in scores.items():
-        print(f"## {scoring_mode} ({' then '.join(GERDER_PAIR_ORDER)})")
+        print(f"## {scoring_mode} [{' then '.join(GERDER_PAIR_ORDER)}]")
         print("- **Mean**", mean)
         print("- **Standard Deviation**", stdev)
 
