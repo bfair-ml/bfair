@@ -392,4 +392,5 @@ class BiasScore:
         total_count_w_g = sum(counts[group] for counts in word2counts.values())
 
         numerator = count_w_g / total_count_w_g if total_count_w_g else 0
+        # denominator = ... # Compared to Co-Occurrence Bias score: count(group) / sum(count(non-seed-words))
         return numerator
