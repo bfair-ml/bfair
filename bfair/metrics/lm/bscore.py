@@ -251,17 +251,18 @@ class BiasScore:
             texts = [paragraph for text in texts for paragraph in text.splitlines()]
 
         word2counts = defaultdict(lambda: defaultdict(int))
+        word2discrete = defaultdict(lambda: defaultdict(int))
         for text in tqdm(texts, desc="Computing counts"):
-            self._aggregate_counts(
-                word2counts,
-                self.get_counts(
-                    text=text,
-                    group_words=self.group_words,
-                    context=self.context,
-                    tokenizer=self.tokenizer,
-                    limit_group_words_pos=self.limit_group_words_pos,
-                ),
+            local_word2counts, local_word2discrete = self.get_counts(
+                text=text,
+                group_words=self.group_words,
+                context=self.context,
+                tokenizer=self.tokenizer,
+                limit_group_words_pos=self.limit_group_words_pos,
             )
+
+            self._aggregate_counts(word2counts, local_word2counts)
+            self._aggregate_counts(word2discrete, local_word2discrete)
 
         if self.remove_stopwords or self.remove_groupwords:
             word2counts = self.drop_words(
@@ -271,8 +272,9 @@ class BiasScore:
                 remove_groupwords=self.remove_groupwords,
                 all_group_words=self.all_group_words,
             )
+            word2discrete = {word: word2discrete[word] for word in word2counts}
         return self.compute_scores(
-            word2counts, self.group_words.keys(), self.scoring_modes
+            word2counts, word2discrete, self.group_words.keys(), self.scoring_modes
         )
 
     @classmethod
@@ -293,6 +295,7 @@ class BiasScore:
         limit_group_words_pos=None,
     ):
         word2counts = defaultdict(lambda: defaultdict(int))
+        word2discrete = defaultdict(lambda: defaultdict(int))
         tokens = tokenizer(text)
         for (center, center_pos), get_context in context(tokens):
             if (
@@ -304,14 +307,13 @@ class BiasScore:
                 if center not in words:
                     continue
 
-                discrete_count = f"discrete[{cls.DISCRETE}] ({group})"
-
                 for (word, word_pos), weight in get_context():
                     word2counts[word][group] += weight
-                    if weight > cls.DISCRETE:
-                        word2counts[word][discrete_count] += 1
 
-        return word2counts
+                    if weight > cls.DISCRETE:
+                        word2discrete[word][group] += 1
+
+        return word2counts, word2discrete
 
     @classmethod
     def drop_words(
@@ -335,7 +337,7 @@ class BiasScore:
         }
 
     @classmethod
-    def compute_scores(cls, word2counts, groups, scoring_modes):
+    def compute_scores(cls, word2counts, word2discrete, groups, scoring_modes):
         result = {}
         for scoring_mode in scoring_modes:
             scores = [
@@ -357,7 +359,6 @@ class BiasScore:
 
         for group in groups:
             scoring_mode = f"count ({group})"
-            discrete_count = f"discrete[{cls.DISCRETE}] ({group})"
             not_infinity = [
                 c[group] for c in word2counts.values() if not math.isinf(c[group])
             ]
@@ -365,13 +366,25 @@ class BiasScore:
                 mean(not_infinity),
                 stdev(not_infinity),
                 pd.DataFrame.from_records(
-                    [
-                        (word, counts[group], counts[discrete_count])
-                        for word, counts in word2counts.items()
-                    ],
-                    columns=["words", scoring_mode, discrete_count],
+                    [(word, counts[group]) for word, counts in word2counts.items()],
+                    columns=["words", scoring_mode],
                 ).set_index("words"),
             )
+
+        for group in groups:
+            scoring_mode = f"discrete[{cls.DISCRETE}] ({group})"
+            not_infinity = [
+                c[group] for c in word2discrete.values() if not math.isinf(c[group])
+            ]
+            result[scoring_mode] = (
+                mean(not_infinity),
+                stdev(not_infinity),
+                pd.DataFrame.from_records(
+                    [(word, counts[group]) for word, counts in word2discrete.items()],
+                    columns=["words", scoring_mode],
+                ).set_index("words"),
+            )
+
         return result
 
     @classmethod
