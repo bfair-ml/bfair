@@ -239,6 +239,7 @@ class BiasScore:
                     token.pos_,
                 )
                 for token in nlp(text)
+                if not token.is_punct and not token.is_digit and not token.is_space
             ]
 
         return tokenizer
