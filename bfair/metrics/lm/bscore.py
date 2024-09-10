@@ -239,7 +239,7 @@ class BiasScore:
                     token.pos_,
                 )
                 for token in nlp(text)
-                if not token.is_punct and not token.is_digit and not token.is_space
+                if not token.is_space
             ]
 
         return tokenizer
@@ -309,6 +309,9 @@ class BiasScore:
                     continue
 
                 for (word, word_pos), weight in get_context():
+                    if word_pos in ("PUNCT", "NUM", "SYM"):
+                        continue
+
                     word2counts[word][group] += weight
 
                     if weight > cls.DISCRETE:
