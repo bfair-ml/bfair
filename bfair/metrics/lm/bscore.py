@@ -293,8 +293,16 @@ class BiasScore:
 
         word2counts = defaultdict(lambda: defaultdict(int))
         word2discrete = defaultdict(lambda: defaultdict(int))
+        word2matches = defaultdict(lambda: defaultdict(set))
+        word2occurrence = defaultdict(int)
+
         for text in tqdm(texts, desc="Computing counts"):
-            local_word2counts, local_word2discrete = self.get_counts(
+            (
+                local_word2counts,
+                local_word2discrete,
+                local_word2match,
+                local_word2occurrence,
+            ) = self.get_counts(
                 text=text,
                 group_words=self.group_words,
                 context=self.context,
@@ -304,6 +312,8 @@ class BiasScore:
 
             self._aggregate_counts(word2counts, local_word2counts)
             self._aggregate_counts(word2discrete, local_word2discrete)
+            self._aggregate_matches(word2matches, local_word2match)
+            self._aggregate_numbers(word2occurrence, local_word2occurrence)
 
         if self.remove_stopwords or self.remove_groupwords:
             word2counts = self.drop_words(
@@ -314,8 +324,16 @@ class BiasScore:
                 all_group_words=self.all_group_words,
             )
             word2discrete = {word: word2discrete[word] for word in word2counts}
+            word2matches = {word: word2matches[word] for word in word2counts}
+            word2occurrence = {word: word2occurrence[word] for word in word2counts}
+
         return self.compute_scores(
-            word2counts, word2discrete, self.group_words.keys(), self.scoring_modes
+            word2counts,
+            word2discrete,
+            word2matches,
+            word2occurrence,
+            self.group_words.keys(),
+            self.scoring_modes,
         )
 
     @classmethod
@@ -324,6 +342,18 @@ class BiasScore:
             total_count = total_counts[word]
             for group, count in counts.items():
                 total_count[group] += count
+
+    @classmethod
+    def _aggregate_matches(cls, total, new):
+        for word, collection in new.items():
+            total_matches = total[word]
+            for group, matches in collection.items():
+                total_matches[group].update(matches)
+
+    @classmethod
+    def _aggregate_numbers(cls, total, new):
+        for word, number in new.items():
+            total[word] += number
 
     @classmethod
     def get_counts(
@@ -337,8 +367,13 @@ class BiasScore:
     ):
         word2counts = defaultdict(lambda: defaultdict(int))
         word2discrete = defaultdict(lambda: defaultdict(int))
+        word2matches = defaultdict(lambda: defaultdict(set))
+        word2occurrence = defaultdict(int)
+
         tokens = tokenizer(text)
         for (center, center_pos), get_context in context(tokens):
+            word2occurrence[center] += 1
+
             if (
                 limit_group_words_pos is not None
                 and center_pos not in limit_group_words_pos
@@ -356,8 +391,9 @@ class BiasScore:
 
                     if weight > cls.DISCRETE:
                         word2discrete[word][group] += 1
+                        word2matches[word][group].add(center)
 
-        return word2counts, word2discrete
+        return word2counts, word2discrete, word2matches, word2occurrence
 
     @classmethod
     def drop_words(
@@ -381,7 +417,15 @@ class BiasScore:
         }
 
     @classmethod
-    def compute_scores(cls, word2counts, word2discrete, groups, scoring_modes):
+    def compute_scores(
+        cls,
+        word2counts,
+        word2discrete,
+        word2matches,
+        word2occurrence,
+        groups,
+        scoring_modes,
+    ):
         result = {}
         for scoring_mode in scoring_modes:
             scores = [
@@ -425,6 +469,26 @@ class BiasScore:
                 stdev(not_infinity),
                 pd.DataFrame.from_records(
                     [(word, counts[group]) for word, counts in word2discrete.items()],
+                    columns=["words", scoring_mode],
+                ).set_index("words"),
+            )
+
+        result["global-count"] = (
+            mean(word2occurrence.values()),
+            stdev(word2occurrence.values()),
+            pd.DataFrame.from_records(
+                [(word, count) for word, count in word2occurrence.items()],
+                columns=["words", "global-count"],
+            ).set_index("words"),
+        )
+
+        for group in groups:
+            scoring_mode = f"matches ({group})"
+            result[scoring_mode] = (
+                None,
+                None,
+                pd.DataFrame.from_records(
+                    [(word, matches[group]) for word, matches in word2matches.items()],
                     columns=["words", scoring_mode],
                 ).set_index("words"),
             )
