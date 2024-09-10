@@ -155,17 +155,57 @@ class FixedContext:
 
 
 class InfiniteContext(FixedContext):
-    def __init__(self):
+    def __init__(self, step=0.95):
         super().__init__(window_size=200)
-        self.step = 0.95
+        self.step = step
 
     def weighted(self, window, middle):
         for i, word in enumerate(window):
             if word is None:
                 continue
-            distance = abs(middle - i)
-            weight = pow(self.step, distance)
+            if i == middle:  # to achieve (..., 0.95, 1, 1, 1, 0.95, ...)
+                yield word, 1
+            else:
+                distance = abs(middle - i)
+                weight = pow(self.step, distance - 1)
+                yield word, weight
+
+
+class ContinuousContext(InfiniteContext):
+    DISRUPTION_PENALIZATION = {
+        punct: penalization
+        for symbols, penalization in (
+            (".¿?¡!", 0.25),
+            (";«»()[]", 0.50),
+            (("...",), 0.75),
+            (",:-•", 0.75),
+            ("/", 0.90),
+        )
+        for punct in symbols
+    }
+
+    def __init__(self, step=0.95, disruption_penalization=None):
+        super().__init__(step)
+        self.disruption_penalization = (
+            self.DISRUPTION_PENALIZATION
+            if disruption_penalization is None
+            else disruption_penalization
+        )
+
+    def weighted(self, window, middle):
+        yield from self._sequential_weighting(reversed(window[:middle]))
+        yield from self._sequential_weighting(window[middle:])
+
+    def _sequential_weighting(self, sequence):
+        weight = 1
+        for word in sequence:
+            if word is None:
+                break
             yield word, weight
+            try:
+                weight *= self.disruption_penalization[word]
+            except KeyError:
+                weight *= self.step
 
 
 class BiasScore:

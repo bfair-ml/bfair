@@ -10,12 +10,14 @@ from bfair.metrics.lm.bscore import (
     BiasScore,
     FixedContext,
     InfiniteContext,
+    ContinuousContext,
     GERDER_PAIR_ORDER,
 )
 from bfair.metrics.lm import EnglishGenderedWords, SpanishGenderedWords
 
 FIXED = "fixed"
 INFINITE = "infinite"
+CONTINUOUS = "continuous"
 
 COMMON_GEN = "common-gen"
 C2GEN = "c2gen"
@@ -61,7 +63,13 @@ def main(args):
     bias_score = BiasScore(
         language=language,
         group_words=group_words,
-        context=FixedContext() if args.context == FIXED else InfiniteContext(),
+        context=(
+            FixedContext()
+            if args.context == FIXED
+            else InfiniteContext()
+            if args.context == INFINITE
+            else ContinuousContext()
+        ),
         scoring_modes=[BiasScore.S_RATIO, BiasScore.S_LOG],
         use_root=args.use_root,
         lower_proper_nouns=args.lower_proper_nouns,
@@ -88,8 +96,8 @@ def entry_point():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--context",
-        choices=[FIXED, INFINITE],
-        default=INFINITE,
+        choices=[FIXED, INFINITE, CONTINUOUS],
+        required=True,
     )
     parser.add_argument(
         "--dataset",
