@@ -384,7 +384,7 @@ class BiasScore:
                     continue
 
                 for (word, word_pos), weight in get_context():
-                    if word_pos in ("PUNCT", "NUM", "SYM"):
+                    if word_pos in ("PUNCT", "NUM", "SYM") or word.isdigit():
                         continue
 
                     word2counts[word][group] += weight
