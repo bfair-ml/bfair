@@ -193,12 +193,12 @@ class SpanishGenderedWords:
         male_suffix="masc",
         female_suffix="fem",
         pronouns="01_Pron",
-        nouns="03_Sust",
-        professions="04_Professions_list",
-        names="05_Nombres",
-        basic="06_Heteronimos",
-        adjectives="07_Heteronimos_adj",
-        abbreviations="08_Abreviaturas",
+        nouns="02_Sust",
+        professions="03_Professions_list",
+        names="04_Nombres",
+        basic="05_Heteronimos",
+        adjectives="06_Heteronimos_adj",
+        abbreviations="07_Abreviaturas",
     ):
         self.gender_order = [MALE, FEMALE]
 
