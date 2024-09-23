@@ -17,8 +17,6 @@ from nltk.corpus import stopwords
 from bfair.metrics.lm.words import GroupWords
 
 
-
-
 class FixedContext:
     def __init__(self, window_size=10):
         self.window_size = window_size
@@ -156,7 +154,10 @@ class BiasScore:
                 (
                     # TEXT
                     token.text
-                    if token.pos_ == "PROPN" and not lower_proper_nouns
+                    if (
+                        token.pos_ == "PROPN"
+                        and (not lower_proper_nouns or group_words.includes(token.text))
+                    )
                     else token.lower_
                     if (
                         not use_root
