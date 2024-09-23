@@ -7,7 +7,7 @@ from statistics import mean, StatisticsError
 from nltk.stem import SnowballStemmer
 from bfair.datasets.commongen import load_dataset as load_commongen, CONCEPTS
 from bfair.datasets.c2gen import load_dataset as load_c2gen, KEYWORDS
-from bfair.metrics.lm.bscore import ALL_GENDER_PAIRS
+from bfair.metrics.lm.words import EnglishGenderedWords
 
 COMMON_GEN = "common-gen"
 C2GEN = "c2gen"
@@ -59,7 +59,7 @@ def main(args):
         ]
     )
 
-    all_gender_words = {w for pair in ALL_GENDER_PAIRS for w in pair}
+    all_gender_words = EnglishGenderedWords().get_group_words().get_all_words()
     gendered_keygens = in_keygens.apply(
         lambda keygens: default_mean(
             [any(w in all_gender_words for w in words) for words in keygens]

@@ -6,7 +6,7 @@ from collections import defaultdict
 from bfair.datasets.c2gen import load_dataset as load_c2gen, CONTEXT
 from bfair.datasets.commongen import load_dataset as load_common_gen, TARGET
 from bfair.datasets.victoria import load_dataset as load_victoria, OUTPUT
-from bfair.metrics.lm.bscore import (
+from bfair.metrics.lm import (
     BiasScore,
     FixedContext,
     InfiniteContext,
@@ -55,10 +55,7 @@ def main(args):
         "spanish": SpanishGenderedWords(),
     }[language]
 
-    group_words = {
-        "male": word_handler.get_male_words(),
-        "female": word_handler.get_female_words(),
-    }
+    group_words = word_handler.get_group_words()
 
     bias_score = BiasScore(
         language=language,

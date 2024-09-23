@@ -13,120 +13,10 @@ from tqdm import tqdm
 from nltk import ngrams, word_tokenize
 from nltk.corpus import stopwords
 
-MALE = "male"
-FEMALE = "female"
 
-GERDER_PAIR_ORDER = [MALE, FEMALE]
-
-DM_GENDER_PAIRS = [
-    ("actor", "actress"),
-    ("boy", "girl"),
-    ("boyfriend", "girlfriend"),
-    ("boys", "girls"),
-    ("father", "mother"),
-    ("fathers", "mothers"),
-    ("gentleman", "lady"),
-    ("gentlemen", "ladies"),
-    ("grandson", "granddaughter"),
-    ("he", "she"),
-    ("him", "her"),
-    ("his", "her"),
-    ("husbands", "wives"),
-    ("kings", "queens"),
-    ("male", "female"),
-    ("males", "females"),
-    ("man", "woman"),
-    ("men", "women"),
-    ("prince", "princess"),
-    ("son", "daughter"),
-    ("sons", "daughters"),
-    ("spokesman", "spokeswoman"),
-    ("stepfather", "stepmother"),
-    ("uncle", "aunt"),
-    ("husband", "wife"),
-    ("king", "queen"),
-    ("brother", "sister"),
-    ("brothers", "sisters"),
-]
-
-PENN_GENDER_PAIRS = [
-    ("actor", "actress"),
-    ("boy", "girl"),
-    ("father", "mother"),
-    ("he", "she"),
-    ("him", "her"),
-    ("his", "her"),
-    ("male", "female"),
-    ("man", "woman"),
-    ("men", "women"),
-    ("son", "daughter"),
-    ("sons", "daughters"),
-    ("spokesman", "spokeswoman"),
-    ("husband", "wife"),
-    ("king", "queen"),
-    ("brother", "sister"),
-]
-
-WIKI_GENDER_PAIRS = [
-    ("actor", "actress"),
-    ("boy", "girl"),
-    ("boyfriend", "girlfriend"),
-    ("boys", "girls"),
-    ("father", "mother"),
-    ("fathers", "mothers"),
-    ("gentleman", "lady"),
-    ("gentlemen", "ladies"),
-    ("grandson", "granddaughter"),
-    ("he", "she"),
-    ("hero", "heroine"),
-    ("him", "her"),
-    ("his", "her"),
-    ("husband", "wife"),
-    ("husbands", "wives"),
-    ("king", "queen"),
-    ("kings", "queens"),
-    ("male", "female"),
-    ("males", "females"),
-    ("man", "woman"),
-    ("men", "women"),
-    ("mr.", "mrs."),
-    ("prince", "princess"),
-    ("son", "daughter"),
-    ("sons", "daughters"),
-    ("spokesman", "spokeswoman"),
-    ("stepfather", "stepmother"),
-    ("uncle", "aunt"),
-    # ("wife", "husband"),
-    ("king", "queen"),
-]
-
-ALL_GENDER_PAIRS = list(
-    {
-        pair
-        for pairs in [DM_GENDER_PAIRS, PENN_GENDER_PAIRS, WIKI_GENDER_PAIRS]
-        for pair in pairs
-    }
-)
+from bfair.metrics.lm.words import GroupWords
 
 
-class EnglishGenderedWords:
-    def __init__(
-        self,
-        sources=(DM_GENDER_PAIRS, PENN_GENDER_PAIRS, WIKI_GENDER_PAIRS),
-        order=GERDER_PAIR_ORDER,
-    ):
-        group_words = defaultdict(set)
-        for pairs in sources:
-            for i, gender in enumerate(order):
-                group_words[gender].update((p[i] for p in pairs))
-        self.male = group_words[MALE]
-        self.female = group_words[FEMALE]
-
-    def get_male_words(self):
-        return self.male
-
-    def get_female_words(self):
-        return self.female
 
 
 class FixedContext:
@@ -223,7 +113,7 @@ class BiasScore:
         self,
         *,
         language,
-        group_words: Dict[str, Set],
+        group_words: GroupWords,
         context,
         scoring_modes,
         use_root,
@@ -232,7 +122,6 @@ class BiasScore:
         remove_groupwords=True,
         merge_paragraphs=False,
         lower_proper_nouns=False,
-        limit_group_words_pos=("NOUN", "PROPN", "PRON", "DET"),
     ):
         self.language = language
         self.group_words = group_words
@@ -241,22 +130,22 @@ class BiasScore:
         self.remove_stopwords = remove_stopwords
         self.remove_groupwords = remove_groupwords
         self.merge_paragraphs = merge_paragraphs
-        self.all_group_words = {w for words in group_words.values() for w in words}
         self.tokenizer = (
             self._get_default_tokenizer(
                 language,
                 use_root,
                 lower_proper_nouns,
-                self.all_group_words,
+                group_words,
             )
             if tokenizer is None
             else tokenizer
         )
         self.stopwords = stopwords.words(language) if remove_stopwords else None
-        self.limit_group_words_pos = limit_group_words_pos
 
     @classmethod
-    def _get_default_tokenizer(cls, language, use_root, lower_proper_nouns, relevant):
+    def _get_default_tokenizer(
+        cls, language, use_root, lower_proper_nouns, group_words: GroupWords
+    ):
         if language not in cls.LANGUAGE2MODEL:
             raise ValueError(language)
 
@@ -272,7 +161,7 @@ class BiasScore:
                     if (
                         not use_root
                         or token.pos_ in ("PRON", "DET")
-                        or token.lower_ in relevant
+                        or group_words.includes(token.lower_, token.pos_)
                     )
                     else token.lemma_.lower(),
                     # POS
@@ -307,7 +196,6 @@ class BiasScore:
                 group_words=self.group_words,
                 context=self.context,
                 tokenizer=self.tokenizer,
-                limit_group_words_pos=self.limit_group_words_pos,
             )
 
             self._aggregate_counts(word2counts, local_word2counts)
@@ -321,7 +209,7 @@ class BiasScore:
                 remove_stopwords=self.remove_stopwords,
                 stopwords=self.stopwords,
                 remove_groupwords=self.remove_groupwords,
-                all_group_words=self.all_group_words,
+                group_words=self.group_words,
             )
             word2discrete = {word: word2discrete[word] for word in word2counts}
             word2matches = {word: word2matches[word] for word in word2counts}
@@ -332,7 +220,7 @@ class BiasScore:
             word2discrete,
             word2matches,
             word2occurrence,
-            self.group_words.keys(),
+            self.group_words.groups(),
             self.scoring_modes,
         )
 
@@ -360,10 +248,9 @@ class BiasScore:
         cls,
         *,
         text,
-        group_words: Dict[str, Set],
+        group_words: GroupWords,
         context,
         tokenizer=str.split,
-        limit_group_words_pos=None,
     ):
         word2counts = defaultdict(lambda: defaultdict(int))
         word2discrete = defaultdict(lambda: defaultdict(int))
@@ -373,14 +260,8 @@ class BiasScore:
         tokens = tokenizer(text)
         for (center, center_pos), get_context in context(tokens):
             word2occurrence[center] += 1
-
-            if (
-                limit_group_words_pos is not None
-                and center_pos not in limit_group_words_pos
-            ):
-                continue
             for group, words in group_words.items():
-                if center not in words:
+                if not words.includes(center, center_pos):
                     continue
 
                 for (word, word_pos), weight in get_context():
@@ -403,7 +284,7 @@ class BiasScore:
         remove_stopwords,
         stopwords,
         remove_groupwords,
-        all_group_words,
+        group_words: GroupWords,
     ):
         return {
             word: counts
@@ -412,7 +293,7 @@ class BiasScore:
                 remove_stopwords
                 and word in stopwords
                 or remove_groupwords
-                and word in all_group_words
+                and group_words.includes(word)
             )
         }
 
