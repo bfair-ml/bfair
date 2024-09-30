@@ -14,7 +14,7 @@ music = [
 
 politics = [
     (nlp("La política es una rama de ...")[2], False),
-    (nlp("No me gusta la política de la que hablan.")[4], False),
+    (nlp("No me gusta la política de la que hablan.")[4], True),
     (nlp("No me gusta la política.")[-2], False),
     (nlp("Mi vecina trabaja como política.")[-2], True),
     (nlp("La política que da un discurso al frente es increible.")[1], True),
