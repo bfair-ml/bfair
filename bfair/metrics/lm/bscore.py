@@ -199,6 +199,8 @@ class BiasScore:
                     else token.lemma_.lower(),
                     # POS
                     token.pos_,
+                    # TOKEN
+                    token,
                 )
                 for token in nlp(text)
                 if not token.is_space
@@ -284,7 +286,7 @@ class BiasScore:
         text,
         group_words: GroupWords,
         context,
-        tokenizer=str.split,
+        tokenizer,
         person_checker=DummyChecker(),
     ):
         word2counts = defaultdict(lambda: defaultdict(int))
@@ -293,15 +295,15 @@ class BiasScore:
         word2occurrence = defaultdict(int)
 
         tokens = tokenizer(text)
-        for (center, center_pos), get_context in context(tokens):
+        for (center, center_pos, center_token), get_context in context(tokens):
             word2occurrence[center] += 1
             for group, words in group_words.items():
                 if not words.includes(
                     center, center_pos
-                ) or not person_checker.check_token(center):
+                ) or not person_checker.check_token(center_token):
                     continue
 
-                for (word, word_pos), weight in get_context():
+                for (word, word_pos, word_token), weight in get_context():
                     if word_pos in ("PUNCT", "NUM", "SYM") or word.isdigit():
                         continue
 
