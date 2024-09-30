@@ -23,7 +23,7 @@ politics = [
 for word, gold in music + politics:
     prediction = checker.check_token(word)
     if prediction != gold:
-        print("⚠️", gold.sent)
+        print("⚠️", word.sent)
         print("Expected: {}. Got: {}.".format(gold, prediction))
     else:
-        print("✅", gold.sent)
+        print("✅", word.sent)
