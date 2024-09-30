@@ -70,6 +70,7 @@ def main(args):
         scoring_modes=[BiasScore.S_RATIO, BiasScore.S_LOG],
         use_root=args.use_root,
         lower_proper_nouns=args.lower_proper_nouns,
+        semantic_check=args.semantic_check,
     )
 
     scores = bias_score(texts)
