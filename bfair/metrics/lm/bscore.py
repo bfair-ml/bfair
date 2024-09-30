@@ -298,7 +298,7 @@ class BiasScore:
             for group, words in group_words.items():
                 if not words.includes(
                     center, center_pos
-                ) or not person_checker.check_token(word):
+                ) or not person_checker.check_token(center):
                     continue
 
                 for (word, word_pos), weight in get_context():
