@@ -13,8 +13,13 @@ from tqdm import tqdm
 from nltk import ngrams, word_tokenize
 from nltk.corpus import stopwords
 
-
 from bfair.metrics.lm.words import GroupWords
+from bfair.utils.spacy_trf_vecs import (
+    ITokenChecker,
+    PersonCheckerForSpanish,
+    DummyChecker,
+    get_model_with_trf_vectors,
+)
 
 
 class FixedContext:
@@ -102,6 +107,10 @@ class BiasScore:
         "spanish": "es_core_news_sm",
     }
 
+    LANGUAGE2SEMANTIC = {
+        "spanish": "es_dep_news_trf",
+    }
+
     S_RATIO = "count_disparity"
     S_LOG = "log_score"
 
@@ -120,6 +129,7 @@ class BiasScore:
         remove_groupwords=True,
         merge_paragraphs=False,
         lower_proper_nouns=False,
+        semantic_check=False,
     ):
         self.language = language
         self.group_words = group_words
@@ -128,9 +138,11 @@ class BiasScore:
         self.remove_stopwords = remove_stopwords
         self.remove_groupwords = remove_groupwords
         self.merge_paragraphs = merge_paragraphs
+
+        nlp = self._get_nlp(language, semantic_check)
         self.tokenizer = (
             self._get_default_tokenizer(
-                language,
+                nlp,
                 use_root,
                 lower_proper_nouns,
                 group_words,
@@ -138,17 +150,37 @@ class BiasScore:
             if tokenizer is None
             else tokenizer
         )
+        self.person_checker = (
+            self._get_person_checker(language, nlp)
+            if semantic_check
+            else DummyChecker()
+        )
+
         self.stopwords = stopwords.words(language) if remove_stopwords else None
 
     @classmethod
+    def _get_nlp(cls, language, semantic_check):
+        source = cls.LANGUAGE2SEMANTIC if semantic_check else cls.LANGUAGE2MODEL
+        try:
+            model_name = source[language]
+            if model_name == "es_dep_news_trf":
+                return get_model_with_trf_vectors(model_name)
+            return spacy.load(model_name)
+        except KeyError:
+            raise ValueError(f"Not supported: {language}(semantic={semantic_check})")
+
+    @classmethod
+    def _get_person_checker(cls, language: str, nlp) -> ITokenChecker:
+        if language == "spanish":
+            return PersonCheckerForSpanish(nlp)
+        raise ValueError(
+            f"{language.title()} does not currently support semantic checking."
+        )
+
+    @classmethod
     def _get_default_tokenizer(
-        cls, language, use_root, lower_proper_nouns, group_words: GroupWords
+        cls, nlp, use_root, lower_proper_nouns, group_words: GroupWords
     ):
-        if language not in cls.LANGUAGE2MODEL:
-            raise ValueError(language)
-
-        nlp = spacy.load(cls.LANGUAGE2MODEL[language])
-
         def tokenizer(text):
             return [
                 (
@@ -197,6 +229,7 @@ class BiasScore:
                 group_words=self.group_words,
                 context=self.context,
                 tokenizer=self.tokenizer,
+                person_checker=self.person_checker,
             )
 
             self._aggregate_counts(word2counts, local_word2counts)
@@ -252,6 +285,7 @@ class BiasScore:
         group_words: GroupWords,
         context,
         tokenizer=str.split,
+        person_checker=DummyChecker(),
     ):
         word2counts = defaultdict(lambda: defaultdict(int))
         word2discrete = defaultdict(lambda: defaultdict(int))
@@ -262,7 +296,9 @@ class BiasScore:
         for (center, center_pos), get_context in context(tokens):
             word2occurrence[center] += 1
             for group, words in group_words.items():
-                if not words.includes(center, center_pos):
+                if not words.includes(
+                    center, center_pos
+                ) or not person_checker.check_token(word):
                     continue
 
                 for (word, word_pos), weight in get_context():

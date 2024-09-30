@@ -126,10 +126,16 @@ def entry_point():
         choices=["yes", "no"],
         required=True,
     )
+    parser.add_argument(
+        "--semantic-check",
+        choices=["yes", "no"],
+        required=True,
+    )
 
     args = parser.parse_args()
     args.use_root = args.use_root == "yes"
     args.lower_proper_nouns = args.lower_proper_nouns == "yes"
+    args.semantic_check = args.semantic_check == "yes"
     main(args)
 
 

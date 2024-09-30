@@ -1,5 +1,6 @@
 import numpy as np
 from typing import Sequence
+from abc import ABC, abstractmethod
 
 import spacy
 from spacy.language import Language
@@ -58,7 +59,7 @@ class TrfContextualVectors:
         return 1 - np.dot(x, y) / (np.dot(x, x) ** 0.5 * np.dot(y, y) ** 0.5)
 
 
-def get_model(model_name):
+def get_model_with_trf_vectors(model_name):
     """
     `model_name`: transformer-based model.
     """
@@ -71,7 +72,13 @@ def best_fit(categories: Sequence[Token], word: Token) -> Token:
     return max(categories, key=lambda x: word.similarity(x))
 
 
-class BooleanChecker:
+class ITokenChecker(ABC):
+    @abstractmethod
+    def check_token(self, word: Token) -> bool:
+        pass
+
+
+class BooleanChecker(ITokenChecker):
     def __init__(self, true_word: Token, false_word: Token):
         self.true = true_word
         self.false = false_word
@@ -81,11 +88,20 @@ class BooleanChecker:
 
 
 class PersonCheckerForSpanish(BooleanChecker):
-    def __init__(self, nlp=None, *, model="es_dep_news_trf"):
+    def __init__(self, nlp=None, *, model: str = None):
         if nlp is None:
-            nlp = get_model(model)
+            if model is None:
+                nlp = get_model_with_trf_vectors("es_dep_news_trf")
+            else:
+                nlp = spacy.load(model)
+
         self.nlp = nlp
 
         true_word = nlp("sí es persona")[-1]
         false_word = nlp("no es persona")[-1]
         super().__init__(true_word, false_word)
+
+
+class DummyChecker(ITokenChecker):
+    def check_token(self, word: Token) -> bool:
+        return True
