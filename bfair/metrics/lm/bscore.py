@@ -3,7 +3,7 @@ import spacy
 import numpy as np
 import pandas as pd
 
-from typing import Dict, Set
+from typing import Dict, Set, Sequence, Callable
 from collections import defaultdict
 from itertools import repeat
 from functools import partial
@@ -20,6 +20,7 @@ from bfair.utils.spacy_trf_vecs import (
     DummyChecker,
     get_model_with_trf_vectors,
 )
+from bfair.metrics.lm.endings import spanish_split_gender_endings
 
 
 class FixedContext:
@@ -111,6 +112,8 @@ class BiasScore:
         "spanish": "es_dep_news_trf",
     }
 
+    LANGUAGE2ENDINGS = {"spanish": spanish_split_gender_endings}
+
     S_RATIO = "count_disparity"
     S_LOG = "log_score"
 
@@ -130,6 +133,7 @@ class BiasScore:
         merge_paragraphs=False,
         lower_proper_nouns=False,
         semantic_check=False,
+        split_endings=None,
     ):
         self.language = language
         self.group_words = group_words
@@ -140,12 +144,21 @@ class BiasScore:
         self.merge_paragraphs = merge_paragraphs
 
         nlp = self._get_nlp(language, semantic_check)
+
+        preprocessings = []
+        if split_endings is None:
+            split_endings = language in self.LANGUAGE2ENDINGS
+        if split_endings:
+            splitter = self._get_endings_splitter(language)
+            preprocessings.append(splitter)
+
         self.tokenizer = (
             self._get_default_tokenizer(
                 nlp,
                 use_root,
                 lower_proper_nouns,
                 group_words,
+                preprocessings,
             )
             if tokenizer is None
             else tokenizer
@@ -178,10 +191,27 @@ class BiasScore:
         )
 
     @classmethod
+    def _get_endings_splitter(cls, language: str) -> Callable[[str], str]:
+        try:
+            return cls.LANGUAGE2ENDINGS[language]
+        except KeyError:
+            raise ValueError(
+                f"{language.title()} does not currently support split endings."
+            )
+
+    @classmethod
     def _get_default_tokenizer(
-        cls, nlp, use_root, lower_proper_nouns, group_words: GroupWords
+        cls,
+        nlp,
+        use_root,
+        lower_proper_nouns,
+        group_words: GroupWords,
+        preprocessings: Sequence[Callable[[str], str]],
     ):
         def tokenizer(text):
+            for preprocessor in preprocessings:
+                text = preprocessor(text)
+
             return [
                 (
                     # TEXT
