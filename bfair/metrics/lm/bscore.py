@@ -132,7 +132,7 @@ class BiasScore:
         remove_groupwords=True,
         merge_paragraphs=False,
         lower_proper_nouns=False,
-        semantic_check=False,
+        semantic_check=None,
         split_endings=None,
     ):
         self.language = language
@@ -142,6 +142,9 @@ class BiasScore:
         self.remove_stopwords = remove_stopwords
         self.remove_groupwords = remove_groupwords
         self.merge_paragraphs = merge_paragraphs
+
+        if semantic_check is None:
+            semantic_check = language in self.LANGUAGE2SEMANTIC
 
         nlp = self._get_nlp(language, semantic_check)
 
