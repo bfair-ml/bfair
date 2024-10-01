@@ -11,11 +11,11 @@ PATTERN_R_RA = re.compile(r"(\b\w+?)r/a(\s*[\.,;:\?!]?)")
 REPLACEMENT_EO_A = r"\1r o \1ra\2"
 
 # jefe/a - amigo/a - doctor/a
-PATTERN_JOINT = re.compile(r"(\b\w+?)(e|o|r)/a(\s*[\.,;:\?!]?)")
+PATTERN_JOINT = re.compile(r"(\b\w+?)(e|o|r)/a\b")
 
 
 def replacement_joint(m):
-    return f"{m[1]}{m[2]} {m[1]}{'ra' if m[2] == 'r' else 'a'}{m[3]}"
+    return f"{m[1]}{m[2]} {m[1]}{'ra' if m[2] == 'r' else 'a'}"
 
 
 def spanish_split_gender_endings(text):
