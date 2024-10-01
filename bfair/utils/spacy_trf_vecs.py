@@ -25,6 +25,9 @@ class TrfContextualVectors:
         if type(sdoc) == str:
             sdoc = self._nlp(sdoc)
 
+        if not sdoc:
+            return sdoc
+
         # pre-calculate all vectors for every token:
 
         # calculate groups for spacy token boundaries in the trf vectors
