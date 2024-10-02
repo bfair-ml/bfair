@@ -228,6 +228,7 @@ class BiasScore:
                         not use_root
                         or token.pos_ in ("PRON", "DET")
                         or group_words.includes(token.lower_, token.pos_)
+                        or group_words.includes(token.lemma_.lower(), token.pos_)
                     )
                     else token.lemma_.lower(),
                     # POS
