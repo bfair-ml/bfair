@@ -348,13 +348,20 @@ class BiasScore:
                         offset = 3
                         min_token = min(center_token, word_token, key=lambda x: x.i)
                         max_token = max(center_token, word_token, key=lambda x: x.i)
+                        min_word, max_word = (
+                            (center, word)
+                            if center_token == min_token
+                            else (word, center)
+                        )
 
-                        highlighted = "{}{} [[{}]] {} [[{}]] {}{}".format(
+                        highlighted = "{}{} [[{}->{}]] {} [[{}->{}]] {}{}".format(
                             "... " if min_token.i - offset > 0 else "",
                             min_token.doc[min_token.i - offset : min_token.i],
                             min_token.text,
+                            min_word,
                             min_token.doc[min_token.i + 1 : max_token.i],
                             max_token.text,
+                            max_word,
                             max_token.doc[max_token.i + 1 : max_token.i + offset],
                             " ..." if max_token.i + offset < len(max_token.doc) else "",
                         )
