@@ -119,6 +119,8 @@ class BiasScore:
 
     DISCRETE = 0.05
 
+    EPSILON = np.finfo(float).eps
+
     def __init__(
         self,
         *,
@@ -495,8 +497,8 @@ class BiasScore:
         if len(groups) != 2:
             raise ValueError("Only usable with two classes.")
         first, second, *_ = groups
-        prob_first = cls.compute_word_prob(word, first, word2counts)
-        prob_second = cls.compute_word_prob(word, second, word2counts)
+        prob_first = cls.compute_word_prob(word, first, word2counts) + cls.EPSILON
+        prob_second = cls.compute_word_prob(word, second, word2counts) + cls.EPSILON
 
         if prob_first and prob_second:
             return np.log2(prob_first / prob_second)  # I am pretty sure it is log 2
