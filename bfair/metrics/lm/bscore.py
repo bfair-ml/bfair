@@ -14,7 +14,7 @@ from nltk import ngrams, word_tokenize
 from nltk.corpus import stopwords
 
 from bfair.metrics.lm.words import GroupWords
-from bfair.utils.spacy_trf_vecs import (
+from bfair.metrics.lm.semantics import (
     ITokenChecker,
     PersonCheckerForSpanish,
     DummyChecker,
@@ -358,14 +358,29 @@ class BiasScore:
                         )
 
                         highlighted = "{}{} [[{}->{}]] {} [[{}->{}]] {}{}".format(
+                            # START
                             "... " if min_token.i - offset > 0 else "",
-                            min_token.doc[min_token.i - offset : min_token.i],
+                            # PRE
+                            min_token.doc[max(min_token.i - offset, 0) : min_token.i]
+                            if min_token.i > 0
+                            else "",
+                            # WORD or CENTER
                             min_token.text,
+                            # LEX
                             min_word,
-                            min_token.doc[min_token.i + 1 : max_token.i],
+                            # MIDDLE
+                            min_token.doc[min_token.i + 1 : max_token.i]
+                            if max_token.i > min_token.i + 1
+                            else "",
+                            # WORD or CENTER
                             max_token.text,
+                            # LEX
                             max_word,
-                            max_token.doc[max_token.i + 1 : max_token.i + offset],
+                            # POST
+                            max_token.doc[max_token.i + 1 : max_token.i + offset]
+                            if len(max_token.doc) > max_token.i + 1
+                            else "",
+                            # END
                             " ..." if max_token.i + offset < len(max_token.doc) else "",
                         )
 
