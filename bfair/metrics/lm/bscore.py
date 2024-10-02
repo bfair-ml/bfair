@@ -344,7 +344,22 @@ class BiasScore:
 
                     if weight > cls.DISCRETE:
                         word2discrete[word][group] += 1
-                        word2matches[word][group].add(center)
+
+                        offset = 3
+                        min_token = min(center_token, word_token, key=lambda x: x.i)
+                        max_token = max(center_token, word_token, key=lambda x: x.i)
+
+                        highlighted = "{}{} [[{}]] {} [[{}]] {}{}".format(
+                            "... " if min_token.i - offset > 0 else "",
+                            min_token.doc[min_token.i - offset : min_token.i],
+                            min_token.text,
+                            min_token.doc[min_token.i + 1 : max_token.i],
+                            max_token.text,
+                            max_token.doc[max_token.i + 1 : max_token.i + offset],
+                            " ..." if max_token.i + offset < len(max_token.doc) else "",
+                        )
+
+                        word2matches[word][group].add(highlighted)
 
         return word2counts, word2discrete, word2matches, word2occurrence
 
