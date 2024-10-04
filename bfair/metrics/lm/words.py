@@ -192,6 +192,7 @@ class SpanishGenderedWords:
         female_dir="Feminine",
         male_suffix="masc",
         female_suffix="fem",
+        ignore="00_Ignore",
         pronouns="01_Pron",
         nouns="02_Sust",
         professions="03_Professions_list",
@@ -202,7 +203,14 @@ class SpanishGenderedWords:
     ):
         self.gender_order = [MALE, FEMALE]
 
-        gender_info = [(male_dir, male_suffix), (female_dir, female_suffix)]
+        ignore_male = self.read(path, male_dir, male_suffix, ignore)
+        ignore_female = self.read(path, female_dir, female_suffix, ignore)
+
+        gender_info = [
+            (male_dir, male_suffix, ignore_male),
+            (female_dir, female_suffix, ignore_female),
+        ]
+
         self.pronouns = []
         self.nouns = []
         self.professions = []
@@ -220,8 +228,8 @@ class SpanishGenderedWords:
             (self.adjectives, adjectives),
             (self.abbreviations, abbreviations),
         ]:
-            for gender, suffix in gender_info:
-                info = self.read(path, gender, suffix, category)
+            for gender, suffix, to_ignore in gender_info:
+                info = self.read(path, gender, suffix, category, to_ignore)
                 collection.append(info)
 
     def get_group_words(self):
@@ -247,8 +255,15 @@ class SpanishGenderedWords:
         return group_words
 
     @classmethod
-    def read(cls, root: Path, gender: str, suffix: str, category: str):
+    def read(
+        cls,
+        root: Path,
+        gender: str,
+        suffix: str,
+        category: str,
+        to_ignore: set = frozenset(),
+    ):
         path = root / gender / f"{category}_{suffix}.csv"
         data = pd.read_csv(path, names=["words"], header=None)
         words = data["words"].str.strip()
-        return set(words)
+        return set(words) - to_ignore
