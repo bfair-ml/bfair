@@ -22,11 +22,18 @@ CONTINUOUS = "continuous"
 COMMON_GEN = "common-gen"
 C2GEN = "c2gen"
 VICTORIA = "victoria"
-VICTORIA_GPT35 = "victoria-GPT3.5"
-VICTORIA_GPT4O = "victoria-GPT4o"
-VICTORIA_LLAMA3 = "victoria-Llama3"
-VICTORIA_GEMINI15 = "victoria-Gemini1.5"
-VICTORIA_MISTRAL8X7B = "victoria-Mistral8x7b"
+
+VICTORIA_GPT35_LEADING = "victoria-GPT3.5-leading"
+VICTORIA_GPT4O_LEADING = "victoria-GPT4o-leading"
+VICTORIA_LLAMA3_LEADING = "victoria-Llama3-leading"
+VICTORIA_GEMINI15_LEADING = "victoria-Gemini1.5-leading"
+VICTORIA_MISTRAL8X7B_LEADING = "victoria-Mistral8x7b-leading"
+
+VICTORIA_GPT35_NO_LEADING = "victoria-GPT3.5-independent"
+VICTORIA_GPT4O_NO_LEADING = "victoria-GPT4o-independent"
+VICTORIA_LLAMA3_NO_LEADING = "victoria-Llama3-independent"
+VICTORIA_GEMINI15_NO_LEADING = "victoria-Gemini1.5-independent"
+VICTORIA_MISTRAL8X7B_NO_LEADING = "victoria-Mistral8x7b-independent"
 
 
 def main(args):
@@ -39,8 +46,11 @@ def main(args):
         texts = dataset.all_data[TARGET].str.lower()
         language = dataset.language()
     elif args.dataset.startswith(VICTORIA):
-        model = args.dataset.split("-")[1]
-        dataset = load_victoria(model=model)
+        info = args.dataset.split("-")
+        if len(info) < 3:
+            raise ValueError(args.dataset)
+        _, model, mode = info
+        dataset = load_victoria(model=model, leading=mode == "leading")
         texts = dataset.data[OUTPUT].str.lower()
         language = dataset.language()
     elif Path(args.dataset).exists():
@@ -104,11 +114,16 @@ def entry_point():
             [
                 COMMON_GEN,
                 C2GEN,
-                VICTORIA_GPT35,
-                VICTORIA_GPT4O,
-                VICTORIA_LLAMA3,
-                VICTORIA_GEMINI15,
-                VICTORIA_MISTRAL8X7B,
+                VICTORIA_GPT35_LEADING,
+                VICTORIA_GPT4O_LEADING,
+                VICTORIA_LLAMA3_LEADING,
+                VICTORIA_GEMINI15_LEADING,
+                VICTORIA_MISTRAL8X7B_LEADING,
+                VICTORIA_GPT35_NO_LEADING,
+                VICTORIA_GPT4O_NO_LEADING,
+                VICTORIA_LLAMA3_NO_LEADING,
+                VICTORIA_GEMINI15_NO_LEADING,
+                VICTORIA_MISTRAL8X7B_NO_LEADING,
                 "<PATH>",
             ]
         ),
