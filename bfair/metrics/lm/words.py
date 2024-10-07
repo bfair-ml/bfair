@@ -197,51 +197,73 @@ class SpanishGenderedWords:
         nouns="02_Sust",
         professions="03_Professions_list",
         names="04_Nombres",
-        basic="05_Heteronimos",
+        heteronyms="05_Heteronimos",
         adjectives="06_Heteronimos_adj",
         abbreviations="07_Abreviaturas",
+        *,
+        include_professions=True,
     ):
         self.gender_order = [MALE, FEMALE]
 
-        ignore_male = self.read(path, male_dir, male_suffix, ignore)
-        ignore_female = self.read(path, female_dir, female_suffix, ignore)
-
         gender_info = [
-            (male_dir, male_suffix, ignore_male),
-            (female_dir, female_suffix, ignore_female),
+            (male_dir, male_suffix),
+            (female_dir, female_suffix),
         ]
 
+        self.ignore = []
         self.pronouns = []
         self.nouns = []
         self.professions = []
         self.names = []
-        self.basic = []
+        self.heteronyms = []
         self.adjectives = []
         self.abbreviations = []
 
         for collection, category in [
+            (self.ignore, ignore),
             (self.pronouns, pronouns),
             (self.nouns, nouns),
             (self.professions, professions),
             (self.names, names),
-            (self.basic, basic),
+            (self.heteronyms, heteronyms),
             (self.adjectives, adjectives),
             (self.abbreviations, abbreviations),
         ]:
-            for gender, suffix, to_ignore in gender_info:
-                info = self.read(path, gender, suffix, category, to_ignore)
+            for gender, suffix in gender_info:
+                info = self.read(path, gender, suffix, category)
                 collection.append(info)
+
+        self.exclude(self.professions, self.ignore)
+        self.exclude(self.pronouns, self.ignore)
+        self.exclude(self.nouns, self.ignore, self.professions)
+        self.exclude(self.names, self.ignore)
+        self.exclude(self.heteronyms, self.ignore)
+        self.exclude(self.adjectives, self.ignore)
+        self.exclude(self.abbreviations, self.ignore)
+
+        self.include_professions = include_professions
+
+    @staticmethod
+    def exclude(collection, *exclusion_sources):
+        for to_exclude in exclusion_sources:
+            if len(collection) != len(to_exclude):
+                raise ValueError("Collections do not have the same size.")
+            for i in range(len(collection)):
+                collection[i] = collection[i] - to_exclude[i]
 
     def get_group_words(self):
         group_words = GroupWords()
 
+        noun_collections = [
+            self.nouns,
+            self.heteronyms,
+        ]
+
+        if self.include_professions:
+            noun_collections.append(self.professions)
+
         for i, gender in enumerate(self.gender_order):
-            for collection in [
-                self.pronouns,
-                self.nouns,
-                self.professions,
-                self.basic,
-            ]:
+            for collection in noun_collections:
                 group_words.update(gender, collection[i], "NOUN")
 
             for collection in [
@@ -250,6 +272,7 @@ class SpanishGenderedWords:
             ]:
                 group_words.update(gender, collection[i], "PROPN")
 
+            group_words.update(gender, self.pronouns[i], "PRON")
             group_words.update(gender, self.adjectives[i], "ADJ")
 
         return group_words
