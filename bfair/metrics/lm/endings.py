@@ -1,6 +1,17 @@
 import re
 
-TEST = "... señor/a ...\n... profesor/a ...\n... amigo/a ...\n... doctor/a ..."
+TEST = """
+... señor/a ...
+... profesor/a ...
+... amigo/a ...
+... doctor/a ...
+... jefe/a ...
+... señores/as ...
+... profesores/as ...
+... amigos/as ...
+... doctores/as ...
+... jefes/as ...
+"""
 
 # jefe/a - amigo/a
 PATTERN_EO_A = re.compile(r"(\b\w+?)(e|o)/a(\s*[\.,;:\?!]?)")
@@ -11,12 +22,18 @@ PATTERN_R_RA = re.compile(r"(\b\w+?)r/a(\s*[\.,;:\?!]?)")
 REPLACEMENT_EO_A = r"\1r o \1ra\2"
 
 # jefe/a - amigo/a - doctor/a
-PATTERN_JOINT = re.compile(r"(\b\w+?)(e|o|r)/a\b")
+PATTERN_JOINT = re.compile(r"(\b\w+?)(e|o|r|es|os)/(a|as)\b")
 
 
 def replacement_joint(m):
-    return f"{m[1]}{m[2]} {m[1]}{'ra' if m[2] == 'r' else 'a'}"
+    return f"{m[1]}{m[2]} {m[1]}{'r' if m[2] == 'r' else ''}{m[3]}"
 
 
 def spanish_split_gender_endings(text):
     return re.sub(PATTERN_JOINT, replacement_joint, text)
+
+
+if __name__ == "__main__":
+    print(TEST)
+    print("------------")
+    print(spanish_split_gender_endings(TEST))
