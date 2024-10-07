@@ -376,25 +376,33 @@ class BiasScore:
                             else (word, center)
                         )
 
-                        highlighted = "{}{} [[{}->{}]] {} [[{}->{}]] {}{}".format(
+                        if center_token.i == word_token.i:
+                            core = f"«{center_token.text}->{center}»"
+                        else:
+                            core = "[[{}->{}]] {} [[{}->{}]]".format(
+                                # WORD or CENTER
+                                min_token.text,
+                                # LEX
+                                min_word,
+                                # MIDDLE
+                                min_token.doc[min_token.i + 1 : max_token.i]
+                                if max_token.i > min_token.i + 1
+                                else "",
+                                # WORD or CENTER
+                                max_token.text,
+                                # LEX
+                                max_word,
+                            )
+
+                        highlighted = "{}{} {} {}{}".format(
                             # START
                             "... " if min_token.i - offset > 0 else "",
                             # PRE
                             min_token.doc[max(min_token.i - offset, 0) : min_token.i]
                             if min_token.i > 0
                             else "",
-                            # WORD or CENTER
-                            min_token.text,
-                            # LEX
-                            min_word,
-                            # MIDDLE
-                            min_token.doc[min_token.i + 1 : max_token.i]
-                            if max_token.i > min_token.i + 1
-                            else "",
-                            # WORD or CENTER
-                            max_token.text,
-                            # LEX
-                            max_word,
+                            # CORE
+                            core,
                             # POST
                             max_token.doc[max_token.i + 1 : max_token.i + offset]
                             if len(max_token.doc) > max_token.i + 1
