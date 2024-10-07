@@ -14,8 +14,7 @@ def main(args):
         print(f"WARNING: Empty! ... skipping ({path})")
         return
 
-    model_name = BiasScore.LANGUAGE2MODEL[args.language]
-    nlp = spacy.load(model_name)
+    nlp = BiasScore.get_nlp(args.language, args.semantic_model)
     with_pos = scores_per_word["words"].apply(lambda x: nlp(x)[0].pos_ == args.pos)
     selected = scores_per_word[with_pos].set_index("words")
     selected.to_csv(path.with_name(f"{path.stem}-filtered-by-{args.pos}{path.suffix}"))
@@ -25,6 +24,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--path")
     parser.add_argument("--language")
+    parser.add_argument("--semantic-model", choices=["yes", "no"], default=False)
     parser.add_argument("--pos", default="ADJ")
+
     args = parser.parse_args()
+    args.semantic_model = args.semantic_model == "yes"
     main(args)

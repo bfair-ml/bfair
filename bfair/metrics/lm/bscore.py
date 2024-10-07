@@ -148,7 +148,7 @@ class BiasScore:
         if semantic_check is None:
             semantic_check = language in self.LANGUAGE2SEMANTIC
 
-        nlp = self._get_nlp(language, semantic_check)
+        nlp = self.get_nlp(language, semantic_check)
 
         preprocessings = []
         if split_endings is None:
@@ -177,7 +177,7 @@ class BiasScore:
         self.stopwords = stopwords.words(language) if remove_stopwords else None
 
     @classmethod
-    def _get_nlp(cls, language, semantic_check):
+    def get_nlp(cls, language, semantic_check):
         source = cls.LANGUAGE2SEMANTIC if semantic_check else cls.LANGUAGE2MODEL
         try:
             model_name = source[language]
