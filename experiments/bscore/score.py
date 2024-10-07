@@ -65,6 +65,14 @@ def main(args):
             f"{language.title()} language does not support professions exclusion."
         )
 
+    if args.inspect_professions and args.exclude_professions:
+        raise ValueError("For inspecting professions they cannot be excluded.")
+
+    if args.inspect_professions and language != "spanish":
+        raise ValueError(
+            f"{language.title()} language does not support professions inspection."
+        )
+
     word_handler = {
         "english": EnglishGenderedWords(),
         "spanish": SpanishGenderedWords(
@@ -73,6 +81,12 @@ def main(args):
     }[language]
 
     group_words = word_handler.get_group_words()
+
+    group_words_to_inspect = (
+        word_handler.get_professions_as_group_words()
+        if args.inspect_professions
+        else None
+    )
 
     bias_score = BiasScore(
         language=language,
@@ -89,6 +103,7 @@ def main(args):
         lower_proper_nouns=args.lower_proper_nouns,
         semantic_check=args.semantic_check,
         split_endings=args.split_endings,
+        group_words_to_inspect=group_words_to_inspect,
     )
 
     scores = bias_score(texts)
@@ -165,11 +180,18 @@ def entry_point():
         choices=["yes", "no"],
         default="no",
     )
+    parser.add_argument(
+        "--inspect-professions",
+        choices=["yes", "no"],
+        default="no",
+    )
 
     args = parser.parse_args()
     args.use_root = args.use_root == "yes"
     args.lower_proper_nouns = args.lower_proper_nouns == "yes"
     args.exclude_professions = args.exclude_professions == "yes"
+    args.inspect_professions = args.inspect_professions == "yes"
+
     args.semantic_check = (
         None if args.semantic_check == "auto" else args.semantic_check == "yes"
     )

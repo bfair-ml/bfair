@@ -136,6 +136,7 @@ class BiasScore:
         lower_proper_nouns=False,
         semantic_check=None,
         split_endings=None,
+        group_words_to_inspect: GroupWords = None,
     ):
         self.language = language
         self.group_words = group_words
@@ -173,8 +174,10 @@ class BiasScore:
             if semantic_check
             else DummyChecker()
         )
+        self.lemmatizer = lambda word: nlp(word)[0].lemma_
 
         self.stopwords = stopwords.words(language) if remove_stopwords else None
+        self.group_words_to_inspect = group_words_to_inspect
 
     @classmethod
     def get_nlp(cls, language, semantic_check):
@@ -282,10 +285,26 @@ class BiasScore:
                 stopwords=self.stopwords,
                 remove_groupwords=self.remove_groupwords,
                 group_words=self.group_words,
+                group_words_to_inspect=self.group_words_to_inspect,
             )
             word2discrete = {word: word2discrete[word] for word in word2counts}
             word2matches = {word: word2matches[word] for word in word2counts}
             word2occurrence = {word: word2occurrence[word] for word in word2counts}
+
+        if self.group_words_to_inspect is not None:
+            (
+                word2counts,
+                word2discrete,
+                word2matches,
+                word2occurrence,
+            ) = self.merge_words_to_inspect(
+                word2counts,
+                word2discrete,
+                word2matches,
+                word2occurrence,
+                group_words_to_inspect=self.group_words_to_inspect,
+                lemmatizer=self.lemmatizer,
+            )
 
         return self.compute_scores(
             word2counts,
@@ -397,6 +416,7 @@ class BiasScore:
         stopwords,
         remove_groupwords,
         group_words: GroupWords,
+        group_words_to_inspect: GroupWords,
     ):
         return {
             word: counts
@@ -406,8 +426,58 @@ class BiasScore:
                 and word in stopwords
                 or remove_groupwords
                 and group_words.includes(word)
+                and (
+                    group_words_to_inspect is None
+                    or not group_words_to_inspect.includes(word)
+                )
             )
         }
+
+    @classmethod
+    def merge_words_to_inspect(
+        cls,
+        word2counts,
+        word2discrete,
+        word2matches,
+        word2occurrence,
+        *,
+        group_words_to_inspect: GroupWords,
+        lemmatizer,
+    ):
+        merged_word2counts = defaultdict(lambda: defaultdict(int))
+        merged_word2discrete = defaultdict(lambda: defaultdict(int))
+        merged_word2matches = defaultdict(lambda: defaultdict(set))
+        merged_word2occurrence = defaultdict(int)
+
+        for word in word2counts:
+            if not group_words_to_inspect.includes(word):
+                merged_word2counts[word] = word2counts[word]
+                merged_word2discrete[word] = word2discrete[word]
+                merged_word2matches[word] = word2matches[word]
+                merged_word2occurrence[word] = word2occurrence[word]
+            else:
+                lemma = lemmatizer(word)
+                cls.combine_by_sum(merged_word2counts[lemma], word2counts[word])
+                cls.combine_by_sum(merged_word2discrete[lemma], word2discrete[word])
+                cls.combine_by_or(merged_word2matches[lemma], word2matches[word])
+                merged_word2occurrence[word] += word2occurrence[word]
+
+        return (
+            merged_word2counts,
+            merged_word2discrete,
+            merged_word2matches,
+            merged_word2occurrence,
+        )
+
+    @classmethod
+    def combine_by_sum(cls, merged: defaultdict, new: defaultdict):
+        for gender, count in new.items():
+            merged[gender] += count
+
+    @classmethod
+    def combine_by_or(cls, merged: defaultdict, new: defaultdict):
+        for gender, count in new.items():
+            merged[gender] |= count
 
     @classmethod
     def compute_scores(

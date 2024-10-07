@@ -277,6 +277,12 @@ class SpanishGenderedWords:
 
         return group_words
 
+    def get_professions_as_group_words(self):
+        output = GroupWords()
+        for i, gender in enumerate(self.gender_order):
+            output.update(gender, self.professions[i], "NOUN")
+        return output
+
     @classmethod
     def read(
         cls,
