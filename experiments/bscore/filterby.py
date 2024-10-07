@@ -5,9 +5,14 @@ import pandas as pd
 from pathlib import Path
 from bfair.metrics.lm.bscore import BiasScore
 
+
 def main(args):
     path = Path(args.path)
     scores_per_word = pd.read_csv(path)
+
+    if scores_per_word.empty:
+        print(f"WARNING: Empty! ... skipping ({path})")
+        return
 
     model_name = BiasScore.LANGUAGE2MODEL[args.language]
     nlp = spacy.load(model_name)
