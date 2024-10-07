@@ -135,6 +135,7 @@ class BiasScore:
         merge_paragraphs=False,
         lower_proper_nouns=False,
         semantic_check=None,
+        use_legacy_semantics=None,
         split_endings=None,
         group_words_to_inspect: GroupWords = None,
     ):
@@ -148,8 +149,10 @@ class BiasScore:
 
         if semantic_check is None:
             semantic_check = language in self.LANGUAGE2SEMANTIC
+        if use_legacy_semantics is None:
+            use_legacy_semantics = language not in self.LANGUAGE2SEMANTIC
 
-        nlp = self.get_nlp(language, semantic_check)
+        nlp = self.get_nlp(language, semantic_check, use_legacy_semantics)
 
         preprocessings = []
         if split_endings is None:
@@ -180,8 +183,14 @@ class BiasScore:
         self.group_words_to_inspect = group_words_to_inspect
 
     @classmethod
-    def get_nlp(cls, language, semantic_check):
-        source = cls.LANGUAGE2SEMANTIC if semantic_check else cls.LANGUAGE2MODEL
+    def get_nlp(cls, language, semantic_check, use_legacy_semantics):
+        if semantic_check and use_legacy_semantics:
+            print("[BFAIR ⚠️] Using legacy semantics.")
+        source = (
+            cls.LANGUAGE2SEMANTIC
+            if semantic_check and not use_legacy_semantics
+            else cls.LANGUAGE2MODEL
+        )
         try:
             model_name = source[language]
             if model_name == "es_dep_news_trf":

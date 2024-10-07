@@ -102,6 +102,7 @@ def main(args):
         use_root=args.use_root,
         lower_proper_nouns=args.lower_proper_nouns,
         semantic_check=args.semantic_check,
+        use_legacy_semantics=args.use_legacy_semantics,
         split_endings=args.split_endings,
         group_words_to_inspect=group_words_to_inspect,
     )
@@ -171,6 +172,11 @@ def entry_point():
         required=True,
     )
     parser.add_argument(
+        "--use-legacy-semantics",
+        choices=["auto", "yes", "no"],
+        default="no",
+    )
+    parser.add_argument(
         "--split-endings",
         choices=["auto", "yes", "no"],
         default="auto",
@@ -194,6 +200,11 @@ def entry_point():
 
     args.semantic_check = (
         None if args.semantic_check == "auto" else args.semantic_check == "yes"
+    )
+    args.use_legacy_semantics = (
+        None
+        if args.use_legacy_semantics == "auto"
+        else args.use_legacy_semantics == "yes"
     )
     args.split_endings = (
         None if args.split_endings == "auto" else args.split_endings == "yes"
