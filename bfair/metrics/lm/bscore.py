@@ -468,7 +468,7 @@ class BiasScore:
                 cls.combine_by_sum(merged_word2counts[lemma], word2counts[word])
                 cls.combine_by_sum(merged_word2discrete[lemma], word2discrete[word])
                 cls.combine_by_or(merged_word2matches[lemma], word2matches[word])
-                merged_word2occurrence[word] += word2occurrence[word]
+                merged_word2occurrence[lemma] += word2occurrence[word]
 
         return (
             merged_word2counts,
