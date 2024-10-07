@@ -60,9 +60,16 @@ def main(args):
     else:
         raise ValueError(args.dataset)
 
+    if args.exclude_professions and language != "spanish":
+        raise ValueError(
+            f"{language.title()} language does not support professions exclusion."
+        )
+
     word_handler = {
         "english": EnglishGenderedWords(),
-        "spanish": SpanishGenderedWords(),
+        "spanish": SpanishGenderedWords(
+            include_professions=not args.exclude_professions
+        ),
     }[language]
 
     group_words = word_handler.get_group_words()
@@ -153,10 +160,16 @@ def entry_point():
         choices=["auto", "yes", "no"],
         default="auto",
     )
+    parser.add_argument(
+        "--exclude-professions",
+        choices=["yes", "no"],
+        default="no",
+    )
 
     args = parser.parse_args()
     args.use_root = args.use_root == "yes"
     args.lower_proper_nouns = args.lower_proper_nouns == "yes"
+    args.exclude_professions = args.exclude_professions == "yes"
     args.semantic_check = (
         None if args.semantic_check == "auto" else args.semantic_check == "yes"
     )
