@@ -36,6 +36,34 @@ VICTORIA_GEMINI15_NO_LEADING = "victoria-Gemini1.5-independent"
 VICTORIA_MISTRAL8X7B_NO_LEADING = "victoria-Mistral8x7b-independent"
 
 
+def get_group_words_and_to_inspect(language, exclude_professions, inspect_professions):
+    if exclude_professions and language != "spanish":
+        raise ValueError(
+            f"{language.title()} language does not support professions exclusion."
+        )
+
+    if inspect_professions and exclude_professions:
+        raise ValueError("For inspecting professions they cannot be excluded.")
+
+    if inspect_professions and language != "spanish":
+        raise ValueError(
+            f"{language.title()} language does not support professions inspection."
+        )
+
+    word_handler = {
+        "english": EnglishGenderedWords(),
+        "spanish": SpanishGenderedWords(include_professions=not exclude_professions),
+    }[language]
+
+    group_words = word_handler.get_group_words()
+
+    group_words_to_inspect = (
+        word_handler.get_professions_as_group_words() if inspect_professions else None
+    )
+
+    return group_words, group_words_to_inspect
+
+
 def main(args):
     if args.dataset == C2GEN:
         dataset = load_c2gen()
@@ -60,32 +88,10 @@ def main(args):
     else:
         raise ValueError(args.dataset)
 
-    if args.exclude_professions and language != "spanish":
-        raise ValueError(
-            f"{language.title()} language does not support professions exclusion."
-        )
-
-    if args.inspect_professions and args.exclude_professions:
-        raise ValueError("For inspecting professions they cannot be excluded.")
-
-    if args.inspect_professions and language != "spanish":
-        raise ValueError(
-            f"{language.title()} language does not support professions inspection."
-        )
-
-    word_handler = {
-        "english": EnglishGenderedWords(),
-        "spanish": SpanishGenderedWords(
-            include_professions=not args.exclude_professions
-        ),
-    }[language]
-
-    group_words = word_handler.get_group_words()
-
-    group_words_to_inspect = (
-        word_handler.get_professions_as_group_words()
-        if args.inspect_professions
-        else None
+    group_words, group_words_to_inspect = get_group_words_and_to_inspect(
+        language,
+        args.exclude_professions,
+        args.inspect_professions,
     )
 
     bias_score = BiasScore(
