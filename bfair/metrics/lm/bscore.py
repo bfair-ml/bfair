@@ -386,13 +386,15 @@ class BiasScore:
                         )
 
                         if center_token.i == word_token.i:
-                            core = f"«{center_token.text}->{center}»"
+                            core = f"«{center_token.text}->{center}:{center_pos}»"
                         else:
-                            core = "[[{}->{}]] {} [[{}->{}]]".format(
+                            core = "[[{}->{}:{}]] {} [[{}->{}:{}]]".format(
                                 # WORD or CENTER
                                 min_token.text,
                                 # LEX
                                 min_word,
+                                # POS
+                                min_token.pos_,
                                 # MIDDLE
                                 min_token.doc[min_token.i + 1 : max_token.i]
                                 if max_token.i > min_token.i + 1
@@ -401,6 +403,8 @@ class BiasScore:
                                 max_token.text,
                                 # LEX
                                 max_word,
+                                # POS
+                                max_token.pos_,
                             )
 
                         highlighted = "{}{} {} {}{}".format(
