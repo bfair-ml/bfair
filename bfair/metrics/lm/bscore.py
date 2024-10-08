@@ -296,9 +296,9 @@ class BiasScore:
                 group_words=self.group_words,
                 group_words_to_inspect=self.group_words_to_inspect,
             )
-            word2discrete = {word: word2discrete[word] for word in word2counts}
-            word2matches = {word: word2matches[word] for word in word2counts}
-            word2occurrence = {word: word2occurrence[word] for word in word2counts}
+            word2discrete = {key: word2discrete[key] for key in word2counts}
+            word2matches = {key: word2matches[key] for key in word2counts}
+            word2occurrence = {key: word2occurrence[key] for key in word2counts}
 
         if self.group_words_to_inspect is not None:
             (
@@ -360,7 +360,7 @@ class BiasScore:
 
         tokens = tokenizer(text)
         for (center, center_pos, center_token), get_context in context(tokens):
-            word2occurrence[center] += 1
+            word2occurrence[center, center_pos] += 1
             for group, words in group_words.items():
                 if not words.includes(
                     center, center_pos
@@ -371,10 +371,10 @@ class BiasScore:
                     if word_pos in ("PUNCT", "NUM", "SYM") or word.isdigit():
                         continue
 
-                    word2counts[word][group] += weight
+                    word2counts[word, word_pos][group] += weight
 
                     if weight > cls.DISCRETE:
-                        word2discrete[word][group] += 1
+                        word2discrete[word, word_pos][group] += 1
 
                         offset = 3
                         min_token = min(center_token, word_token, key=lambda x: x.i)
@@ -424,7 +424,7 @@ class BiasScore:
                             " ..." if max_token.i + offset < len(max_token.doc) else "",
                         )
 
-                        word2matches[word][group].add(highlighted)
+                        word2matches[word, word_pos][group].add(highlighted)
 
         return word2counts, word2discrete, word2matches, word2occurrence
 
@@ -440,16 +440,16 @@ class BiasScore:
         group_words_to_inspect: GroupWords,
     ):
         return {
-            word: counts
-            for word, counts in tqdm(word2counts.items(), desc="Dropping words")
+            (word, pos): counts
+            for (word, pos), counts in tqdm(word2counts.items(), desc="Dropping words")
             if not (
                 remove_stopwords
                 and word in stopwords
                 or remove_groupwords
-                and group_words.includes(word)
+                and group_words.includes(word, pos)
                 and (
                     group_words_to_inspect is None
-                    or not group_words_to_inspect.includes(word)
+                    or not group_words_to_inspect.includes(word, pos)
                 )
             )
         }
@@ -470,18 +470,24 @@ class BiasScore:
         merged_word2matches = defaultdict(lambda: defaultdict(set))
         merged_word2occurrence = defaultdict(int)
 
-        for word in word2counts:
-            if not group_words_to_inspect.includes(word):
-                merged_word2counts[word] = word2counts[word]
-                merged_word2discrete[word] = word2discrete[word]
-                merged_word2matches[word] = word2matches[word]
-                merged_word2occurrence[word] = word2occurrence[word]
+        for (word, pos) in word2counts:
+            if not group_words_to_inspect.includes(word, pos):
+                merged_word2counts[word, pos] = word2counts[word, pos]
+                merged_word2discrete[word, pos] = word2discrete[word, pos]
+                merged_word2matches[word, pos] = word2matches[word, pos]
+                merged_word2occurrence[word, pos] = word2occurrence[word, pos]
             else:
                 lemma = lemmatizer(word)
-                cls.combine_by_sum(merged_word2counts[lemma], word2counts[word])
-                cls.combine_by_sum(merged_word2discrete[lemma], word2discrete[word])
-                cls.combine_by_or(merged_word2matches[lemma], word2matches[word])
-                merged_word2occurrence[lemma] += word2occurrence[word]
+                cls.combine_by_sum(
+                    merged_word2counts[lemma, pos], word2counts[word, pos]
+                )
+                cls.combine_by_sum(
+                    merged_word2discrete[lemma, pos], word2discrete[word, pos]
+                )
+                cls.combine_by_or(
+                    merged_word2matches[lemma, pos], word2matches[word, pos]
+                )
+                merged_word2occurrence[lemma, pos] += word2occurrence[word, pos]
 
         return (
             merged_word2counts,
@@ -515,18 +521,23 @@ class BiasScore:
             scores = [
                 (
                     word,
-                    cls.compute_score_for_word(word, word2counts, groups, scoring_mode),
+                    pos,
+                    cls.compute_score_for_word(
+                        (word, pos), word2counts, groups, scoring_mode
+                    ),
                 )
-                for word in tqdm(word2counts, desc=f"Scoring words ({scoring_mode})")
+                for (word, pos) in tqdm(
+                    word2counts, desc=f"Scoring words ({scoring_mode})"
+                )
             ]
-            not_infinity = [s for _, s in scores if not math.isinf(s)]
+            not_infinity = [s for _, _, s in scores if not math.isinf(s)]
             result[scoring_mode] = (
                 mean(not_infinity),
                 stdev(not_infinity),
                 pd.DataFrame.from_records(
                     scores,
-                    columns=["words", scoring_mode],
-                ).set_index("words"),
+                    columns=["words", "pos", scoring_mode],
+                ).set_index(["words", "pos"]),
             )
 
         for group in groups:
@@ -538,9 +549,12 @@ class BiasScore:
                 mean(not_infinity),
                 stdev(not_infinity),
                 pd.DataFrame.from_records(
-                    [(word, counts[group]) for word, counts in word2counts.items()],
-                    columns=["words", scoring_mode],
-                ).set_index("words"),
+                    [
+                        (word, pos, counts[group])
+                        for (word, pos), counts in word2counts.items()
+                    ],
+                    columns=["words", "pos", scoring_mode],
+                ).set_index(["words", "pos"]),
             )
 
         for group in groups:
@@ -552,18 +566,21 @@ class BiasScore:
                 mean(not_infinity),
                 stdev(not_infinity),
                 pd.DataFrame.from_records(
-                    [(word, counts[group]) for word, counts in word2discrete.items()],
-                    columns=["words", scoring_mode],
-                ).set_index("words"),
+                    [
+                        (word, pos, counts[group])
+                        for (word, pos), counts in word2discrete.items()
+                    ],
+                    columns=["words", "pos", scoring_mode],
+                ).set_index(["words", "pos"]),
             )
 
         result["global-count"] = (
             mean(word2occurrence.values()),
             stdev(word2occurrence.values()),
             pd.DataFrame.from_records(
-                [(word, count) for word, count in word2occurrence.items()],
-                columns=["words", "global-count"],
-            ).set_index("words"),
+                [(word, pos, count) for (word, pos), count in word2occurrence.items()],
+                columns=["words", "pos", "global-count"],
+            ).set_index(["words", "pos"]),
         )
 
         for group in groups:
@@ -572,9 +589,12 @@ class BiasScore:
                 None,
                 None,
                 pd.DataFrame.from_records(
-                    [(word, matches[group]) for word, matches in word2matches.items()],
-                    columns=["words", scoring_mode],
-                ).set_index("words"),
+                    [
+                        (word, pos, matches[group])
+                        for (word, pos), matches in word2matches.items()
+                    ],
+                    columns=["words", "pos", scoring_mode],
+                ).set_index(["words", "pos"]),
             )
 
         return result
