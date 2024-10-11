@@ -118,21 +118,36 @@ class IMorphAnalyzer(ABC):
 
 
 class GenderMorphAnalyzer(IMorphAnalyzer):
+    MALE = "male"
+    FEMALE = "female"
+
+    def __init__(self, curated):
+        self.curated = curated
+
     def is_indefinite(self, token):
         definite = token.morph.definite_
         return definite and definite.endswith("ind")
 
     def chains_to_the_left(self, token):
-        return token.pos_ in ("ADJ", "DET") and not self.is_indefinite(token)
+        return (
+            token.pos_ in ("ADJ", "DET")
+            and not self.is_indefinite(token)
+            or token.text in self.curated
+        )
 
     def get_morphological_group(self, token):
+        try:
+            return self.curated[token.text]
+        except KeyError:
+            pass
+
         gender = token.morph.gender_
         if not gender:
             return None
         if gender.endswith("fem"):
-            return "female"
+            return self.FEMALE
         if gender.endswith("masc"):
-            return "male"
+            return self.MALE
         raise ValueError(f"Unknown morphological gender {gender}.")
 
 

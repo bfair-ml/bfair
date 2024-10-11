@@ -70,7 +70,12 @@ def get_morph_analyzer(language, use_morph):
         return None
 
     if language == "spanish":
-        return GenderMorphAnalyzer()
+        return GenderMorphAnalyzer(
+            {
+                "del": GenderMorphAnalyzer.MALE,
+                "al": GenderMorphAnalyzer.MALE,
+            }
+        )
 
     raise ValueError(
         f"{language.title()} language does not support morphological analyzis."
