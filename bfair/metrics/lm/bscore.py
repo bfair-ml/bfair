@@ -3,7 +3,8 @@ import spacy
 import numpy as np
 import pandas as pd
 
-from typing import Dict, Set, Sequence, Callable
+from abc import ABC, abstractmethod
+from typing import Sequence, Callable
 from collections import defaultdict
 from itertools import repeat
 from functools import partial
@@ -102,6 +103,39 @@ class ContinuousContext(InfiniteContext):
                 weight *= self.step
 
 
+class IMorphAnalyzer(ABC):
+    @abstractmethod
+    def is_indefinite(self, token):
+        pass
+
+    @abstractmethod
+    def chains_to_the_left(self, token):
+        pass
+
+    @abstractmethod
+    def get_morphological_group(self, token):
+        pass
+
+
+class GenderMorphAnalyzer(IMorphAnalyzer):
+    def is_indefinite(self, token):
+        definite = token.morph.definite_
+        return definite and definite.endswith("ind")
+
+    def chains_to_the_left(self, token):
+        return token.pos_ in ("ADJ", "DET") and not self.is_indefinite(token)
+
+    def get_morphological_group(self, token):
+        gender = token.morph.gender_
+        if not gender:
+            return None
+        if gender.endswith("fem"):
+            return "female"
+        if gender.endswith("masc"):
+            return "male"
+        raise ValueError(f"Unknown morphological gender {gender}.")
+
+
 class BiasScore:
     LANGUAGE2MODEL = {
         "english": "en_core_web_sm",
@@ -138,6 +172,7 @@ class BiasScore:
         use_legacy_semantics=None,
         split_endings=None,
         group_words_to_inspect: GroupWords = None,
+        morph_analyzer: IMorphAnalyzer = None,
     ):
         self.language = language
         self.group_words = group_words
@@ -181,6 +216,7 @@ class BiasScore:
 
         self.stopwords = stopwords.words(language) if remove_stopwords else None
         self.group_words_to_inspect = group_words_to_inspect
+        self.morph_analyzer = morph_analyzer
 
     @classmethod
     def get_nlp(cls, language, semantic_check, use_legacy_semantics):
@@ -280,6 +316,7 @@ class BiasScore:
                 context=self.context,
                 tokenizer=self.tokenizer,
                 person_checker=self.person_checker,
+                morph_analyzer=self.morph_analyzer,
             )
 
             self._aggregate_counts(word2counts, local_word2counts)
@@ -352,6 +389,7 @@ class BiasScore:
         context,
         tokenizer,
         person_checker=DummyChecker(),
+        morph_analyzer: IMorphAnalyzer = None,
     ):
         word2counts = defaultdict(lambda: defaultdict(int))
         word2discrete = defaultdict(lambda: defaultdict(int))
@@ -366,6 +404,22 @@ class BiasScore:
                     center, center_pos
                 ) or not person_checker.check_token(center_token):
                     continue
+
+                if morph_analyzer is not None and center_token.i > 0:
+
+                    pivot = center_token.nbor(-1)
+                    pivot_group = None
+                    while morph_analyzer.chains_to_the_left(pivot):
+                        pivot_group = morph_analyzer.get_morphological_group(pivot)
+                        if pivot_group is not None:
+                            break
+                        try:
+                            pivot = pivot.nbor(-1)
+                        except IndexError:
+                            break
+
+                    if pivot_group is not None and pivot_group != group:
+                        continue
 
                 for (word, word_pos, word_token), weight in get_context():
                     if word_pos in ("PUNCT", "NUM", "SYM") or word.isdigit():

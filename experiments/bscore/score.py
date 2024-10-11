@@ -14,6 +14,7 @@ from bfair.metrics.lm import (
     GERDER_PAIR_ORDER,
 )
 from bfair.metrics.lm import EnglishGenderedWords, SpanishGenderedWords
+from bfair.metrics.lm.bscore import GenderMorphAnalyzer
 
 FIXED = "fixed"
 INFINITE = "infinite"
@@ -64,6 +65,18 @@ def get_group_words_and_to_inspect(language, exclude_professions, inspect_profes
     return group_words, group_words_to_inspect
 
 
+def get_morph_analyzer(language, use_morph):
+    if not use_morph:
+        return None
+
+    if language == "spanish":
+        return GenderMorphAnalyzer()
+
+    raise ValueError(
+        f"{language.title()} language does not support morphological analyzis."
+    )
+
+
 def main(args):
     if args.dataset == C2GEN:
         dataset = load_c2gen()
@@ -94,6 +107,8 @@ def main(args):
         args.inspect_professions,
     )
 
+    morph_analyzer = get_morph_analyzer(language, args.use_morph)
+
     bias_score = BiasScore(
         language=language,
         group_words=group_words,
@@ -111,6 +126,7 @@ def main(args):
         use_legacy_semantics=args.use_legacy_semantics,
         split_endings=args.split_endings,
         group_words_to_inspect=group_words_to_inspect,
+        morph_analyzer=morph_analyzer,
     )
 
     scores = bias_score(texts)
@@ -197,12 +213,18 @@ def entry_point():
         choices=["yes", "no"],
         default="no",
     )
+    parser.add_argument(
+        "--use-morph",
+        choices=["yes", "no"],
+        required=True,
+    )
 
     args = parser.parse_args()
     args.use_root = args.use_root == "yes"
     args.lower_proper_nouns = args.lower_proper_nouns == "yes"
     args.exclude_professions = args.exclude_professions == "yes"
     args.inspect_professions = args.inspect_professions == "yes"
+    args.use_morph = args.use_morph == "yes"
 
     args.semantic_check = (
         None if args.semantic_check == "auto" else args.semantic_check == "yes"
