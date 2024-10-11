@@ -643,3 +643,7 @@ class BiasScore:
         numerator = count_w_g / total_count_w_g if total_count_w_g else 0
         # denominator = ... # Compared to Co-Occurrence Bias score: count(group) / sum(count(non-seed-words))
         return numerator
+
+    @classmethod
+    def compute_mock_word_prob(cls, word, group, word2counts):
+        return word2counts[word][group]
