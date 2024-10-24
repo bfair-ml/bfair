@@ -285,8 +285,8 @@ class BiasScore:
                     # TEXT
                     token.text
                     if (
-                        token.pos_ == "PROPN"
-                        and (not lower_proper_nouns or group_words.includes(token.text))
+                        group_words.includes(token.text, token.pos_)
+                        or (token.pos_ == "PROPN" and not lower_proper_nouns)
                     )
                     else token.lower_
                     if (
