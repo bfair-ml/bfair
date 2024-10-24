@@ -14,7 +14,7 @@ from tqdm import tqdm
 from nltk import ngrams, word_tokenize
 from nltk.corpus import stopwords
 
-from bfair.metrics.lm.words import GroupWords
+from bfair.metrics.lm.words import IGroupWords
 from bfair.metrics.lm.semantics import (
     ITokenChecker,
     PersonCheckerForSpanish,
@@ -174,7 +174,7 @@ class BiasScore:
         self,
         *,
         language,
-        group_words: GroupWords,
+        group_words: IGroupWords,
         context,
         scoring_modes,
         use_root,
@@ -186,7 +186,7 @@ class BiasScore:
         semantic_check=None,
         use_legacy_semantics=None,
         split_endings=None,
-        group_words_to_inspect: GroupWords = None,
+        group_words_to_inspect: IGroupWords = None,
         morph_analyzer: IMorphAnalyzer = None,
     ):
         self.language = language
@@ -273,7 +273,7 @@ class BiasScore:
         nlp,
         use_root,
         lower_proper_nouns,
-        group_words: GroupWords,
+        group_words: IGroupWords,
         preprocessings: Sequence[Callable[[str], str]],
     ):
         def tokenizer(text):
@@ -402,7 +402,7 @@ class BiasScore:
         cls,
         *,
         text,
-        group_words: GroupWords,
+        group_words: IGroupWords,
         context,
         tokenizer,
         person_checker=DummyChecker(),
@@ -507,8 +507,8 @@ class BiasScore:
         remove_stopwords,
         stopwords,
         remove_groupwords,
-        group_words: GroupWords,
-        group_words_to_inspect: GroupWords,
+        group_words: IGroupWords,
+        group_words_to_inspect: IGroupWords,
     ):
         return {
             (word, pos): counts
@@ -533,7 +533,7 @@ class BiasScore:
         word2matches,
         word2occurrence,
         *,
-        group_words_to_inspect: GroupWords,
+        group_words_to_inspect: IGroupWords,
         lemmatizer,
     ):
         merged_word2counts = defaultdict(lambda: defaultdict(int))
