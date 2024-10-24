@@ -339,6 +339,8 @@ class BiasScore:
             self._aggregate_matches(word2matches, local_word2match)
             self._aggregate_numbers(word2occurrence, local_word2occurrence)
 
+            self.group_words.advance_context()
+
         if self.remove_stopwords or self.remove_groupwords:
             word2counts = self.drop_words(
                 word2counts,

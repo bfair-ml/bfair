@@ -6,6 +6,7 @@ from collections import defaultdict
 from bfair.datasets.c2gen import load_dataset as load_c2gen, CONTEXT
 from bfair.datasets.commongen import load_dataset as load_common_gen, TARGET
 from bfair.datasets.victoria import load_dataset as load_victoria, OUTPUT
+from bfair.datasets.ilenia import load_dataset as load_ilenia, SENTENCE, ANALYSIS
 from bfair.metrics.lm import (
     BiasScore,
     FixedContext,
@@ -13,7 +14,11 @@ from bfair.metrics.lm import (
     ContinuousContext,
     GERDER_PAIR_ORDER,
 )
-from bfair.metrics.lm import EnglishGenderedWords, SpanishGenderedWords
+from bfair.metrics.lm import (
+    EnglishGenderedWords,
+    SpanishGenderedWords,
+    DynamicGroupWords,
+)
 from bfair.metrics.lm.bscore import GenderMorphAnalyzer
 
 FIXED = "fixed"
@@ -23,6 +28,7 @@ CONTINUOUS = "continuous"
 COMMON_GEN = "common-gen"
 C2GEN = "c2gen"
 VICTORIA = "victoria"
+ILENIA = "ilenia"
 
 VICTORIA_GPT35_LEADING = "victoria-GPT3.5-leading"
 VICTORIA_GPT4O_LEADING = "victoria-GPT4o-leading"
@@ -83,6 +89,8 @@ def get_morph_analyzer(language, use_morph):
 
 
 def main(args):
+    group_words = None
+
     if args.dataset == C2GEN:
         dataset = load_c2gen()
         texts = dataset.data[CONTEXT].str.lower()
@@ -99,6 +107,17 @@ def main(args):
         dataset = load_victoria(model=model, leading=mode == "leading")
         texts = dataset.data[OUTPUT].str.lower()
         language = dataset.language()
+    elif args.dataset.startswith(ILENIA):
+        info = args.dataset.split(":")
+        if len(info) > 2:
+            raise ValueError(args.dataset)
+        elif len(info) == 1:
+            dataset = load_ilenia()
+        else:
+            dataset = load_ilenia(path=info[-1])
+        texts = dataset.data[SENTENCE]
+        language = dataset.language()
+        group_words = DynamicGroupWords(texts, dataset.data[ANALYSIS])
     elif Path(args.dataset).exists():
         dataset = pd.read_csv(args.dataset, sep="\t", usecols=["sentence"])
         texts = dataset["sentence"].dropna().str.lower()
@@ -106,11 +125,13 @@ def main(args):
     else:
         raise ValueError(args.dataset)
 
-    group_words, group_words_to_inspect = get_group_words_and_to_inspect(
+    _group_words, group_words_to_inspect = get_group_words_and_to_inspect(
         language,
         args.exclude_professions,
         args.inspect_professions,
     )
+    if group_words is None:
+        group_words = _group_words
 
     morph_analyzer = get_morph_analyzer(language, args.use_morph)
 
@@ -174,6 +195,7 @@ def entry_point():
                 VICTORIA_LLAMA3_NO_LEADING,
                 VICTORIA_GEMINI15_NO_LEADING,
                 VICTORIA_MISTRAL8X7B_NO_LEADING,
+                ILENIA,
                 "<PATH>",
             ]
         ),

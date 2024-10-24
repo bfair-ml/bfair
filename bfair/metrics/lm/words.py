@@ -1,10 +1,41 @@
 import pandas as pd
 from pathlib import Path
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, Set, Union, Dict
 from collections import defaultdict
+from abc import ABC, abstractmethod
 
 
-class GroupWords:
+class IGroupWords(ABC):
+    @abstractmethod
+    def items(self) -> Sequence[Tuple[str, Union["IGroupWords", Set]]]:
+        pass
+
+    @abstractmethod
+    def includes(self, word: str, key: str = None) -> bool:
+        pass
+
+    @abstractmethod
+    def __getitem__(self, key: str) -> Union["IGroupWords", Set]:
+        pass
+
+    @abstractmethod
+    def groups(self):
+        pass
+
+    def advance_context(self):
+        """
+        By default, do nothing.
+        """
+        pass
+
+    def reset_context(self):
+        """
+        By default, do nothing.
+        """
+        pass
+
+
+class GroupWords(IGroupWords):
     def __init__(self) -> None:
         self.group_words = defaultdict(WordsByPos)
         self.all_available_pos = set()
@@ -55,7 +86,7 @@ class GroupWords:
         )
 
 
-class WordsByPos:
+class WordsByPos(IGroupWords):
     def __init__(self) -> None:
         self.pos2words = defaultdict(set)
 
@@ -70,6 +101,86 @@ class WordsByPos:
 
     def __getitem__(self, pos) -> set:
         return self.pos2words[pos]
+
+    def groups(self):
+        return self.pos2words.keys()
+
+
+class WordsByAny(IGroupWords):
+    def __init__(self) -> None:
+        self.words = set()
+
+    def add(self, word: str) -> None:
+        self.words.add(word)
+
+    def items(self) -> Sequence[Tuple[str, Union[IGroupWords, Set]]]:
+        yield None, self.words
+
+    def includes(self, word: str, key: str = None) -> bool:
+        return word in self.words
+
+    def __getitem__(self, key: str) -> Union[IGroupWords, Set]:
+        return self.words
+
+    def groups(self):
+        return ()
+
+
+class DynamicGroupWords(IGroupWords):
+    def __init__(
+        self, texts: Sequence[str], annotations: Sequence[Tuple[str, bool, str]]
+    ) -> None:
+        self.texts = texts
+        self.annotations = annotations
+        self.list_of_group_words = self._initilize_group_words(annotations)
+        self.current = 0
+
+    @property
+    def group_words(self) -> Dict[str, WordsByAny]:
+        return self.list_of_group_words[self.current]
+
+    def groups(self):
+        return {
+            group
+            for group_words in self.list_of_group_words
+            for group in group_words.keys()
+        }
+
+    @classmethod
+    def _initilize_group_words(cls, annotations) -> Dict[str, WordsByAny]:
+        list_of_group_words = []
+        for annotation in annotations:
+            group_words = defaultdict(WordsByAny)
+            for word, include, group in annotation:
+                if not include:
+                    continue
+                group_words[group].add(word)
+            list_of_group_words.append(group_words)
+        return list_of_group_words
+
+    def items(self) -> Sequence[Tuple[str, WordsByAny]]:
+        return self.group_words.items()
+
+    def includes(self, word: str, key: str = None) -> bool:
+        list_of_group_words = (
+            [self.group_words]
+            if self.current < len(self.texts)
+            else self.list_of_group_words
+        )
+        return any(
+            words.includes(word)
+            for group_words in list_of_group_words
+            for _, words in group_words.items()
+        )
+
+    def __getitem__(self, group: str) -> WordsByAny:
+        return self.group_words[group]
+
+    def advance_context(self):
+        self.current += 1
+
+    def reset_context(self):
+        self.current = 0
 
 
 MALE = "male"
