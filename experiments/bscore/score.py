@@ -1,7 +1,6 @@
 import argparse
 import pandas as pd
 from pathlib import Path
-from collections import defaultdict
 
 from bfair.datasets.c2gen import load_dataset as load_c2gen, CONTEXT
 from bfair.datasets.commongen import load_dataset as load_common_gen, TARGET
@@ -12,7 +11,6 @@ from bfair.metrics.lm import (
     FixedContext,
     InfiniteContext,
     ContinuousContext,
-    GERDER_PAIR_ORDER,
 )
 from bfair.metrics.lm import (
     EnglishGenderedWords,
@@ -157,7 +155,7 @@ def main(args):
 
     scores = bias_score(texts)
     for scoring_mode, (mean, stdev, _) in scores.items():
-        print(f"## {scoring_mode} [{' then '.join(GERDER_PAIR_ORDER)}]")
+        print(f"## {scoring_mode} [{' then '.join(group_words.groups())}]")
         print("- **Mean**", mean)
         print("- **Standard Deviation**", stdev)
 
