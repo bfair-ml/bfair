@@ -128,23 +128,34 @@ class WordsByAny(IGroupWords):
 
 class DynamicGroupWords(IGroupWords):
     def __init__(
-        self, texts: Sequence[str], annotations: Sequence[Tuple[str, bool, str]]
+        self,
+        texts: Sequence[str],
+        annotations: Sequence[Tuple[str, bool, str]],
+        group_order: Sequence[str],
     ) -> None:
         self.texts = texts
         self.annotations = annotations
         self.list_of_group_words = self._initilize_group_words(annotations)
         self.current = 0
 
+        all_groups = {
+            group
+            for group_words in self.list_of_group_words
+            for group in group_words.keys()
+        }
+
+        self.group_order = {group: None for group in group_order}.keys()  # ordered set
+        if all_groups != self.group_order:
+            raise ValueError(
+                f"Group order does not match groups in annotations. {all_groups} vs {group_order}"
+            )
+
     @property
     def group_words(self) -> Dict[str, WordsByAny]:
         return self.list_of_group_words[self.current]
 
     def groups(self):
-        return {
-            group
-            for group_words in self.list_of_group_words
-            for group in group_words.keys()
-        }
+        return self.group_order
 
     @classmethod
     def _initilize_group_words(cls, annotations) -> Dict[str, WordsByAny]:
