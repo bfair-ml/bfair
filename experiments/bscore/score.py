@@ -117,11 +117,7 @@ def main(args):
             dataset = load_ilenia(path=info[-1])
         texts = dataset.data[SENTENCE]
         language = dataset.language()
-        group_words = DynamicGroupWords(
-            texts,
-            dataset.data[ANALYSIS],
-            GERDER_PAIR_ORDER,
-        )
+        group_words = DynamicGroupWords(texts, dataset.data[ANALYSIS])
     elif Path(args.dataset).exists():
         dataset = pd.read_csv(args.dataset, sep="\t", usecols=["sentence"])
         texts = dataset["sentence"].dropna().str.lower()
