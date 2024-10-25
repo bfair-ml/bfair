@@ -154,6 +154,10 @@ class DynamicGroupWords(IGroupWords):
             for word, include, group in annotation:
                 if not include:
                     continue
+                if " " in word:
+                    print(
+                        f"⚠️ Word contains space but current tokenization strategies do not support multi-word tokens."
+                    )
                 group_words[group].add(word)
             list_of_group_words.append(group_words)
         return list_of_group_words
