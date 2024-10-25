@@ -3,6 +3,7 @@ from pathlib import Path
 
 from .base import Dataset
 from bfair.utils import md2text
+from bfair.envs import VICTORIA_DATASET
 
 PROMPT = "prompt"
 OUTPUT = "output"
@@ -18,7 +19,7 @@ class Victoria(Dataset):
         cls,
         model,
         leading: bool,
-        path="datasets/victoria/LLMs",
+        path=VICTORIA_DATASET,
         split_seed=None,
         stratify_by=None,
     ):

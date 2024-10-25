@@ -7,8 +7,8 @@ from bfair.sensors.text.ner.base import NERBasedSensor
 from bfair.sensors.text.embedding.aggregators import Aggregator, SumAggregator
 from bfair.sensors.text.embedding.filters import BestScoreFilter
 
-MALE_VALUE = "Male"
-FEMALE_VALUE = "Female"
+MALE_VALUE = "male"
+FEMALE_VALUE = "female"
 
 _GENDER_MAP = {
     0: MALE_VALUE,

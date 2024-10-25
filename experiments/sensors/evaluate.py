@@ -80,11 +80,11 @@ def main():
         # - Load CONFIG ---
 
         if config_str == "always-male":
-            handler = SensorHandler(sensors=[FixValueSensor("Male")])
+            handler = SensorHandler(sensors=[FixValueSensor("male")])
         elif config_str == "always-female":
-            handler = SensorHandler(sensors=[FixValueSensor("Female")])
+            handler = SensorHandler(sensors=[FixValueSensor("female")])
         elif config_str == "always-both":
-            handler = SensorHandler(sensors=[FixValueSensor(["Male", "Female"])])
+            handler = SensorHandler(sensors=[FixValueSensor(["male", "female"])])
         elif config_str == "always-none":
             handler = SensorHandler(sensors=[FixValueSensor([])])
         elif config_str.startswith("random-"):
@@ -96,7 +96,7 @@ def main():
                 handler = SensorHandler(
                     sensors=[
                         RandomValueSensor(
-                            seed=seed, distribution={"Female": 24 / 49, "Male": 33 / 49}
+                            seed=seed, distribution={"female": 24 / 49, "male": 33 / 49}
                         )
                     ]
                 )
@@ -105,7 +105,7 @@ def main():
                     sensors=[
                         RandomValueSensor(
                             seed=seed,
-                            distribution={"Female": 468 / 5000, "Male": 998 / 5000},
+                            distribution={"female": 468 / 5000, "male": 998 / 5000},
                         )
                     ]
                 )

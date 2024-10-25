@@ -517,7 +517,7 @@ def protected_attributes_extraction():
 
         X = pd.Series([text], name="Text")
         y = pd.Series([("CUSTOM SENTENCE",)], name="Gender")
-        gender_values = ["Male", "Female"]
+        gender_values = ["male", "female"]
 
     language = st.sidebar.selectbox("Language", ["english"])
 

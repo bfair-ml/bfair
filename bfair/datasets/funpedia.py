@@ -3,9 +3,9 @@ from .base import Dataset
 import pandas as pd
 import datasets as db
 
-MALE_VALUE = "Male"
-FEMALE_VALUE = "Female"
-NEUTRAL_VALUE = "Gender-Neutral"
+MALE_VALUE = "male"
+FEMALE_VALUE = "female"
+NEUTRAL_VALUE = "gender-neutral"
 GENDER_VALUES = [MALE_VALUE, FEMALE_VALUE]
 
 TEXT_COLUMN = "Text"

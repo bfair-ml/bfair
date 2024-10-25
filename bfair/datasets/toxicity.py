@@ -5,8 +5,8 @@ from bfair.envs import TOXICITY_DATASET
 
 from .base import Dataset
 
-MALE_VALUE = "Male"
-FEMALE_VALUE = "Female"
+MALE_VALUE = "male"
+FEMALE_VALUE = "female"
 GENDER_VALUES = [MALE_VALUE, FEMALE_VALUE]
 
 TEXT_COLUMN = "Text"
@@ -35,7 +35,7 @@ class ToxicityDataset(Dataset):
                 .dropna()
                 .apply(
                     lambda row: [
-                        gender.title()
+                        gender.lower()
                         for gender, score in zip(_GENDER_COLUMNS, row)
                         if score > threshold
                     ],

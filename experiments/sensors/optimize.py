@@ -123,7 +123,7 @@ def main():
         texts_for_testing = []
         annotations_for_testing = []
         attr_cls = P_GENDER
-        sensitive_values = ["Male", "Female"]
+        sensitive_values = ["male", "female"]
 
         if DB_REVIEWS in args.dataset:
             dataset = load_review(split_seed=0)

@@ -3,8 +3,8 @@ from .base import Dataset
 import pandas as pd
 import datasets as db
 
-MALE_VALUE = "Male"
-FEMALE_VALUE = "Female"
+MALE_VALUE = "male"
+FEMALE_VALUE = "female"
 GENDER_VALUES = [MALE_VALUE, FEMALE_VALUE]
 
 TEXT_COLUMN = "Text"
@@ -30,7 +30,7 @@ class ImageChatDataset(Dataset):
             df = source[split].to_pandas()
             gender_list = df[_GENDER_COLUMNS].apply(
                 lambda row: [
-                    gender.title()
+                    gender.lower()
                     for gender, include in zip(_GENDER_COLUMNS, row)
                     if include
                 ],

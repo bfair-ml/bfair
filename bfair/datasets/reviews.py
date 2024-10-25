@@ -9,7 +9,7 @@ REVIEW_COLUMN = "Review"
 GENDER_COLUMN = "Gender"
 SENTIMENT_COLUMN = "Sentiment"
 
-GENDER_VALUES = ["Male", "Female"]
+GENDER_VALUES = ["male", "female"]
 SENTIMENT_VALUES = ["negative", "positive"]
 
 
@@ -34,7 +34,7 @@ class ReviewsDataset(Dataset):
     def _parse_gender(cls, cell):
         return tuple(
             sorted(
-                clean
+                clean.lower()
                 for raw in str.split(cell, ",")
                 for clean in (raw.strip(),)
                 if clean
