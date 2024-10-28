@@ -63,7 +63,7 @@ class NameGenderSensor(NERBasedSensor):
         selected = self.aggregator(scored_tokens)
         values = {value for value, _ in selected}
 
-        return [attribute for attribute in attributes if attribute.title() in values]
+        return [attribute for attribute in attributes if attribute.lower() in values]
 
     @classmethod
     def build(
