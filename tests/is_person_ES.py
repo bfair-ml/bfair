@@ -1,4 +1,4 @@
-from bfair.utils.spacy_trf_vecs import PersonCheckerForSpanish
+from bfair.metrics.lm.semantics import PersonCheckerForSpanish
 
 checker = PersonCheckerForSpanish()
 nlp = checker.nlp

@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from spacy.tokens import Token
 
 try:
-    from bfair.utils.spacy_trf_vecs import get_model_with_trf_vectors
+    from bfair.utils.spacy import get_model_with_trf_vectors
 except:
     print(
         "[BFAIR ⚠️]: Failed to load the semantic module.",

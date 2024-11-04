@@ -14,12 +14,12 @@ from tqdm import tqdm
 from nltk import ngrams, word_tokenize
 from nltk.corpus import stopwords
 
+from bfair.utils.spacy import get_model
 from bfair.metrics.lm.words import IGroupWords
 from bfair.metrics.lm.semantics import (
     ITokenChecker,
     PersonCheckerForSpanish,
     DummyChecker,
-    get_model_with_trf_vectors,
 )
 from bfair.metrics.lm.endings import spanish_split_gender_endings
 
@@ -244,9 +244,11 @@ class BiasScore:
         )
         try:
             model_name = source[language]
-            if model_name == "es_dep_news_trf":
-                return get_model_with_trf_vectors(model_name)
-            return spacy.load(model_name)
+            add_transformer_vectors = model_name in ["es_dep_news_trf"]
+            return get_model(
+                model_name=model_name,
+                add_transformer_vectors=add_transformer_vectors,
+            )
         except KeyError:
             raise ValueError(f"Not supported: {language}(semantic={semantic_check})")
 
