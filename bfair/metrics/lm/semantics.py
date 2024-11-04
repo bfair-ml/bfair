@@ -4,16 +4,7 @@ from typing import Sequence
 from abc import ABC, abstractmethod
 from spacy.tokens import Token
 
-try:
-    from bfair.utils.spacy import get_model_with_trf_vectors
-except:
-    print(
-        "[BFAIR ⚠️]: Failed to load the semantic module.",
-        "You can safely ignore this message if the module is not required for your current use.",
-    )
-
-    def get_model_with_trf_vectors(model_name):
-        raise Exception("Attempting to use the semantic module, but it was not loaded correctly.")
+from bfair.utils.spacy.base import get_model
 
 
 def best_fit(categories: Sequence[Token], word: Token) -> Token:
@@ -44,7 +35,10 @@ class PersonCheckerForSpanish(BooleanChecker):
     def __init__(self, nlp=None, *, model: str = None):
         if nlp is None:
             if model is None:
-                nlp = get_model_with_trf_vectors("es_dep_news_trf")
+                nlp = get_model(
+                    model_name="es_dep_news_trf",
+                    add_transformer_vectors=True,
+                )
             else:
                 nlp = spacy.load(model)
 

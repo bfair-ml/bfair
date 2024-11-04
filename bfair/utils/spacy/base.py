@@ -1,5 +1,19 @@
 import spacy
-from bfair.utils.spacy.trf_vecs import get_model_with_trf_vectors
+
+
+try:
+    from .trf_vecs import get_model_with_trf_vectors
+except:
+    print(
+        "[BFAIR ⚠️]: Failed to load the semantic module.",
+        "You can safely ignore this message if the module is not required for your current use.",
+    )
+    # MOCK
+    def get_model_with_trf_vectors(model_name):
+        raise Exception(
+            "Attempting to use the semantic module, but it was not loaded correctly."
+        )
+
 
 LANGUAGE2MODEL = {
     "english": "en_core_web_sm",
@@ -7,14 +21,15 @@ LANGUAGE2MODEL = {
 }
 
 
-def get_model(*, language, model_name=None, add_transformer_vectors=False):
+def get_model(*, model_name=None, language=None, add_transformer_vectors=False):
     if model_name is None:
         try:
             model_name = LANGUAGE2MODEL[language]
         except KeyError:
             raise ValueError(f"Language not supported: {language}.")
 
-        if add_transformer_vectors:
-            return get_model_with_trf_vectors(model_name)
-
-        return spacy.load(model_name)
+    return (
+        get_model_with_trf_vectors(model_name)
+        if add_transformer_vectors
+        else spacy.load(model_name)
+    )
