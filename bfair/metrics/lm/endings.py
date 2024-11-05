@@ -26,7 +26,9 @@ PATTERN_JOINT = re.compile(r"(\b\w+?)(e|o|r|es|os)/(a|as)\b")
 
 
 def replacement_joint(m):
-    return f"{m[1]}{m[2]} {m[1]}{'r' if m[2] == 'r' else ''}{m[3]}"
+    # The '/'  is important to avoid sintactical errors while tokenizing
+    # "Un doctor/a ... " -> "Un doctor doctora ..." -> "DET NOUN **VERB**"
+    return f"{m[1]}{m[2]} / {m[1]}{'r' if m[2] == 'r' else ''}{m[3]}"
 
 
 def spanish_split_gender_endings(text):
