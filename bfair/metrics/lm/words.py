@@ -35,6 +35,20 @@ class IGroupWords(ABC):
         pass
 
 
+class FalseGroupWords(IGroupWords):
+    def items(self) -> Sequence[Tuple[str, Union[IGroupWords, Set]]]:
+        return ()
+
+    def includes(self, word: str, key: str = None) -> bool:
+        return False
+
+    def __getitem__(self, key: str) -> IGroupWords:
+        return FalseGroupWords()
+
+    def groups(self):
+        return ()
+
+
 class GroupWords(IGroupWords):
     def __init__(self) -> None:
         self.group_words = defaultdict(WordsByPos)
@@ -93,8 +107,12 @@ class WordsByPos(IGroupWords):
     def add(self, word: str, pos: str) -> None:
         self.pos2words[pos].add(word)
 
-    def includes(self, word: str, pos: str) -> bool:
-        return word in self.pos2words[pos]
+    def includes(self, word: str, pos: str = None) -> bool:
+        return (
+            word in self.pos2words[pos]
+            if pos is not None
+            else any(word in items for items in self.pos2words.values())
+        )
 
     def items(self) -> Sequence[Tuple[str, set]]:
         return self.pos2words.items()
