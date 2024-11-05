@@ -29,7 +29,7 @@ class WordEmbedding:
         raise NotImplementedError()
 
     def get_ready(self):
-        pass
+        return self
 
 
 def register_embedding(language: str, source: str):
