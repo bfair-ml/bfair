@@ -9,3 +9,4 @@ from .c2gen import load_dataset as load_c2gen
 from .commongen import load_dataset as load_common_gen
 from .victoria import load_dataset as load_victoria
 from .ilenia import load_dataset as load_ilenia
+from .villanos import load_dataset as load_villanos
