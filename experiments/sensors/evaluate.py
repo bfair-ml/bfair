@@ -13,6 +13,7 @@ from bfair.sensors import (
     CoreferenceNERSensor,
     DBPediaSensor,
     NameGenderSensor,
+    StaticWordsSensor,
 )
 from bfair.sensors.optimization import (
     load,
@@ -29,6 +30,7 @@ from bfair.datasets import (
     load_image_chat,
     load_funpedia,
     load_toxicity,
+    load_villanos,
 )
 from bfair.datasets.reviews import (
     REVIEW_COLUMN as TEXT_COLUMN_REVIEW,
@@ -57,6 +59,9 @@ from bfair.datasets.toxicity import (
     GENDER_COLUMN as GENDER_COLUMN_TOXICITY,
     GENDER_VALUES as GENDER_VALUES_TOXICITY,
 )
+from bfair.datasets.villanos import (
+    TEXT_COLUMN as TEXT_COLUMN_VILLANOS,
+)
 from bfair.metrics import exploded_statistical_parity
 
 DB_REVIEWS = "reviews"
@@ -64,6 +69,7 @@ DB_MDGENDER = "mdgender"
 DB_IMAGECHAT = "imagechat"
 DB_FUNPEDIA = "funpedia"
 DB_TOXICITY = "toxicity"
+DB_VILLANOS = "villanos"
 
 
 def main():
@@ -72,9 +78,26 @@ def main():
     parser.add_argument("--config", action="append", required=True)
     parser.add_argument("--eval-all", action="store_true")
     parser.add_argument("--dump-path", default=None)
+    parser.add_argument(
+        "--datasets",
+        action="append",
+        choices=[
+            DB_REVIEWS,
+            DB_MDGENDER,
+            DB_IMAGECHAT,
+            DB_FUNPEDIA,
+            DB_TOXICITY,
+            DB_VILLANOS,
+        ],
+    )
+    parser.add_argument("--eval-annotation", action="store_true")
+    parser.add_argument("--eval-fairness", action="store_true")
+
     args = parser.parse_args()
     eval_all = args.eval_all
     dump_path = Path(args.dump_path) if args.dump_path is not None else None
+    eval_annotation = args.eval_annotation
+    eval_fairness = args.eval_fairness
 
     handlers = []
     for config_str in args.config:
@@ -113,13 +136,26 @@ def main():
             else:
                 print(f"Invalid handler configuration. {config_str}")
                 exit()
-        elif config_str == "defaults":
+        elif config_str.startswith("defaults"):
+            _, *params = config_str.split("|")
+            kwargs = {
+                name: value for param in params for name, value in (param.split(":"),)
+            }
+
+            def select(*arguments):
+                return {
+                    name: value for name, value in kwargs.items() if name in arguments
+                }
+
             handler = SensorHandler(
                 sensors=[
-                    EmbeddingBasedSensor.build_default_in_plain_mode(),
-                    CoreferenceNERSensor.build(),
-                    # DBPediaSensor.build(),
-                    NameGenderSensor.build(),
+                    EmbeddingBasedSensor.build_default_in_plain_mode(
+                        **select("language", "source")
+                    ),
+                    CoreferenceNERSensor.build(**select("language")),
+                    # DBPediaSensor.build(**select("language")),
+                    NameGenderSensor.build(**select("language")),
+                    StaticWordsSensor.build(**select("language")),
                 ],
             )
         else:
@@ -157,7 +193,7 @@ def main():
         print(scores)
 
     # - Load DATASETS ---
-    datasets = [
+    all_datasets = [
         (
             f"{DB_REVIEWS} (complete)",
             lambda: load_review().data,
@@ -248,6 +284,21 @@ def main():
             None,
             NEUTRAL_VALUE_FUNPEDIA,
         ),
+        (
+            f"{DB_VILLANOS} (all data)",
+            lambda: load_villanos().all_data,
+            TEXT_COLUMN_VILLANOS,
+            None,
+            ["male", "female"],
+            None,
+            None,
+        ),
+    ]
+
+    datasets = [
+        ds
+        for ds in all_datasets
+        if not args.datasets or ds[0].split(" ")[0] in args.datasets
     ]
 
     db.logging.set_verbosity_error()
@@ -270,17 +321,18 @@ def main():
             data = load_dataset()
 
             X = data[text_column]
-            y = data[gender_column]
+            y = data[gender_column] if gender_column is not None else None
 
             predictions = [
                 handler(text, gender_values, P_GENDER)
                 for text in tqdm(X, desc=f"Texts {dataset_name}")
             ]
 
-            if neutral_value is None:
-                multilabel_errors(y, predictions, gender_values)
-            else:
-                multiclass_error(y, predictions, neutral_value)
+            if eval_annotation and y is not None:
+                if neutral_value is None:
+                    multilabel_errors(y, predictions, gender_values)
+                else:
+                    multiclass_error(y, predictions, neutral_value)
 
             if dump_path is not None:
                 all_predictions = [("Hander", predictions)]
@@ -293,7 +345,11 @@ def main():
                 results = pd.concat(
                     (
                         X,
-                        y.str.join(" & ") if neutral_value is None else y,
+                        (
+                            y.str.join(" & ")
+                            if neutral_value is None and y is not None
+                            else y
+                        ),
                         *[
                             pd.Series(pred, name=name, index=X.index)
                             .apply(sorted)
@@ -305,7 +361,7 @@ def main():
                 )
                 results.to_csv((dump_path / dataset_name).with_suffix(".csv"))
 
-            if target_column is None:
+            if target_column is None or not eval_fairness:
                 continue
 
             fairness = exploded_statistical_parity(
