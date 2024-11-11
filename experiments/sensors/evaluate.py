@@ -72,7 +72,7 @@ DB_TOXICITY = "toxicity"
 DB_VILLANOS = "villanos"
 
 
-def main():
+def get_args():
     # - SETUP ---
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", action="append", required=True)
@@ -92,15 +92,14 @@ def main():
     )
     parser.add_argument("--eval-annotation", action="store_true")
     parser.add_argument("--eval-fairness", action="store_true")
-
     args = parser.parse_args()
-    eval_all = args.eval_all
-    dump_path = Path(args.dump_path) if args.dump_path is not None else None
-    eval_annotation = args.eval_annotation
-    eval_fairness = args.eval_fairness
+    return args
 
+
+def get_handlers(config):
     handlers = []
-    for config_str in args.config:
+
+    for config_str in config:
         # - Load CONFIG ---
 
         if config_str == "always-male":
@@ -176,22 +175,10 @@ def main():
 
         handlers.append((config_str, handler))
 
-    def multilabel_errors(true_labels, predictions, gender_values):
-        errors = compute_errors(true_labels, predictions, gender_values)
-        print(errors)
-        scores = compute_scores(errors)
-        print(scores)
+    return handlers
 
-    def multiclass_error(true_classes, predictions, neutral_value):
-        errors = compute_multiclass_errors(
-            true_classes,
-            predictions,
-            partial(attributes_to_class, neutral=neutral_value),
-        )
-        print(errors)
-        scores = compute_multiclass_scores(errors)
-        print(scores)
 
+def get_datasets(selected_datasets=None):
     # - Load DATASETS ---
     all_datasets = [
         (
@@ -298,8 +285,106 @@ def main():
     datasets = [
         ds
         for ds in all_datasets
-        if not args.datasets or ds[0].split(" ")[0] in args.datasets
+        if not selected_datasets or ds[0].split(" ")[0] in selected_datasets
     ]
+
+    return datasets
+
+
+def do_and_dump_annotations(
+    handler,
+    gender_values,
+    data,
+    text_column,
+    dataset_name,
+    dump_path=None,
+    eval_all=False,
+):
+    texts_to_annotate = data[text_column]
+
+    predictions = [
+        handler(text, gender_values, P_GENDER)
+        for text in tqdm(texts_to_annotate, desc=f"Texts {dataset_name}")
+    ]
+
+    if dump_path is not None:
+        all_predictions = [("Hander", predictions)]
+
+        if eval_all:
+            for sensor in handler.sensors:
+                pred = [
+                    sensor(text, gender_values, P_GENDER) for text in texts_to_annotate
+                ]
+                all_predictions.append((type(sensor).__name__, pred))
+
+        results = pd.concat(
+            (
+                data,
+                *[
+                    pd.Series(pred, name=name, index=data.index)
+                    .apply(sorted)
+                    .str.join(" & ")
+                    for name, pred in all_predictions
+                ],
+            ),
+            axis=1,
+        )
+        results.to_csv((dump_path / dataset_name).with_suffix(".csv"))
+
+    return predictions
+
+
+def evaluate_annotation(gold, predictions, gender_values, neutral_value=None):
+    def multilabel_errors(true_labels, predictions, gender_values):
+        errors = compute_errors(true_labels, predictions, gender_values)
+        print(errors)
+        scores = compute_scores(errors)
+        print(scores)
+
+    def multiclass_error(true_classes, predictions, neutral_value):
+        errors = compute_multiclass_errors(
+            true_classes,
+            predictions,
+            partial(attributes_to_class, neutral=neutral_value),
+        )
+        print(errors)
+        scores = compute_multiclass_scores(errors)
+        print(scores)
+
+    if neutral_value is None:
+        multilabel_errors(gold, predictions, gender_values)
+    else:
+        multiclass_error(gold, predictions, neutral_value)
+
+
+def compare_fairness(data, gender_column, predictions, target_column):
+    evaluate_fairness(data, gender_column, target_column, "True")
+    auto_annotated = data.copy()
+    auto_annotated[gender_column] = [list(x) for x in predictions]
+    evaluate_fairness(auto_annotated, gender_column, target_column, "Estimated")
+
+
+def evaluate_fairness(data, gender_column, target_column, label):
+    fairness = exploded_statistical_parity(
+        data=data,
+        protected_attributes=gender_column,
+        target_attribute=target_column,
+        target_predictions=None,
+        positive_target="positive",
+        return_probs=True,
+    )
+    print(f"## {label} fairness:", fairness)
+
+
+def main():
+    args = get_args()
+    eval_all = args.eval_all
+    dump_path = Path(args.dump_path) if args.dump_path is not None else None
+    eval_annotation = args.eval_annotation
+    eval_fairness = args.eval_fairness
+
+    handlers = get_handlers(args.config)
+    datasets = get_datasets(args.datasets)
 
     db.logging.set_verbosity_error()
 
@@ -320,72 +405,22 @@ def main():
             print(f"\n# {dataset_name}")
             data = load_dataset()
 
-            X = data[text_column]
-            y = data[gender_column] if gender_column is not None else None
-
-            predictions = [
-                handler(text, gender_values, P_GENDER)
-                for text in tqdm(X, desc=f"Texts {dataset_name}")
-            ]
-
-            if eval_annotation and y is not None:
-                if neutral_value is None:
-                    multilabel_errors(y, predictions, gender_values)
-                else:
-                    multiclass_error(y, predictions, neutral_value)
-
-            if dump_path is not None:
-                all_predictions = [("Hander", predictions)]
-
-                if eval_all:
-                    for sensor in handler.sensors:
-                        pred = [sensor(text, gender_values, P_GENDER) for text in X]
-                        all_predictions.append((type(sensor).__name__, pred))
-
-                results = pd.concat(
-                    (
-                        X,
-                        (
-                            y.str.join(" & ")
-                            if neutral_value is None and y is not None
-                            else y
-                        ),
-                        *[
-                            pd.Series(pred, name=name, index=X.index)
-                            .apply(sorted)
-                            .str.join(" & ")
-                            for name, pred in all_predictions
-                        ],
-                    ),
-                    axis=1,
-                )
-                results.to_csv((dump_path / dataset_name).with_suffix(".csv"))
-
-            if target_column is None or not eval_fairness:
-                continue
-
-            fairness = exploded_statistical_parity(
-                data=data,
-                protected_attributes=gender_column,
-                target_attribute=target_column,
-                target_predictions=None,
-                positive_target="positive",
-                return_probs=True,
+            predictions = do_and_dump_annotations(
+                handler,
+                gender_values,
+                data,
+                text_column,
+                dataset_name,
+                dump_path,
+                eval_all,
             )
-            print("## True fairness:", fairness)
 
-            auto_annotated = data.copy()
-            auto_annotated[gender_column] = [list(x) for x in predictions]
+            if eval_annotation and gender_column is not None:
+                gold = data[gender_column]
+                evaluate_annotation(gold, predictions, gender_values, neutral_value)
 
-            fairness = exploded_statistical_parity(
-                data=auto_annotated,
-                protected_attributes=gender_column,
-                target_attribute=target_column,
-                target_predictions=None,
-                positive_target="positive",
-                return_probs=True,
-            )
-            print("## Estimated fairness:", fairness)
+            if eval_fairness and target_column is not None:
+                compare_fairness(data, gender_column, predictions, target_column)
 
 
 if __name__ == "__main__":
