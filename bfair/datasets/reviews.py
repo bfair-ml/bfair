@@ -11,6 +11,7 @@ SENTIMENT_COLUMN = "Sentiment"
 
 GENDER_VALUES = ["male", "female"]
 SENTIMENT_VALUES = ["negative", "positive"]
+POSITIVE_VALUE = "positive"
 
 
 def load_dataset(path=IMDB_REVIEWS_DATASET, split_seed=None):

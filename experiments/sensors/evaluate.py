@@ -37,6 +37,7 @@ from bfair.datasets.reviews import (
     GENDER_COLUMN as GENDER_COLUMN_REVIEW,
     GENDER_VALUES as GENDER_VALUES_REVIEW,
     SENTIMENT_COLUMN as TARGET_COLUMN_REVIEW,
+    POSITIVE_VALUE as POSITIVE_VALUE_REVIEW,
 )
 from bfair.datasets.mdgender import (
     TEXT_COLUMN as TEXT_COLUMN_MDGENDER,
@@ -61,6 +62,8 @@ from bfair.datasets.toxicity import (
 )
 from bfair.datasets.villanos import (
     TEXT_COLUMN as TEXT_COLUMN_VILLANOS,
+    LABEL_COLUMN as TARGET_COLUMN_VILLANOS,
+    POSITIVE_VALUE as POSITIVE_VALUE_VILLANOS,
 )
 from bfair.metrics import exploded_statistical_parity
 
@@ -188,6 +191,7 @@ def get_datasets(selected_datasets=None):
             GENDER_COLUMN_REVIEW,
             GENDER_VALUES_REVIEW,
             TARGET_COLUMN_REVIEW,
+            POSITIVE_VALUE_REVIEW,
             None,
         ),
         (
@@ -197,6 +201,7 @@ def get_datasets(selected_datasets=None):
             GENDER_COLUMN_REVIEW,
             GENDER_VALUES_REVIEW,
             TARGET_COLUMN_REVIEW,
+            POSITIVE_VALUE_REVIEW,
             None,
         ),
         (
@@ -206,6 +211,7 @@ def get_datasets(selected_datasets=None):
             GENDER_COLUMN_REVIEW,
             GENDER_VALUES_REVIEW,
             TARGET_COLUMN_REVIEW,
+            POSITIVE_VALUE_REVIEW,
             None,
         ),
         (
@@ -214,6 +220,7 @@ def get_datasets(selected_datasets=None):
             TEXT_COLUMN_MDGENDER,
             GENDER_COLUMN_MDGENDER,
             GENDER_VALUES_MDGENDER,
+            None,
             None,
             None,
         ),
@@ -225,6 +232,7 @@ def get_datasets(selected_datasets=None):
             GENDER_VALUES_IMAGECHAT,
             None,
             None,
+            None,
         ),
         (
             f"{DB_IMAGECHAT} (testing)",
@@ -232,6 +240,7 @@ def get_datasets(selected_datasets=None):
             TEXT_COLUMN_IMAGECHAT,
             GENDER_COLUMN_IMAGECHAT,
             GENDER_VALUES_IMAGECHAT,
+            None,
             None,
             None,
         ),
@@ -243,6 +252,7 @@ def get_datasets(selected_datasets=None):
             GENDER_VALUES_TOXICITY,
             None,
             None,
+            None,
         ),
         (
             f"{DB_TOXICITY} (training @ 0.5)",
@@ -250,6 +260,7 @@ def get_datasets(selected_datasets=None):
             TEXT_COLUMN_TOXICITY,
             GENDER_COLUMN_TOXICITY,
             GENDER_VALUES_TOXICITY,
+            None,
             None,
             None,
         ),
@@ -260,6 +271,7 @@ def get_datasets(selected_datasets=None):
             GENDER_COLUMN_FUNPEDIA,
             GENDER_VALUES_FUNPEDIA,
             None,
+            None,
             NEUTRAL_VALUE_FUNPEDIA,
         ),
         (
@@ -269,6 +281,7 @@ def get_datasets(selected_datasets=None):
             GENDER_COLUMN_FUNPEDIA,
             GENDER_VALUES_FUNPEDIA,
             None,
+            None,
             NEUTRAL_VALUE_FUNPEDIA,
         ),
         (
@@ -277,7 +290,8 @@ def get_datasets(selected_datasets=None):
             TEXT_COLUMN_VILLANOS,
             None,
             ["male", "female"],
-            None,
+            TARGET_COLUMN_VILLANOS,
+            POSITIVE_VALUE_VILLANOS,
             None,
         ),
     ]
@@ -308,7 +322,7 @@ def do_and_dump_annotations(
     ]
 
     if dump_path is not None:
-        all_predictions = [("Hander", predictions)]
+        all_predictions = [("Handler", predictions)]
 
         if eval_all:
             for sensor in handler.sensors:
@@ -357,20 +371,32 @@ def evaluate_annotation(gold, predictions, gender_values, neutral_value=None):
         multiclass_error(gold, predictions, neutral_value)
 
 
-def compare_fairness(data, gender_column, predictions, target_column):
-    evaluate_fairness(data, gender_column, target_column, "True")
+def compare_fairness(data, gender_column, predictions, target_column, positive_target):
+    evaluate_fairness(
+        data,
+        gender_column,
+        target_column,
+        positive_target,
+        "True",
+    )
     auto_annotated = data.copy()
     auto_annotated[gender_column] = [list(x) for x in predictions]
-    evaluate_fairness(auto_annotated, gender_column, target_column, "Estimated")
+    evaluate_fairness(
+        auto_annotated,
+        gender_column,
+        target_column,
+        positive_target,
+        "Estimated",
+    )
 
 
-def evaluate_fairness(data, gender_column, target_column, label):
+def evaluate_fairness(data, gender_column, target_column, positive_target, label):
     fairness = exploded_statistical_parity(
         data=data,
         protected_attributes=gender_column,
         target_attribute=target_column,
         target_predictions=None,
-        positive_target="positive",
+        positive_target=positive_target,
         return_probs=True,
     )
     print(f"## {label} fairness:", fairness)
@@ -399,6 +425,7 @@ def main():
             gender_column,
             gender_values,
             target_column,
+            positive_target,
             neutral_value,
         ) in tqdm(datasets, desc="Datasets"):
 
@@ -420,7 +447,13 @@ def main():
                 evaluate_annotation(gold, predictions, gender_values, neutral_value)
 
             if eval_fairness and target_column is not None:
-                compare_fairness(data, gender_column, predictions, target_column)
+                compare_fairness(
+                    data,
+                    gender_column,
+                    predictions,
+                    target_column,
+                    positive_target,
+                )
 
 
 if __name__ == "__main__":

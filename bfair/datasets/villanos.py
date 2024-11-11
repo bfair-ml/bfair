@@ -8,6 +8,9 @@ from .base import Dataset
 TEXT_COLUMN = "Text"
 LABEL_COLUMN = "Violent"
 
+TARGET_VALUES = ["yes", "no"]
+POSITIVE_VALUE = "no"
+
 _TEXT_COLUMN = "text"
 _LABEL_COLUMN = "label"
 
@@ -28,9 +31,9 @@ class VillanosDataset(Dataset):
             df = pd.read_csv(path / f"{split}.tsv", sep="\t")
             violent_list = df[_LABEL_COLUMN].apply(
                 (
-                    lambda row: True
+                    lambda row: "yes"
                     if row == "VIOLENTO"
-                    else False
+                    else "no"
                     if row == "NOVIOLENTO"
                     else None
                 ),
