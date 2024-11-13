@@ -1,7 +1,5 @@
 ![BFair Logo](https://bfair-ml.github.io/bfair-banner.jpg)
 
----
-
 BFair is a Python library designed to automate fair and unbiased classification for various tasks, without requiring extensive machine learning knowledge. It leverages AutoML capabilities (through [AutoGOAL](https://autogoal.github.io)) to promote accessibility and democratization of fairness techniques in machine learning. All methods within BFair have been evaluated and documented for the scientific community.
 
 ## 🧰 Features
