@@ -1,4 +1,4 @@
-![BFair Logo](https://bfair.github.io/bfair-banner.png)
+![BFair Logo](https://bfair-ml.github.io/bfair-banner.jpg)
 
 ---
 
