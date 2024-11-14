@@ -64,6 +64,9 @@ from bfair.datasets.villanos import (
     TEXT_COLUMN as TEXT_COLUMN_VILLANOS,
     LABEL_COLUMN as TARGET_COLUMN_VILLANOS,
     POSITIVE_VALUE as POSITIVE_VALUE_VILLANOS,
+    GENDER_COLUMN_A as GENDER_COLUMN_A_VILLANOS,
+    GENDER_COLUMN_B as GENDER_COLUMN_B_VILLANOS,
+    GENDER_VALUES as GENDER_VALUES_VILLANOS,
 )
 from bfair.metrics import exploded_statistical_parity
 
@@ -73,12 +76,17 @@ DB_IMAGECHAT = "imagechat"
 DB_FUNPEDIA = "funpedia"
 DB_TOXICITY = "toxicity"
 DB_VILLANOS = "villanos"
+DB_VILLANOS_GENDERED = "villanos-gendered"
 
 
 def get_args():
     # - SETUP ---
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", action="append", required=True)
+
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--config", action="append")
+    group.add_argument("--annotations-from", default=None)
+
     parser.add_argument("--eval-all", action="store_true")
     parser.add_argument("--dump-path", default=None)
     parser.add_argument(
@@ -91,6 +99,7 @@ def get_args():
             DB_FUNPEDIA,
             DB_TOXICITY,
             DB_VILLANOS,
+            DB_VILLANOS_GENDERED,
         ],
     )
     parser.add_argument("--eval-annotation", action="store_true")
@@ -289,7 +298,27 @@ def get_datasets(selected_datasets=None):
             lambda: load_villanos().all_data,
             TEXT_COLUMN_VILLANOS,
             None,
-            ["male", "female"],
+            GENDER_VALUES_VILLANOS,
+            TARGET_COLUMN_VILLANOS,
+            POSITIVE_VALUE_VILLANOS,
+            None,
+        ),
+        (
+            f"{DB_VILLANOS_GENDERED} ({GENDER_COLUMN_A_VILLANOS})",
+            lambda: load_villanos(gendered=True).all_data,
+            TEXT_COLUMN_VILLANOS,
+            GENDER_COLUMN_A_VILLANOS,
+            GENDER_VALUES_VILLANOS,
+            TARGET_COLUMN_VILLANOS,
+            POSITIVE_VALUE_VILLANOS,
+            None,
+        ),
+        (
+            f"{DB_VILLANOS_GENDERED} ({GENDER_COLUMN_B_VILLANOS})",
+            lambda: load_villanos(gendered=True).all_data,
+            TEXT_COLUMN_VILLANOS,
+            GENDER_COLUMN_B_VILLANOS,
+            GENDER_VALUES_VILLANOS,
             TARGET_COLUMN_VILLANOS,
             POSITIVE_VALUE_VILLANOS,
             None,
@@ -404,12 +433,16 @@ def evaluate_fairness(data, gender_column, target_column, positive_target, label
 
 def main():
     args = get_args()
-    eval_all = args.eval_all
+    config = args.config
+    eval_all = args.eval_all if config else False
+    annotations_from = args.annotations_from
     dump_path = Path(args.dump_path) if args.dump_path is not None else None
     eval_annotation = args.eval_annotation
     eval_fairness = args.eval_fairness
 
-    handlers = get_handlers(args.config)
+    handlers = (
+        get_handlers(args.config) if config else [(f"column:{annotations_from}", None)]
+    )
     datasets = get_datasets(args.datasets)
 
     db.logging.set_verbosity_error()
@@ -432,15 +465,20 @@ def main():
             print(f"\n# {dataset_name}")
             data = load_dataset()
 
-            predictions = do_and_dump_annotations(
-                handler,
-                gender_values,
-                data,
-                text_column,
-                dataset_name,
-                dump_path,
-                eval_all,
-            )
+            if handler is not None:
+                predictions = do_and_dump_annotations(
+                    handler,
+                    gender_values,
+                    data,
+                    text_column,
+                    dataset_name,
+                    dump_path,
+                    eval_all,
+                )
+            elif annotations_from is not None:
+                predictions = data[annotations_from]
+            else:
+                raise ValueError()
 
             if eval_annotation and gender_column is not None:
                 gold = data[gender_column]
