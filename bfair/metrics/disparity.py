@@ -322,6 +322,33 @@ def equalized_odds(
     return (value, probs) if return_probs else value
 
 
+@castparams
+@disparity_metric
+def representation_disparity(
+    *,
+    data: DataFrame,
+    protected_attributes: Union[List[str], str],
+    target_attribute: str,
+    target_predictions: Union[Series, Sequence],
+    positive_target,
+    **kwargs,
+) -> float:
+
+    if target_predictions is None:
+        target_predictions = data[target_attribute]
+
+    positives = target_predictions[target_predictions == positive_target]
+
+    probs = {
+        key: len(group.index & positives.index) / len(positives)
+        for key, group in data.groupby(
+            protected_attributes
+        )  # duplicated indexes are removed here since explode is only being done on `protected attributes`
+    }
+
+    return probs
+
+
 def on_compound_columns(metric: base_metric) -> base_metric:
     """
     The computation of these metrics become more expensive but they can now be used on dataframes whose protected attributes may contain multiple values instead of just one.
@@ -345,3 +372,4 @@ exploded_accuracy_disparity = on_compound_columns(accuracy_disparity)
 exploded_statistical_parity = on_compound_columns(statistical_parity)
 exploded_equal_opportunity = on_compound_columns(equal_opportunity)
 exploded_equalized_odds = on_compound_columns(equalized_odds)
+exploded_representation_disparity = on_compound_columns(representation_disparity)

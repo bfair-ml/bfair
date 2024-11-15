@@ -1,6 +1,7 @@
 import argparse
 import pandas as pd
 from experiments.sensors.evaluate import evaluate_fairness
+from bfair.metrics import exploded_statistical_parity, exploded_representation_disparity
 
 
 def get_args():
@@ -37,6 +38,10 @@ def main():
                 target_column,
                 target,
                 f'Column "{gender_column}" [{target}]',
+                {
+                    "SP": exploded_statistical_parity,
+                    "RD": exploded_representation_disparity,
+                },
             )
 
 
