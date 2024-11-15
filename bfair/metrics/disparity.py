@@ -5,6 +5,7 @@ from pandas import DataFrame, Series
 
 DIFFERENCE = "difference"
 RATIO = "ratio"
+MODES = [DIFFERENCE, RATIO]
 
 
 class MetricHandler:

@@ -71,6 +71,7 @@ from bfair.datasets.villanos import (
 from bfair.metrics import (
     exploded_statistical_parity,
     exploded_representation_disparity,
+    MODES,
 )
 
 DB_REVIEWS = "reviews"
@@ -409,7 +410,7 @@ def compare_fairness(
     predictions,
     target_column,
     positive_target,
-    fairness_metrics,
+    values=None,
 ):
     evaluate_fairness(
         data,
@@ -417,7 +418,7 @@ def compare_fairness(
         target_column,
         positive_target,
         "True",
-        fairness_metrics,
+        values=values,
     )
     auto_annotated = data.copy()
     auto_annotated[gender_column] = [list(x) for x in predictions]
@@ -427,7 +428,7 @@ def compare_fairness(
         target_column,
         positive_target,
         "Estimated",
-        fairness_metrics,
+        values=values,
     )
 
 
@@ -436,7 +437,48 @@ def evaluate_fairness(
     gender_column,
     target_column,
     positive_target,
-    label,
+    tag,
+    values=None,
+):
+    values = [positive_target] if values is None else values
+
+    for mode in MODES:
+
+        fairness = exploded_statistical_parity(
+            data=data,
+            protected_attributes=gender_column,
+            target_attribute=target_column,
+            target_predictions=None,
+            positive_target=positive_target,
+            return_probs=True,
+            ndigits=3,
+            mode=mode,
+        )
+        print(f"## {tag} fairness [{mode}: statistical parity]:", fairness)
+
+        for value in values:
+            fairness = exploded_representation_disparity(
+                data=data,
+                protected_attributes=gender_column,
+                target_attribute=target_column,
+                target_predictions=None,
+                positive_target=value,
+                return_probs=True,
+                ndigits=3,
+                mode=mode,
+            )
+            print(
+                f"## {tag} fairness [{mode}: representation disparity {value}]:",
+                fairness,
+            )
+
+
+def evaluate_fairness_equally(
+    data,
+    gender_column,
+    target_column,
+    positive_target,
+    tag,
     fairness_metrics,
 ):
     for name, metric in fairness_metrics.items():
@@ -449,7 +491,7 @@ def evaluate_fairness(
             return_probs=True,
             ndigits=3,
         )
-        print(f"## {label} fairness [{name}]:", fairness)
+        print(f"## {tag} fairness [{name}]:", fairness)
 
 
 def main():
@@ -512,10 +554,7 @@ def main():
                     predictions,
                     target_column,
                     positive_target,
-                    {
-                        "SP": exploded_statistical_parity,
-                        "RD": exploded_representation_disparity,
-                    },
+                    values=data[target_column].unique(),
                 )
 
 
