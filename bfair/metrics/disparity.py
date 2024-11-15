@@ -86,6 +86,7 @@ def base_metric(
     positive_target,
     mode: Union[str, Callable[..., float]] = DIFFERENCE,
     return_probs: bool = False,
+    ndigits=None,
     **kwargs,
 ) -> float:
     """
@@ -107,6 +108,8 @@ def base_metric(
         - `Callable`: compute a custom score between the highest scored and least scored groups.
 
     `return_probs`: Whether to return the computed probabilities in addition the score.
+
+    `ndigits`: Whether to round the computed probabilities and scores. Number of ndigits.
 
     **kwargs: Additional parameters to ignore.
 
@@ -136,7 +139,7 @@ def castparams(func: base_metric) -> base_metric:
 
 
 def disparity_metric(func: Callable) -> base_metric:
-    def metric(*args, mode=DIFFERENCE, return_probs=False, **kwargs):
+    def metric(*args, mode=DIFFERENCE, return_probs=False, ndigits=None, **kwargs):
         probs = func(*args, mode=mode, **kwargs)
         min_group = min(probs.values())
         max_group = max(probs.values())
@@ -148,6 +151,10 @@ def disparity_metric(func: Callable) -> base_metric:
             if mode == RATIO
             else mode(min_group=min_group, max_group=max_group)
         )
+
+        if ndigits is not None:
+            probs = {group: round(prob, ndigits) for group, prob in probs.items()}
+            value = round(value, ndigits)
 
         return (value, probs) if return_probs else value
 

@@ -447,6 +447,7 @@ def evaluate_fairness(
             target_predictions=None,
             positive_target=positive_target,
             return_probs=True,
+            ndigits=3,
         )
         print(f"## {label} fairness [{name}]:", fairness)
 
