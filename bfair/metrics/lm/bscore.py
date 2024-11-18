@@ -66,7 +66,7 @@ class InfiniteContext(FixedContext):
                 yield word, weight
 
 
-class ContinuousContext(InfiniteContext):
+class ContinualContext(InfiniteContext):
     DISRUPTION_PENALIZATION = {
         punct: penalization
         for symbols, penalization in (

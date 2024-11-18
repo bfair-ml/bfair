@@ -1,4 +1,4 @@
-from .bscore import BiasScore, FixedContext, InfiniteContext, ContinuousContext
+from .bscore import BiasScore, FixedContext, InfiniteContext, ContinualContext
 from .words import (
     IGroupWords,
     GroupWords,

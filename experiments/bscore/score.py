@@ -10,7 +10,7 @@ from bfair.metrics.lm import (
     BiasScore,
     FixedContext,
     InfiniteContext,
-    ContinuousContext,
+    ContinualContext,
 )
 from bfair.metrics.lm import (
     EnglishGenderedWords,
@@ -21,7 +21,7 @@ from bfair.metrics.lm.bscore import GenderMorphAnalyzer
 
 FIXED = "fixed"
 INFINITE = "infinite"
-CONTINUOUS = "continuous"
+CONTINUAL = "continuous"
 
 COMMON_GEN = "common-gen"
 C2GEN = "c2gen"
@@ -143,7 +143,7 @@ def main(args):
             if args.context == FIXED
             else InfiniteContext()
             if args.context == INFINITE
-            else ContinuousContext()
+            else ContinualContext()
         ),
         scoring_modes=[BiasScore.S_RATIO, BiasScore.S_LOG],
         use_root=args.use_root,
@@ -176,7 +176,7 @@ def entry_point():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--context",
-        choices=[FIXED, INFINITE, CONTINUOUS],
+        choices=[FIXED, INFINITE, CONTINUAL],
         required=True,
     )
     parser.add_argument(
