@@ -106,17 +106,17 @@ def main(args):
         texts = dataset.data[OUTPUT].str.lower()
         language = dataset.language()
     elif args.dataset.startswith(ILENIA):
-        info = args.dataset.split(":")
-        if len(info) > 2:
-            raise ValueError(args.dataset)
-        elif len(info) == 1:
-            dataset = load_ilenia()
-        else:
-            dataset = load_ilenia(path=info[-1])
+        _, *params = args.dataset.split("|")
+        kwargs = {
+            name: value for param in params for name, value in (param.split(":"),)
+        }
+        dataset = load_ilenia(**kwargs)
         texts = dataset.data[SENTENCE]
-        language = dataset.language()
-        group_words = DynamicGroupWords(
-            texts, dataset.data[ANALYSIS], ["male", "female"]
+        language = dataset.language
+        group_words = (
+            DynamicGroupWords(texts, dataset.data[ANALYSIS], ["male", "female"])
+            if dataset.annotated
+            else None
         )
     elif Path(args.dataset).exists():
         dataset = pd.read_csv(args.dataset, sep="\t", usecols=["sentence"])
