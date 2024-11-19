@@ -348,10 +348,12 @@ def representation_disparity(
     positives = target_predictions[target_predictions == positive_target]
 
     probs = {
-        key: len(group.index & positives.index) / len(positives)
-        for key, group in data.groupby(
-            protected_attributes
-        )  # duplicated indexes are removed here since explode is only being done on `protected attributes`
+        key: len(group.index & positives.index)
+        / len(
+            positives.index.unique()
+            # since duplicated indexes have not been removed after explode, we need to remove them here.
+        )
+        for key, group in data.groupby(protected_attributes)
     }
 
     return probs
