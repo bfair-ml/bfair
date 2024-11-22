@@ -40,7 +40,12 @@ for violent, group_by_violent in ds.data.groupby(LABEL_COLUMN):
 
     for objective, group_by_objective in group_by_violent.groupby(OBJECTIVE):
         print(list(objective), len(group_by_objective), "->", sizes[len(objective)])
-        selected.append(group_by_objective.sample(sizes[len(objective)]))
+        selected.append(
+            group_by_objective.sample(
+                sizes[len(objective)],
+                random_state=0,
+            )
+        )
 
 selected_df = pd.concat(selected)
 selected_df.rename(
