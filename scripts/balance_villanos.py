@@ -30,7 +30,7 @@ sizes = defaultdict(lambda: float("inf"))
 for violent, group_by_violent in ds.data.groupby(LABEL_COLUMN):
     for category, count in group_by_violent[OBJECTIVE].value_counts().items():
         sizes[len(category)] = min(sizes[len(category)], count)
-sizes[0] = min(sizes[0], sizes[1] + sizes[2])
+sizes[0] = min(sizes[0], sizes[1] + sizes[2] // 2)
 sizes = dict(sizes)
 print(sizes)
 
