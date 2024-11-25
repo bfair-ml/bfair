@@ -90,6 +90,35 @@ class TwitterNERSensor(Sensor):
     def _get_input_type(self) -> SemanticType:
         return Text
 
+    @classmethod
+    def build(
+        cls,
+        *,
+        access_token: str,
+        cache_path: str = None,
+        model=None,
+        language="english",
+        entity_labels=None,
+        just_people=True,
+        attention_step=0,
+        aggregator=None,
+        filter=None,
+        threshold=None,
+    ):
+
+        name_sensor = NameGenderSensor.build(
+            model=model,
+            language=language,
+            entity_labels=entity_labels,
+            just_people=just_people,
+            attention_step=attention_step,
+            aggregator=aggregator,
+            filter=filter,
+            threshold=threshold,
+        )
+
+        return cls(name_sensor, access_token, cache_path)
+
 
 class DummyNameGenderSensor:
     def extract_attributes(self, entity, attributes: List[str], attr_cls: str):
