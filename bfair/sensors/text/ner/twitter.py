@@ -65,7 +65,12 @@ class TwitterNERSensor(Sensor):
             response = requests.get(url, headers=headers)
 
             if response.status_code == 200:
-                return response.json()["data"]
+                content = response.json()
+                try:
+                    return content["data"]
+                except KeyError:
+                    print(f"Error: {content}")
+                    return None
             elif response.status_code == 429:
                 print("Rate limit exceeded. Waiting...")
                 time.sleep(60)
