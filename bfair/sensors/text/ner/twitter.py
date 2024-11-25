@@ -35,7 +35,8 @@ class TwitterNERSensor(Sensor):
         self.dump_cache()
 
         labeled_entities = {}
-        for entity in names:
+        for name in names:
+            entity = MockEntity(name)
             predicted = self.extract_attributes(entity, attributes, attr_cls)
             labeled_entities[entity] = predicted
 
@@ -118,6 +119,11 @@ class TwitterNERSensor(Sensor):
         )
 
         return cls(name_sensor, access_token, cache_path)
+
+
+class MockEntity:
+    def __init__(self, text):
+        self.text = text
 
 
 class DummyNameGenderSensor:
