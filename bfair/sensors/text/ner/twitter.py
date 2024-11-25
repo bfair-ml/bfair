@@ -128,5 +128,5 @@ class MockEntity:
 
 class DummyNameGenderSensor:
     def extract_attributes(self, entity, attributes: List[str], attr_cls: str):
-        print("Extracting attributes for", entity)
+        print("Extracting attributes for", entity.text)
         return attributes
