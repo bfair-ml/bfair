@@ -7,3 +7,4 @@ from .dbpedia import (
     GenderStandarizer,
 )
 from .names import NameGenderSensor
+from .twitter import TwitterNERSensor
