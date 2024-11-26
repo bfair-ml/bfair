@@ -60,11 +60,11 @@ class TwitterNERSensor(Sensor):
         except KeyError:
             self.logger(f"Cache miss: {username}. Fetching from Twitter ...")
             data, ok = self.fetch_data_from_twitter(username)
-            self.logger(f"... done: {username} -> {data} ({ok})")
+            self.logger(f"Fetch ended {'successfully' if ok else 'with error'}")
 
             if data is not None:
-                name = data.get("name")
-                self.cache[username] = name
+                name = self.cache[username] = data.get("name")
+                self.logger(f"Cache updated: {username} -> {name}")
                 return name if ok else None
             return None
 
