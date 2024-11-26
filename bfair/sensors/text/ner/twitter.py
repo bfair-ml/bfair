@@ -59,13 +59,14 @@ class TwitterNERSensor(Sensor):
             return name
         except KeyError:
             self.logger(f"Cache miss: {username}. Fetching from Twitter ...")
-            data = self.fetch_data_from_twitter(username)
-            self.logger(f"... done: {data}")
-            if data is None:
-                return None
-            name = data.get("name")
-            self.cache[username] = name
-            return name
+            data, ok = self.fetch_data_from_twitter(username)
+            self.logger(f"... done: {username} -> {data} ({ok})")
+
+            if data is not None:
+                name = data.get("name")
+                self.cache[username] = name
+                return name if ok else None
+            return None
 
     def fetch_data_from_twitter(self, username):
         url = f"https://api.twitter.com/2/users/by/username/{username}"
@@ -80,10 +81,14 @@ class TwitterNERSensor(Sensor):
             if response.status_code == 200:
                 content = response.json()
                 try:
-                    return content["data"]
+                    return content["data"], True
                 except KeyError:
                     print(f"Error: {content}")
-                    return None
+                    try:
+                        error = content["errors"][0]
+                        return {"name": error["title"]}, False
+                    except (KeyError, IndexError):
+                        return {"name": str(content)}, False
             elif response.status_code == 429 and (
                 remaining_retries is None or remaining_retries > 0
             ):
@@ -93,7 +98,7 @@ class TwitterNERSensor(Sensor):
                 remaining_retries -= 1
             else:
                 print(f"Error: {response.status_code} - {response.text}")
-                return None
+                return None, False
 
     def extract_attributes(self, entity, attributes: List[str], attr_cls: str):
         return self.name_sensor.extract_attributes(entity, attributes, attr_cls)
