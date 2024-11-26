@@ -16,11 +16,13 @@ class TwitterNERSensor(Sensor):
         name_sensor: NameGenderSensor,
         access_token: str,
         cache_path: str = None,
+        retries=None,
     ):
         self.name_sensor = name_sensor
         self.access_token = access_token
         self.cache_path = Path(cache_path) if cache_path is not None else None
         self.cache = self.load_cache(self.cache_path)
+        self.retries = retries
         super().__init__(restricted_to=P_GENDER)
 
     def __call__(self, text, attributes: List[str], attr_cls: str):
@@ -61,6 +63,9 @@ class TwitterNERSensor(Sensor):
         url = f"https://api.twitter.com/2/users/by/username/{username}"
         headers = {"Authorization": f"Bearer {self.access_token}"}
 
+        sleep_time = 60
+        remaining_retries = self.retries
+
         while True:
             response = requests.get(url, headers=headers)
 
@@ -71,9 +76,13 @@ class TwitterNERSensor(Sensor):
                 except KeyError:
                     print(f"Error: {content}")
                     return None
-            elif response.status_code == 429:
+            elif response.status_code == 429 and (
+                remaining_retries is None or remaining_retries > 0
+            ):
                 print("Rate limit exceeded. Waiting...")
-                time.sleep(60)
+                time.sleep(sleep_time)
+                sleep_time *= 2
+                remaining_retries -= 1
             else:
                 print(f"Error: {response.status_code} - {response.text}")
                 return None
