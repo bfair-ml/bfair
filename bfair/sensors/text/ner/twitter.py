@@ -25,7 +25,7 @@ class TwitterNERSensor(Sensor):
         self.cache = self.load_cache(self.cache_path)
         self.retries = retries
         self.logger = (
-            (lambda args: print(*args, flush=True)) if log else (lambda args: None)
+            (lambda *args: print(*args, flush=True)) if log else (lambda *args: None)
         )
         super().__init__(restricted_to=P_GENDER)
 
