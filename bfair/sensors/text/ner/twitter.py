@@ -17,12 +17,16 @@ class TwitterNERSensor(Sensor):
         access_token: str,
         cache_path: str = None,
         retries=None,
+        log=False,
     ):
         self.name_sensor = name_sensor
         self.access_token = access_token
         self.cache_path = Path(cache_path) if cache_path is not None else None
         self.cache = self.load_cache(self.cache_path)
         self.retries = retries
+        self.logger = (
+            (lambda args: print(*args, flush=True)) if log else (lambda args: None)
+        )
         super().__init__(restricted_to=P_GENDER)
 
     def __call__(self, text, attributes: List[str], attr_cls: str):
@@ -50,9 +54,13 @@ class TwitterNERSensor(Sensor):
 
     def get_name_by_username(self, username):
         try:
-            return self.cache[username]
+            name = self.cache[username]
+            self.logger(f"Cache hit: {username} -> {name}")
+            return name
         except KeyError:
+            self.logger(f"Cache miss: {username}. Fetching from Twitter ...")
             data = self.fetch_data_from_twitter(username)
+            self.logger(f"... done: {data}")
             if data is None:
                 return None
             name = data.get("name")
