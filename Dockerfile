@@ -23,8 +23,8 @@ RUN cd /usr/lib/python3/dist-packages/ \
  && sudo pip install -r requirements.txt \
  && sudo pip install -e .
 
-RUN python -m spacy download en_core_web_sm==2.3.1
-RUN python -m spacy download es_core_news_sm==2.3.1 # Lemmatization in newer versions of spacy (ES) do not turn femenine words into masculine
+RUN python -m spacy download en_core_web_sm-2.3.1 --direct
+RUN python -m spacy download es_core_news_sm-2.3.1 --direct # Lemmatization in newer versions of spacy (ES) do not turn femenine words into masculine
 
 RUN pip install datasets
 RUN mkdir -p /home/coder/huggingface_data/
