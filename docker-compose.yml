@@ -32,6 +32,17 @@ services:
               count: 1
               capabilities: [gpu]
 
+  main-all-gpus:
+    <<: *main
+    container_name: "bfair-all-gpus"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
   autogoal:
     image: "jpconsuegra/autogoal"
     build: "./vendor/autogoal/"
