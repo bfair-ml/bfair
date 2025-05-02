@@ -14,6 +14,7 @@ from bfair.sensors import (
     DBPediaSensor,
     NameGenderSensor,
     StaticWordsSensor,
+    TwitterNERSensor,
 )
 from bfair.sensors.optimization import (
     load,
@@ -162,6 +163,7 @@ def get_handlers(config):
                     name: value for name, value in kwargs.items() if name in arguments
                 }
 
+            names = NameGenderSensor.build(**select("language"))
             handler = SensorHandler(
                 sensors=[
                     EmbeddingBasedSensor.build_default_in_plain_mode(
@@ -169,8 +171,9 @@ def get_handlers(config):
                     ),
                     CoreferenceNERSensor.build(**select("language")),
                     # DBPediaSensor.build(**select("language")),
-                    NameGenderSensor.build(**select("language")),
+                    names,
                     StaticWordsSensor.build(**select("language")),
+                    # TwitterNERSensor(names, cache_path="twitter-cache.json", access_token=""),
                 ],
             )
         else:
