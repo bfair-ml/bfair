@@ -58,7 +58,11 @@ def get_group_words_and_to_inspect(language, exclude_professions, inspect_profes
     word_handler = {
         "english": EnglishGenderedWords(),
         "spanish": SpanishGenderedWords(include_professions=not exclude_professions),
-    }[language]
+    }.get(language)
+
+    if word_handler is None:
+        print(f"No group words defined for {language.title()} language. Ignore if using dynamic group words.")
+        return None, None
 
     group_words = word_handler.get_group_words()
 
