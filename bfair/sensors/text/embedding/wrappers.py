@@ -137,3 +137,31 @@ class SpacySpanishLgEmbedding(SpacyEmbedding):
 class SpacySpanishTrfEmbedding(SpacyEmbedding):
     def __init__(self):
         super().__init__("es_dep_news_trf", add_transformer_vectors=True)
+
+@register_embedding("valencian", "spacy-sm")
+@register_embedding("catalan", "spacy-sm")
+class SpacyCatalanSmEmbedding(SpacyEmbedding):
+    def __init__(self):
+        super().__init__("ca_core_news_sm")
+
+    def get_ready(self):
+        print("[BFAIR ⚠️] This model only have syntantic vectors (not semantic).")
+        return super().get_ready()
+    
+@register_embedding("valencian", "spacy-md")
+@register_embedding("catalan", "spacy-md")
+class SpacyCatalanMdEmbedding(SpacyEmbedding):
+    def __init__(self):
+        super().__init__("ca_core_news_md")
+
+@register_embedding("valencian", "spacy-lg")
+@register_embedding("catalan", "spacy-lg")
+class SpacyCatalanLgEmbedding(SpacyEmbedding):
+    def __init__(self):
+        super().__init__("ca_core_news_lg")
+
+@register_embedding("valencian", "spacy-trf")
+@register_embedding("catalan", "spacy-trf")
+class SpacyCatalanTrfEmbedding(SpacyEmbedding):
+    def __init__(self):
+        super().__init__("ca_dep_news_trf", add_transformer_vectors=True)

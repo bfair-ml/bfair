@@ -18,6 +18,8 @@ except:
 LANGUAGE2MODEL = {
     "english": "en_core_web_sm",
     "spanish": "es_core_news_sm",
+    "valencian": "ca_core_news_sm",
+    "catalan": "ca_core_news_sm",
 }
 
 

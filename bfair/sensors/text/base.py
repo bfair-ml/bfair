@@ -5,7 +5,7 @@ from typing import Sequence, Callable, Tuple
 
 from bfair.utils.spacy import get_model
 from bfair.metrics.lm.words import IGroupWords, FalseGroupWords
-from bfair.metrics.lm.endings import spanish_split_gender_endings
+from bfair.metrics.lm.endings import SpanishGenderPreprocessor, CatalanGenderPreprocessor
 
 
 class IAnnotatedToken(ABC):
@@ -42,7 +42,10 @@ class IPosTokenizer(ABC):
 
 
 class SpacyPosTokenizer(IPosTokenizer):  # TODO: integrate @ bscore.
-    LANGUAGE2ENDINGS = {"spanish": spanish_split_gender_endings}
+    LANGUAGE2ENDINGS = {
+        "spanish": SpanishGenderPreprocessor.split_gender_endings,
+        "valencian": CatalanGenderPreprocessor.split_gender_endings
+        }
 
     def __init__(
         self,

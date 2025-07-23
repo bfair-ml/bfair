@@ -19,9 +19,10 @@ from bfair.metrics.lm.words import IGroupWords
 from bfair.metrics.lm.semantics import (
     ITokenChecker,
     PersonCheckerForSpanish,
+    PersonCheckerForCatalan,
     DummyChecker,
 )
-from bfair.metrics.lm.endings import spanish_split_gender_endings
+from bfair.metrics.lm.endings import SpanishGenderPreprocessor, CatalanGenderPreprocessor
 
 
 class FixedContext:
@@ -155,13 +156,21 @@ class BiasScore:
     LANGUAGE2MODEL = {
         "english": "en_core_web_sm",
         "spanish": "es_core_news_sm",
+        "valencian": "ca_core_news_sm",
+        "catalan": "ca_core_news_sm",
     }
 
     LANGUAGE2SEMANTIC = {
         "spanish": "es_dep_news_trf",
+        "valencian": "ca_core_news_trf",
+        "catalan": "ca_core_news_trf",
     }
 
-    LANGUAGE2ENDINGS = {"spanish": spanish_split_gender_endings}
+    LANGUAGE2ENDINGS = {
+        "spanish": SpanishGenderPreprocessor.split_gender_endings,
+        "valencian": CatalanGenderPreprocessor.split_gender_endings,
+        "catalan": CatalanGenderPreprocessor.split_gender_endings,
+    }
 
     S_RATIO = "count_disparity"
     S_LOG = "log_score"
@@ -256,6 +265,8 @@ class BiasScore:
     def _get_person_checker(cls, language: str, nlp) -> ITokenChecker:
         if language == "spanish":
             return PersonCheckerForSpanish(nlp)
+        elif language in ("catalan", "valencian"):
+            return PersonCheckerForCatalan(nlp)
         raise ValueError(
             f"{language.title()} does not currently support semantic checking."
         )

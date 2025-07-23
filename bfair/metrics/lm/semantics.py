@@ -47,3 +47,20 @@ class PersonCheckerForSpanish(BooleanChecker):
         true_word = nlp("sí es persona")[-1]
         false_word = nlp("no es persona")[-1]
         super().__init__(true_word, false_word)
+
+class PersonCheckerForCatalan(BooleanChecker):
+    def __init__(self, nlp=None, *, model: str = None):
+        if nlp is None:
+            if model is None:
+                nlp = get_model(
+                    model_name="ca_core_news_trf",
+                    add_transformer_vectors=True,
+                )
+            else:
+                nlp = spacy.load(model)
+
+        self.nlp = nlp
+
+        true_word = nlp("sí és persona")[-1]
+        false_word = nlp("no és persona")[-1]
+        super().__init__(true_word, false_word)
