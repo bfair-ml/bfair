@@ -13,10 +13,13 @@ services:
       - "./vendor/autogoal/:/home/coder/autogoal"
       - "./vendor/autogoal/autogoal:/usr/lib/python3/dist-packages/autogoal"
       - "./vendor/autogoal/vendor/illiterate/illiterate:/usr/lib/python3/dist-packages/illiterate"
+      - "./vendor/rspacy:/home/coder/rspacy"
+      - "./vendor/rspacy/rspacy:/usr/lib/python3/dist-packages/rspacy"
       - "./bfair:/usr/lib/python3/dist-packages/bfair"
     network_mode: "host"
     depends_on:
       - autogoal
+      - rspacy
     user: "1000:1000"
     working_dir: /home/coder/bfair
     command: /usr/bin/make dashboard
@@ -49,4 +52,13 @@ services:
     hostname: autogoal
     volumes:
       - "~/.autogoal:/home/coder/.autogoal"
+    user: "1000:1000"
+
+  rspacy:
+    image: "jpconsuegra/rspacy"
+    build: "./vendor/rspacy/"
+    ports:
+      - "8001:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
     user: "1000:1000"

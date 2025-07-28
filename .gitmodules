@@ -2,3 +2,6 @@
 	path = vendor/autogoal
 	url = git@github.com:bfair-ml/autogoal.git
 	branch = develop
+[submodule "vendor/rspacy"]
+	path = vendor/rspacy
+	url = git@github.com:bfair-ml/rspacy.git
