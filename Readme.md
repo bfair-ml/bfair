@@ -107,3 +107,5 @@ The technologies and theoretical results leading up to BFair have been presented
 - [Automatic annotation of protected attributes to support fairness optimization](https://doi.org/10.1016/j.ins.2024.120188). This work introduces an automatic annotation component for protected attributes, extending the technology’s applicability to scenarios where protected attributes are not explicitly annotated.
 
 - [A multifaceted approach to detect gender biases in Natural Language Generation](https://doi.org/10.1016/j.knosys.2024.112367). This publication introduces a component to quantify biases in text corpora and outputs from large language models.
+
+- [Leading and non-leading prompts: Quantifying gender bias in Large Language Models through BiasBloom corpus](https://doi.org/10.1016/j.knosys.2025.113915). This paper extends the previous work by adapting the bias quantification methodology to Spanish, enabling cross-lingual analysis and evaluation of gender bias in large language models.
