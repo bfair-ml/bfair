@@ -41,7 +41,12 @@ VICTORIA_GEMINI15_NO_LEADING = "victoria-Gemini1.5-independent"
 VICTORIA_MISTRAL8X7B_NO_LEADING = "victoria-Mistral8x7b-independent"
 
 
-def get_group_words_and_to_inspect(language, exclude_professions, inspect_professions):
+def get_group_words_and_to_inspect(
+    language,
+    exclude_professions,
+    inspect_professions,
+    include_plurals,
+):
     if exclude_professions and language != "spanish":
         raise ValueError(
             f"{language.title()} language does not support professions exclusion."
@@ -55,9 +60,15 @@ def get_group_words_and_to_inspect(language, exclude_professions, inspect_profes
             f"{language.title()} language does not support professions inspection."
         )
 
+    if include_plurals and language != "spanish":
+        raise ValueError(f"{language.title()} language does not support plural forms.")
+
     word_handler = {
         "english": EnglishGenderedWords(),
-        "spanish": SpanishGenderedWords(include_professions=not exclude_professions),
+        "spanish": SpanishGenderedWords(
+            include_professions=not exclude_professions,
+            include_plurals=include_plurals,
+        ),
     }.get(language)
 
     if word_handler is None:
@@ -133,6 +144,7 @@ def main(args):
         language,
         args.exclude_professions,
         args.inspect_professions,
+        args.include_plurals,
     )
     if group_words is None:
         group_words = _group_words
@@ -249,6 +261,11 @@ def entry_point():
         choices=["yes", "no"],
         required=True,
     )
+    parser.add_argument(
+        "--include-plurals",
+        choices=["yes", "no"],
+        default="no",
+    )
 
     args = parser.parse_args()
     args.use_root = args.use_root == "yes"
@@ -256,6 +273,7 @@ def entry_point():
     args.exclude_professions = args.exclude_professions == "yes"
     args.inspect_professions = args.inspect_professions == "yes"
     args.use_morph = args.use_morph == "yes"
+    args.include_plurals = args.include_plurals == "yes"
 
     args.semantic_check = (
         None if args.semantic_check == "auto" else args.semantic_check == "yes"
