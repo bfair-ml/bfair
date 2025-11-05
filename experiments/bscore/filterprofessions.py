@@ -14,7 +14,7 @@ def main(args):
         return
 
     _, professions_group_words = get_group_words_and_to_inspect(
-        args.language, False, True
+        args.language, False, True, True
     )
     professions = professions_group_words.get_all_words()
 

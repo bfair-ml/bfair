@@ -344,8 +344,11 @@ class SpanishGenderedWords:
         heteronyms="05_Heteronimos",
         adjectives="06_Heteronimos_adj",
         abbreviations="07_Abreviaturas",
+        singular_suffix="",
+        plural_suffix="_pl",
         *,
         include_professions=True,
+        include_plurals=False,
     ):
         self.gender_order = [MALE, FEMALE]
 
@@ -353,6 +356,9 @@ class SpanishGenderedWords:
             (male_dir, male_suffix),
             (female_dir, female_suffix),
         ]
+        number_suffixes = (
+            (singular_suffix, plural_suffix) if include_plurals else (singular_suffix,)
+        )
 
         self.ignore = []
         self.pronouns = []
@@ -374,7 +380,14 @@ class SpanishGenderedWords:
             (self.abbreviations, abbreviations),
         ]:
             for gender, suffix in gender_info:
-                info = self.read(path, gender, suffix, category)
+                info = set()
+                for number in number_suffixes:
+                    try:
+                        partial_info = self.read(path, gender, suffix + number, category)
+                    except FileNotFoundError:
+                        print(f"⚠️ Number ({number}) not found for: ({category}, {gender})")
+                        continue
+                    info.update(partial_info)
                 collection.append(info)
 
         self.exclude(self.professions, self.ignore)
