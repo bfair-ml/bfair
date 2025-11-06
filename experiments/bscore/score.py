@@ -148,6 +148,8 @@ def main(args):
     )
     if group_words is None:
         group_words = _group_words
+    else:
+        print("Using precomputed group words.")
 
     morph_analyzer = get_morph_analyzer(language, args.use_morph)
 
