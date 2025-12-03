@@ -130,7 +130,7 @@ class RhoPa64(Dataset):
     ):
         annotated = annotated in ["yes", "True", True]
 
-        path = (Path(path) / model).with_suffix(".tsv")
+        path = str(Path(path) / model) + ".tsv"
         data = pd.read_csv(path, sep="\t")
 
         if language is not None:
