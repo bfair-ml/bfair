@@ -10,3 +10,4 @@ from .commongen import load_dataset as load_common_gen
 from .victoria import load_dataset as load_victoria
 from .ilenia import load_dataset as load_ilenia
 from .villanos import load_dataset as load_villanos
+from .rhopa64 import load_dataset as load_rhopa64
