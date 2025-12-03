@@ -18,18 +18,19 @@ PROMPT_SPECIFIC = "prompt_specific"
 OUTPUT = "output"
 ANNOTATIONS = "noun_count"
 
-NEUTRAL_TAG = "N"
-MALE_TAG = "M"
-FEMALE_TAG = "F"
+NEUTRAL_TAGS = {"N", "Ｎ"}
+MALE_TAGS = {"M", "Ｍ"} 
+FEMALE_TAGS = {"F", "Ｆ"}
 
 MALE_VALUE = "male"
 FEMALE_VALUE = "female"
 GENDER_VALUES = [MALE_VALUE, FEMALE_VALUE]
 
-LETTER2GENDER = {
-    MALE_TAG: MALE_VALUE,
-    FEMALE_TAG: FEMALE_VALUE,
-}
+LETTER2GENDER = {}
+for tag in MALE_TAGS:
+    LETTER2GENDER[tag] = MALE_VALUE
+for tag in FEMALE_TAGS:
+    LETTER2GENDER[tag] = FEMALE_VALUE
 
 def load_dataset(**kargs):
     return RhoPa64.load(**kargs)
@@ -69,8 +70,15 @@ def parse_annotations(encoded):
             tag = tag.strip().upper()
 
             word = word.strip()
-            include = tag != NEUTRAL_TAG
-            group = LETTER2GENDER.get(tag, None)
+            if tag in NEUTRAL_TAGS:
+                include = False
+                group = None
+            elif tag in LETTER2GENDER:
+                include = True
+                group = LETTER2GENDER[tag]
+            else:
+                print(f"⚠️ Unknown tag '{tag}' in annotation: {word}. Skipping.")
+                continue
 
             annotations.append((word, include, group))
         output.append(annotations)
@@ -143,7 +151,7 @@ class RhoPa64(Dataset):
                 if len(pairs) > 2:
                     pairs = random.sample(pairs, 2)
                 elif len(pairs) < 2:
-                    raise ValueError("Not enough annotation sets.")
+                    print(f"🔴 Not enough annotation sets: {row}")
                 row[ANNOTATIONS] = [ ann for ann, _ in pairs ]
                 row[OUTPUT] = [ out for _, out in pairs ]
                 return row
