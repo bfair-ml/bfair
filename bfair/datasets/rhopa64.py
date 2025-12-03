@@ -99,10 +99,12 @@ class RhoPa64(Dataset):
         split_seed=None,
         stratify_by=None,
         language=None,
+        model=None,
         theme_id=None,
         subtheme_id=None,
     ):
         self.language = language
+        self.model = model
         self.theme_id = theme_id
         self.subtheme_id = subtheme_id
         self.annotated = annotated
@@ -119,6 +121,7 @@ class RhoPa64(Dataset):
         cls,
         path=RHOPA64_DATASET,
         language=None,
+        model=None,
         theme_id=None,
         subtheme_id=None,
         annotated=True,
@@ -127,7 +130,7 @@ class RhoPa64(Dataset):
     ):
         annotated = annotated in ["yes", "True", True]
 
-        path = Path(path)
+        path = (Path(path) / model).with_suffix(".tsv")
         data = pd.read_csv(path, sep="\t")
 
         if language is not None:

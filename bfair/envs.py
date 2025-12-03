@@ -5,7 +5,7 @@ IMDB_REVIEWS_DATASET = "datasets/imdb-reviews/"
 TOXICITY_DATASET = "datasets/jigsaw-unintended-bias-in-toxicity-classification/"
 VICTORIA_DATASET = "datasets/victoria/LLMs/"
 ILENIA_DATASET = "datasets/ilenia/"
-RHOPA64_DATASET = "datasets/rhopa64/gpt-oss-20b_databias_generated.tsv"
+RHOPA64_DATASET = "datasets/rhopa64/"
 VILLANOS_DATASET = "datasets/villanos/"
 
 DEBIASED_WORD2VEC_PATH = "embeddings/GoogleNews-vectors-negative300-hard-debiased.bin"
