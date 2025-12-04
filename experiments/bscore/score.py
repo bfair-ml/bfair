@@ -6,6 +6,7 @@ from bfair.datasets.c2gen import load_dataset as load_c2gen, CONTEXT
 from bfair.datasets.commongen import load_dataset as load_common_gen, TARGET
 from bfair.datasets.victoria import load_dataset as load_victoria, OUTPUT
 from bfair.datasets.ilenia import load_dataset as load_ilenia, SENTENCE, ANALYSIS
+from bfair.datasets.rhopa64 import load_dataset as load_rhopa64, OUTPUT, ANNOTATIONS
 from bfair.metrics.lm import (
     BiasScore,
     FixedContext,
@@ -27,6 +28,7 @@ COMMON_GEN = "common-gen"
 C2GEN = "c2gen"
 VICTORIA = "victoria"
 ILENIA = "ilenia"
+RHOPA64 = "rhopa64"
 
 VICTORIA_GPT35_LEADING = "victoria-GPT3.5-leading"
 VICTORIA_GPT4O_LEADING = "victoria-GPT4o-leading"
@@ -133,6 +135,20 @@ def main(args):
             if dataset.annotated
             else None
         )
+    elif args.dataset.startswith(RHOPA64):
+        _, *params = args.dataset.split("|")
+        kwargs = {
+            name: value for param in params for name, value in (param.split(":"),)
+        }
+        dataset = load_rhopa64(**kwargs)
+        texts = dataset.data[OUTPUT].explode()
+        language = dataset.language
+        group_words = (
+            DynamicGroupWords(texts, dataset.data[ANNOTATIONS].explode(), ["male", "female"])
+            if dataset.annotated
+            else None
+        )
+
     elif Path(args.dataset).exists():
         dataset = pd.read_csv(args.dataset, sep="\t", usecols=["sentence"])
         texts = dataset["sentence"].dropna().str.lower()
@@ -165,6 +181,7 @@ def main(args):
         ),
         scoring_modes=[BiasScore.S_RATIO, BiasScore.S_LOG],
         use_root=args.use_root,
+        merge_paragraphs=dataset.annotated,
         lower_proper_nouns=args.lower_proper_nouns,
         semantic_check=args.semantic_check,
         use_legacy_semantics=args.use_legacy_semantics,
@@ -214,6 +231,7 @@ def entry_point():
                 VICTORIA_GEMINI15_NO_LEADING,
                 VICTORIA_MISTRAL8X7B_NO_LEADING,
                 ILENIA,
+                RHOPA64,
                 "<PATH>",
             ]
         ),
