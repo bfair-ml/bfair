@@ -153,10 +153,11 @@ class GenderMorphAnalyzer(IMorphAnalyzer):
 
 
 class BiasScore:
+    LANGUAGE2REDIRECT = {"valencian": "catalan"}
+
     LANGUAGE2MODEL = {
         "english": "en_core_web_sm",
         "spanish": "es_core_news_sm",
-        "valencian": "ca_core_news_sm",
         "catalan": "ca_core_news_sm",
     }
 
@@ -166,9 +167,11 @@ class BiasScore:
         "catalan": "ca_core_news_trf",
     }
 
+    LANGUAGE2REMOTE = {"catalan"}
+    REMOTE_URL = "http://localhost:8555/"
+
     LANGUAGE2ENDINGS = {
         "spanish": SpanishGenderPreprocessor.split_gender_endings,
-        "valencian": CatalanGenderPreprocessor.split_gender_endings,
         "catalan": CatalanGenderPreprocessor.split_gender_endings,
     }
 
@@ -198,6 +201,8 @@ class BiasScore:
         group_words_to_inspect: IGroupWords = None,
         morph_analyzer: IMorphAnalyzer = None,
     ):
+        language = self.LANGUAGE2REDIRECT.get(language, language)
+
         self.language = language
         self.group_words = group_words
         self.context = context
@@ -257,6 +262,7 @@ class BiasScore:
             return get_model(
                 model_name=model_name,
                 add_transformer_vectors=add_transformer_vectors,
+                remote_url=cls.REMOTE_URL if language in cls.LANGUAGE2REMOTE else None,
             )
         except KeyError:
             raise ValueError(f"Not supported: {language}(semantic={semantic_check})")
@@ -331,6 +337,7 @@ class BiasScore:
         word2discrete = defaultdict(lambda: defaultdict(int))
         word2matches = defaultdict(lambda: defaultdict(set))
         word2occurrence = defaultdict(int)
+        group2counts = defaultdict(int)
 
         for text in tqdm(texts, desc="Computing counts"):
             (
@@ -338,6 +345,7 @@ class BiasScore:
                 local_word2discrete,
                 local_word2match,
                 local_word2occurrence,
+                local_group2counts,
             ) = self.get_counts(
                 text=text,
                 group_words=self.group_words,
@@ -351,6 +359,7 @@ class BiasScore:
             self._aggregate_counts(word2discrete, local_word2discrete)
             self._aggregate_matches(word2matches, local_word2match)
             self._aggregate_numbers(word2occurrence, local_word2occurrence)
+            self._aggregate_numbers(group2counts, local_group2counts)
 
             self.group_words.advance_context()
 
@@ -382,6 +391,9 @@ class BiasScore:
                 lemmatizer=self.lemmatizer,
             )
 
+        min_group = min(group2counts.values())
+        simple_scores = [ (group, count / min_group) for group, count in group2counts.items() ]         
+
         return self.compute_scores(
             word2counts,
             word2discrete,
@@ -389,7 +401,7 @@ class BiasScore:
             word2occurrence,
             self.group_words.groups(),
             self.scoring_modes,
-        )
+        ), simple_scores
 
     @classmethod
     def _aggregate_counts(cls, total_counts, new_counts):
@@ -425,6 +437,7 @@ class BiasScore:
         word2discrete = defaultdict(lambda: defaultdict(int))
         word2matches = defaultdict(lambda: defaultdict(set))
         word2occurrence = defaultdict(int)
+        group2counts = defaultdict(int)
 
         tokens = tokenizer(text)
         for (center, center_pos, center_token), get_context in context(tokens):
@@ -434,6 +447,8 @@ class BiasScore:
                     center, center_pos
                 ) or not person_checker.check_token(center_token):
                     continue
+
+                group2counts[group] += 1
 
                 if morph_analyzer is not None and center_token.i > 0:
 
@@ -510,7 +525,7 @@ class BiasScore:
 
                         word2matches[word, word_pos][group].add(highlighted)
 
-        return word2counts, word2discrete, word2matches, word2occurrence
+        return word2counts, word2discrete, word2matches, word2occurrence, group2counts
 
     @classmethod
     def drop_words(

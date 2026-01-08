@@ -190,7 +190,11 @@ def main(args):
         morph_analyzer=morph_analyzer,
     )
 
-    scores = bias_score(texts)
+    scores, simple_scores = bias_score(texts)
+
+    print("## Simple Scores")
+    print(simple_scores)
+
     for scoring_mode, (mean, stdev, _) in scores.items():
         print(f"## {scoring_mode} [{' then '.join(group_words.groups())}]")
         print("- **Mean**", mean)

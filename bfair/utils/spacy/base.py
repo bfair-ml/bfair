@@ -23,12 +23,19 @@ LANGUAGE2MODEL = {
 }
 
 
-def get_model(*, model_name=None, language=None, add_transformer_vectors=False):
+def get_model(*, model_name=None, language=None, add_transformer_vectors=False, remote_url=None):
+    if remote_url is not None and add_transformer_vectors:
+        raise ValueError("Remote models with transformer vectors are not supported.")
+
     if model_name is None:
         try:
             model_name = LANGUAGE2MODEL[language]
         except KeyError:
             raise ValueError(f"Language not supported: {language}.")
+
+    if remote_url is not None:
+        from rspacy import RemoteSpacy
+        return RemoteSpacy(remote_url)
 
     return (
         get_model_with_trf_vectors(model_name)
