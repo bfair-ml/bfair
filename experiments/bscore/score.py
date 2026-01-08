@@ -75,7 +75,9 @@ def get_group_words_and_to_inspect(
     }.get(language)
 
     if word_handler is None:
-        print(f"No group words defined for {language.title()} language. Ignore if using dynamic group words.")
+        print(
+            f"No group words defined for {language.title()} language. Ignore if using dynamic group words."
+        )
         return None, None
 
     group_words = word_handler.get_group_words()
@@ -145,7 +147,9 @@ def main(args):
         texts = dataset.data[OUTPUT].explode()
         language = dataset.language
         group_words = (
-            DynamicGroupWords(texts, dataset.data[ANNOTATIONS].explode(), ["male", "female"])
+            DynamicGroupWords(
+                texts, dataset.data[ANNOTATIONS].explode(), ["male", "female"]
+            )
             if dataset.annotated
             else None
         )
@@ -202,7 +206,10 @@ def main(args):
         export_data = {
             "simple_scores": simple_scores_dict,
             "summary_statistics": {
-                f"## {scoring_mode} [{' then '.join(group_words.groups())}]": {"mean": mean, "stdev": stdev}
+                f"## {scoring_mode} [{' then '.join(group_words.groups())}]": {
+                    "mean": mean,
+                    "stdev": stdev,
+                }
                 for scoring_mode, (mean, stdev, _) in scores.items()
             },
         }

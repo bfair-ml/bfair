@@ -22,7 +22,10 @@ from bfair.metrics.lm.semantics import (
     PersonCheckerForCatalan,
     DummyChecker,
 )
-from bfair.metrics.lm.endings import SpanishGenderPreprocessor, CatalanGenderPreprocessor
+from bfair.metrics.lm.endings import (
+    SpanishGenderPreprocessor,
+    CatalanGenderPreprocessor,
+)
 
 
 class FixedContext:
@@ -392,16 +395,21 @@ class BiasScore:
             )
 
         min_group = min(group2counts.values())
-        simple_scores = [ (group, count / min_group) for group, count in group2counts.items() ]         
+        simple_scores = [
+            (group, count / min_group) for group, count in group2counts.items()
+        ]
 
-        return self.compute_scores(
-            word2counts,
-            word2discrete,
-            word2matches,
-            word2occurrence,
-            self.group_words.groups(),
-            self.scoring_modes,
-        ), simple_scores
+        return (
+            self.compute_scores(
+                word2counts,
+                word2discrete,
+                word2matches,
+                word2occurrence,
+                self.group_words.groups(),
+                self.scoring_modes,
+            ),
+            simple_scores,
+        )
 
     @classmethod
     def _aggregate_counts(cls, total_counts, new_counts):

@@ -48,6 +48,7 @@ class PersonCheckerForSpanish(BooleanChecker):
         false_word = nlp("no es persona")[-1]
         super().__init__(true_word, false_word)
 
+
 class PersonCheckerForCatalan(BooleanChecker):
     def __init__(self, nlp=None, *, model: str = None):
         if nlp is None:

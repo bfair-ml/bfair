@@ -383,9 +383,13 @@ class SpanishGenderedWords:
                 info = set()
                 for number in number_suffixes:
                     try:
-                        partial_info = self.read(path, gender, suffix + number, category)
+                        partial_info = self.read(
+                            path, gender, suffix + number, category
+                        )
                     except FileNotFoundError:
-                        print(f"⚠️ Number ({number}) not found for: ({category}, {gender})")
+                        print(
+                            f"⚠️ Number ({number}) not found for: ({category}, {gender})"
+                        )
                         continue
                     info.update(partial_info)
                 collection.append(info)

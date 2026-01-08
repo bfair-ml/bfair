@@ -8,6 +8,7 @@ from pathlib import Path
 from statistics import mean, stdev
 from bfair.metrics.lm.bscore import BiasScore
 
+
 def compute_confidence_interval(data, confidence=0.95):
     n = len(data)
     if n < 2:
@@ -17,21 +18,22 @@ def compute_confidence_interval(data, confidence=0.95):
     margin = sem * t.ppf((1 + confidence) / 2, n - 1)
     return margin
 
+
 def main(args):
     path = Path(args.path)
     scores_per_word = pd.read_csv(path)
     results = {}
-    
+
     for scoring_mode in [BiasScore.S_RATIO, BiasScore.S_LOG]:
         column = scores_per_word[scoring_mode]
         not_infinity = [s for s in column if not math.isinf(s)]
         results[scoring_mode] = {
             "mean": mean(not_infinity),
             "standard_deviation": stdev(not_infinity),
-            "confidence_margin": compute_confidence_interval(not_infinity)
+            "confidence_margin": compute_confidence_interval(not_infinity),
         }
-    
-    print(json.dumps({ path.name: results }))
+
+    print(json.dumps({path.name: results}))
 
 
 if __name__ == "__main__":

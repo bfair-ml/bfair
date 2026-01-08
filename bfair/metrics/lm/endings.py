@@ -13,6 +13,7 @@ SPANISH_TEST = """
 ... jefes/as ...
 """
 
+
 class SpanishGenderPreprocessor:
     # jefe/a - amigo/a
     PATTERN_EO_A = re.compile(r"(\b\w+?)(e|o)/a(\s*[\.,;:\?!]?)")
@@ -35,6 +36,7 @@ class SpanishGenderPreprocessor:
     def split_gender_endings(cls, text):
         return re.sub(cls.PATTERN_JOINT, cls.replacement_joint, text)
 
+
 CATALAN_TEST = """
 ... amic/a ...
 ... mestre/a ...
@@ -43,6 +45,7 @@ CATALAN_TEST = """
 ... directors/as ...
 ... mestres/as ...
 """
+
 
 class CatalanGenderPreprocessor:
     # Rule: -or/a → or o ora (e.g., director/a)
@@ -69,11 +72,12 @@ class CatalanGenderPreprocessor:
     PATTERN_GENERIC = re.compile(r"(\b\w+?)/([a|as])(\b|\s*[\.,;:\?!])")
     REPLACEMENT_GENERIC = r"\1 o \1\2\3"
 
-
     # Function to apply all patterns
     @classmethod
     def split_gender_endings(cls, text: str) -> str:
-        print("⚠️ Warning: Catalan version is not well tuned and may produce inaccurate results.")
+        print(
+            "⚠️ Warning: Catalan version is not well tuned and may produce inaccurate results."
+        )
         text = cls.PATTERN_OR_A.sub(cls.REPLACEMENT_OR_A, text)
         text = cls.PATTERN_R_A.sub(cls.REPLACEMENT_R_A, text)
         text = cls.PATTERN_E_A.sub(cls.REPLACEMENT_E_A, text)
@@ -91,4 +95,3 @@ if __name__ == "__main__":
     print(CATALAN_TEST)
     print("------------")
     print(CatalanGenderPreprocessor.split_gender_endings(CATALAN_TEST))
-
