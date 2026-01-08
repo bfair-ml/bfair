@@ -1,0 +1,1 @@
+python -m experiments.sensors.evaluate --config "defaults|language:spanish|source:spacy-md" --dump-path runs-villanos --datasets villanos-gendered --eval-annotation --eval-fairness

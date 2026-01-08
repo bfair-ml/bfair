@@ -1,0 +1,1 @@
+python -m experiments.sensors.evaluate --annotations-from Mentions --datasets villanos-gendered --eval-fairness

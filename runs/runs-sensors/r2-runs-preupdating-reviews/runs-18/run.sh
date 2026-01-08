@@ -1,0 +1,1 @@
+python -m experiments.sensors --output output.txt  --title coreference-macro-f1-reviews-1-day --dataset reviews --metric macro-f1 --skip embedding --force coreference --skip dbpedia --skip names --global-timeout 86400 --eval-timeout 180  --iterations 100 --popsize 50 --token 5044881135:AAEzEPL46_uW88R4V6vUCN9c1obOe2oyuKs --channel @bfair_report > log.txt
