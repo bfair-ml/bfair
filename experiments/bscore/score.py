@@ -1,3 +1,4 @@
+import json
 import argparse
 import pandas as pd
 from pathlib import Path
@@ -192,8 +193,21 @@ def main(args):
 
     scores, simple_scores = bias_score(texts)
 
+    simple_scores_dict = {key: value for key, value in simple_scores}
     print("## Simple Scores")
-    print(simple_scores)
+    print(simple_scores_dict)
+
+    if args.export_scores is not None:
+        print(f"Saving simple scores and summary statistics to {args.export_scores}")
+        export_data = {
+            "simple_scores": simple_scores_dict,
+            "summary_statistics": {
+                f"## {scoring_mode} [{' then '.join(group_words.groups())}]": {"mean": mean, "stdev": stdev}
+                for scoring_mode, (mean, stdev, _) in scores.items()
+            },
+        }
+        with open(args.export_scores, "w") as f:
+            json.dump(export_data, f, indent=4)
 
     for scoring_mode, (mean, stdev, _) in scores.items():
         print(f"## {scoring_mode} [{' then '.join(group_words.groups())}]")
@@ -289,6 +303,11 @@ def entry_point():
         "--include-plurals",
         choices=["yes", "no"],
         default="no",
+    )
+    parser.add_argument(
+        "--export-scores",
+        default=None,
+        help="Path to save simple scores and summary statistics as a JSON file.",
     )
 
     args = parser.parse_args()

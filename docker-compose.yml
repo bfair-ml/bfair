@@ -58,7 +58,7 @@ services:
     image: "jpconsuegra/rspacy"
     build: "./vendor/rspacy/"
     ports:
-      - "8001:8000"
+      - "8555:8000"
     environment:
       - PYTHONUNBUFFERED=1
     user: "1000:1000"
