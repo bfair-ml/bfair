@@ -59,7 +59,7 @@ def parse_annotations(encoded):
         annotations = []
         for ann in story_anns.splitlines():
             try:
-                match = re.search(r"(\s?[-–=]\s)|(\s[-–=]\s?)", ann)
+                match = re.search(r"(\s?[-‑–=]\s)|(\s[-‑–=]\s?)", ann)
                 if match is None:
                     raise ValueError(f"Annotation does not contain valid separator")
                 else:
