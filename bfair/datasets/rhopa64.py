@@ -131,7 +131,7 @@ class RhoPa64(Dataset):
         annotated = annotated in ["yes", "True", True]
 
         path = str(Path(path) / model) + ".tsv"
-        data = pd.read_csv(path, sep="\t")
+        data = pd.read_csv(path, sep="\t", dtype={GROUP_ID: str, SUBTHEME_ID: str})
 
         if language is not None:
             key = cls.LANGUAGE2KEY.get(language.lower(), language.lower())

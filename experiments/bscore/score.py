@@ -43,6 +43,9 @@ VICTORIA_LLAMA3_NO_LEADING = "victoria-Llama3-independent"
 VICTORIA_GEMINI15_NO_LEADING = "victoria-Gemini1.5-independent"
 VICTORIA_MISTRAL8X7B_NO_LEADING = "victoria-Mistral8x7b-independent"
 
+RHOPA64_THEME_ID = "theme_id"
+RHOPA64_SUBTHEME_ID = "subtheme_id"
+
 
 def get_group_words_and_to_inspect(
     language,
@@ -143,6 +146,12 @@ def main(args):
         kwargs = {
             name: value for param in params for name, value in (param.split(":"),)
         }
+
+        if RHOPA64_THEME_ID in kwargs and kwargs[RHOPA64_THEME_ID].lower() == "all":
+            kwargs[RHOPA64_THEME_ID] = None
+        if RHOPA64_SUBTHEME_ID in kwargs and kwargs[RHOPA64_SUBTHEME_ID].lower() == "all":
+            kwargs[RHOPA64_SUBTHEME_ID] = None
+
         dataset = load_rhopa64(**kwargs)
         texts = dataset.data[OUTPUT].explode()
         language = dataset.language

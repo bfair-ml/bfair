@@ -34,10 +34,15 @@ def main(args):
         }
 
     print(json.dumps({path.name: results}))
+    
+    if args.output:
+        with open(args.output, "w") as f:
+            json.dump({path.name: results}, f, indent=4)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--path")
+    parser.add_argument("--output", help="Path to output JSON file")
     args = parser.parse_args()
     main(args)
