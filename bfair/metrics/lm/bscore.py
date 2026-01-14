@@ -366,6 +366,13 @@ class BiasScore:
 
             self.group_words.advance_context()
 
+        if not group2counts:
+            print("[BFAIR ⚠️] Warning: No groups found in the input text.")
+            return {
+                scoring_mode: (0, 0, pd.DataFrame(columns=["words", "pos", scoring_mode]).set_index(["words", "pos"]))
+                for scoring_mode in self.scoring_modes
+            }, [(group, 0) for group in self.group_words.groups()]
+
         if self.remove_stopwords or self.remove_groupwords:
             word2counts = self.drop_words(
                 word2counts,
