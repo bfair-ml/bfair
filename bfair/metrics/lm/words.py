@@ -167,6 +167,7 @@ class DynamicGroupWords(IGroupWords):
         self.group_order = {group: None for group in group_order}.keys()  # ordered set
         if all_groups != self.group_order:
             msg = f"Group order does not match groups in annotations. {all_groups} vs {group_order}"
+            msg += f"\nAnnotations: {[str(item) for item in self.annotations]}"
             if check_groups:
                 raise ValueError(msg)
             else:
