@@ -150,7 +150,9 @@ class DynamicGroupWords(IGroupWords):
         texts: Sequence[str],
         annotations: Sequence[Tuple[str, bool, str]],
         group_order: Sequence[str],
+        check_groups: bool = True,
     ) -> None:
+
         self.texts = texts
         self.annotations = annotations
         self.list_of_group_words = self._initilize_group_words(annotations)
@@ -164,9 +166,11 @@ class DynamicGroupWords(IGroupWords):
 
         self.group_order = {group: None for group in group_order}.keys()  # ordered set
         if all_groups != self.group_order:
-            raise ValueError(
-                f"Group order does not match groups in annotations. {all_groups} vs {group_order}"
-            )
+            msg = f"Group order does not match groups in annotations. {all_groups} vs {group_order}"
+            if check_groups:
+                raise ValueError(msg)
+            else:
+                print(f"⚠️ [JUST-WARNING due to `check_groups=False`] {msg}")
 
     @property
     def group_words(self) -> Dict[str, WordsByAny]:

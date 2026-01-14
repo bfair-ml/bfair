@@ -149,7 +149,10 @@ def main(args):
 
         if RHOPA64_THEME_ID in kwargs and kwargs[RHOPA64_THEME_ID].lower() == "all":
             kwargs[RHOPA64_THEME_ID] = None
-        if RHOPA64_SUBTHEME_ID in kwargs and kwargs[RHOPA64_SUBTHEME_ID].lower() == "all":
+        if (
+            RHOPA64_SUBTHEME_ID in kwargs
+            and kwargs[RHOPA64_SUBTHEME_ID].lower() == "all"
+        ):
             kwargs[RHOPA64_SUBTHEME_ID] = None
 
         dataset = load_rhopa64(**kwargs)
@@ -157,7 +160,10 @@ def main(args):
         language = dataset.language
         group_words = (
             DynamicGroupWords(
-                texts, dataset.data[ANNOTATIONS].explode(), ["male", "female"]
+                texts,
+                dataset.data[ANNOTATIONS].explode(),
+                ["male", "female"],
+                check_groups=False,
             )
             if dataset.annotated
             else None
