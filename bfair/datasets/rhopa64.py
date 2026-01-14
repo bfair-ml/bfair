@@ -8,6 +8,8 @@ from pandas import DataFrame
 from .base import Dataset
 from bfair.envs import RHOPA64_DATASET
 
+SEED = 37
+
 GROUP_ID = "group"
 SUBTHEME_ID = "id"
 THEME = "theme"
@@ -128,6 +130,7 @@ class RhoPa64(Dataset):
         split_seed=None,
         stratify_by=None,
     ):
+        random.seed(SEED)
         annotated = annotated in ["yes", "True", True]
 
         path = str(Path(path) / model) + ".tsv"
