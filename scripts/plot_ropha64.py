@@ -158,6 +158,21 @@ def plot_heatmap(df, args, model, language):
         # Exclude neutral expectations (e.g. "all")
         sub = sub[sub.role.notna()]
 
+        sub["label"] = (
+            sub["subtheme"]
+            .apply(
+                lambda subtheme: subtheme[subtheme.find("[") + 1 : subtheme.find("]")]
+                if "[" in subtheme and "]" in subtheme
+                else ""
+            )
+            .apply(lambda label: f"{label[:15]}..." if len(label) > 18 else label)
+        )
+        sub["label"] = (
+            sub["category"].apply(lambda category: f"[{category[0].upper()}]")
+            + " "
+            + sub["label"]
+        )
+
         pivot = (
             sub.pivot(index="theme", columns="role", values="category")
             .reindex(
@@ -166,13 +181,15 @@ def plot_heatmap(df, args, model, language):
             )
             .replace(ALIGNMENT_MAP)
         )
+        annotations = sub.pivot(index="theme", columns="role", values="label")
     else:
         pivot = sub.pivot(index="theme", columns="subtheme", values="category").replace(
             ALIGNMENT_MAP
         )
+        annotations = None
 
     fig = plt.figure(figsize=(14, 8))
-    sns.heatmap(pivot, cmap="RdBu", center=0, annot=True, fmt=".1f", linewidths=0.5)
+    sns.heatmap(pivot, cmap="RdBu", center=0, annot=annotations, fmt="", linewidths=0.5)
 
     mode_label = "roles" if args.heatmap_mode == "roles" else "subthemes"
     plt.title(
