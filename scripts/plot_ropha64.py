@@ -56,11 +56,14 @@ def assign_subtheme_roles(df):
         # exclude neutral expectations (e.g. "all")
         male = group[group.expected == "male"].sort_values("subtheme")
         female = group[group.expected == "female"].sort_values("subtheme")
+        neutral = group[group.expected == "neutral"]
 
         for i, idx in enumerate(female.index[:2]):
             df.at[idx, "role"] = f"female-{i+1}"
         for i, idx in enumerate(male.index[:2]):
             df.at[idx, "role"] = f"male-{i+1}"
+        for i, idx in enumerate(neutral.index):
+            df.at[idx, "role"] = "neutral"
 
     return df
 
@@ -151,7 +154,10 @@ def plot_heatmap(df, args, model, language):
 
         pivot = (
             sub.pivot(index="theme", columns="role", values="category")
-            .reindex(columns=ROLE_ORDER)
+            .reindex(
+                columns=ROLE_ORDER
+                + ([] if "neutral" not in sub.role.unique() else ["neutral"])
+            )
             .replace(ALIGNMENT_MAP)
         )
     else:
