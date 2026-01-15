@@ -1,0 +1,1 @@
+python scripts/summarize_rhopa64.py runs/runs-rhopa64/ --mapping-dir datasets/rhopa64/ --output runs/runs-rhopa64/summary.json
