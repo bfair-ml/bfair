@@ -95,7 +95,7 @@ def classify_alignment(expected, observed):
     if observed == "neutral":
         return "neutral"
     if expected == "neutral":
-        return "biased"
+        return "male-biased" if observed == "male" else "female-biased"
     if expected == observed:
         return "stereotypical"
     return "counter"
@@ -105,7 +105,13 @@ def classify_alignment(expected, observed):
 # Utilities
 # -----------------------------
 
-ALIGNMENT_MAP = {"stereotypical": 1, "biased": 0.5, "neutral": 0, "counter": -1}
+ALIGNMENT_MAP = {
+    "stereotypical": 1,
+    "female-biased": -0.5,
+    "male-biased": 0.5,
+    "neutral": 0,
+    "counter": -1,
+}
 
 
 def save_or_show(fig, path=None):
