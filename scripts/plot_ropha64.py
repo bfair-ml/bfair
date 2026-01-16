@@ -4,6 +4,8 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from pathlib import Path
+from matplotlib.colors import ListedColormap
+
 
 # -----------------------------
 # Data loading
@@ -62,10 +64,68 @@ def assign_subtheme_roles(df):
             df.at[idx, "role"] = f"female-{i+1}"
         for i, idx in enumerate(male.index[:2]):
             df.at[idx, "role"] = f"male-{i+1}"
-        for i, idx in enumerate(neutral.index):
+        for idx in neutral.index:
             df.at[idx, "role"] = "neutral"
 
     return df
+
+
+def summarize_themes(df, metric, threshold, tau=0.25):
+    records = []
+
+    for (model, language, theme), group in df.groupby(["model", "language", "theme"]):
+        # ---------- non-neutral expectations ----------
+        nn = group[group.expected.isin(["male", "female"])]
+        if not nn.empty:
+            nn = nn.copy()
+            nn["observed"] = nn.apply(
+                observed_bias, axis=1, metric=metric, threshold=threshold
+            )
+            nn["alignment"] = nn.apply(
+                lambda r: ALIGNMENT_MAP[classify_alignment(r.expected, r.observed)],
+                axis=1,
+            )
+
+            mean_alignment = nn["alignment"].mean()
+
+            if mean_alignment > tau:
+                category = "stereotypical"
+            elif mean_alignment < -tau:
+                category = "counter"
+            else:
+                category = "neutral"
+
+            records.append(
+                {
+                    "model": model,
+                    "language": language,
+                    "type": "expected",
+                    "category": category,
+                }
+            )
+
+        # ---------- neutral expectations ----------
+        neu = group[group.expected == "neutral"]
+        if not neu.empty:
+            row = neu.iloc[0]
+            observed = observed_bias(row, metric, threshold)
+            category = (
+                "neutral"
+                if observed == "neutral"
+                else "male-biased"
+                if observed == "male"
+                else "female-biased"
+            )
+            records.append(
+                {
+                    "model": model,
+                    "language": language,
+                    "type": "neutral",
+                    "category": category,
+                }
+            )
+
+    return pd.DataFrame(records)
 
 
 # -----------------------------
@@ -112,6 +172,22 @@ ALIGNMENT_MAP = {
     "neutral": 0,
     "counter": -1,
 }
+
+CATEGORY_COLORS = {
+    "counter": "#0072B2",  # blue
+    "female-biased": "#CC79A7",  # purple
+    "neutral": "#B0B0B0",  # gray
+    "male-biased": "#56B4E9",  # light blue
+    "stereotypical": "#D55E00",  # vermillion
+}
+
+CATEGORY_ORDER = [
+    "counter",
+    "female-biased",
+    "neutral",
+    "male-biased",
+    "stereotypical",
+]
 
 
 def save_or_show(fig, path=None):
@@ -189,7 +265,7 @@ def plot_heatmap(df, args, model, language):
         annotations = None
 
     fig = plt.figure(figsize=(14, 8))
-    cmap = sns.color_palette("RdBu", n_colors=len(ALIGNMENT_MAP))
+    cmap = ListedColormap([CATEGORY_COLORS[c] for c in CATEGORY_ORDER])
     sns.heatmap(
         pivot,
         cmap=cmap,
@@ -200,18 +276,15 @@ def plot_heatmap(df, args, model, language):
         cbar=False,  # Disable the gradient color bar
     )
 
-    # Add a discrete color legend
-    legend_labels = list(ALIGNMENT_MAP.keys())
-    legend_colors = [cmap[i] for i in range(len(legend_labels))]
+    handles = [
+        plt.Line2D([0], [0], marker="s", linestyle="", color=CATEGORY_COLORS[c])
+        for c in CATEGORY_ORDER
+    ]
     plt.legend(
-        handles=[
-            plt.Line2D([0], [0], marker="o", color=color, markersize=10, linestyle="")
-            for color in legend_colors
-        ],
-        labels=legend_labels,
+        handles,
+        CATEGORY_ORDER,
         title="Category",
-        loc="upper right",
-        bbox_to_anchor=(1.2, 1),
+        bbox_to_anchor=(1.25, 1),
     )
 
     mode_label = "roles" if args.heatmap_mode == "roles" else "subthemes"
@@ -261,6 +334,43 @@ def plot_count_disparity(df, args, model, language):
     return fig
 
 
+def plot_model_summary(df, args, language):
+    summary = summarize_themes(df, args.metric, args.threshold)
+
+    sub = summary[summary.language == language]
+
+    fig, axes = plt.subplots(1, 2, figsize=(16, 6), sharey=True)
+
+    for ax, t, title in zip(
+        axes,
+        ["expected", "neutral"],
+        ["Non-neutral expectations", "Neutral expectations"],
+    ):
+        pivot = (
+            sub[sub.type == t]
+            .groupby(["model", "category"])
+            .size()
+            .unstack(fill_value=0)
+        )
+
+        pivot = pivot.reindex(columns=CATEGORY_ORDER, fill_value=0)
+        active_categories = [c for c in pivot.columns if pivot[c].sum() > 0]
+
+        pivot[active_categories].plot(
+            kind="bar",
+            stacked=True,
+            ax=ax,
+            color=[CATEGORY_COLORS[c] for c in active_categories],
+        )
+
+        ax.set_title(title)
+        ax.tick_params(axis="x", rotation=45)
+
+    fig.suptitle(f"Model comparison | {language} | metric={args.metric}")
+    plt.tight_layout()
+    return fig
+
+
 # -----------------------------
 # CLI
 # -----------------------------
@@ -271,7 +381,9 @@ def main():
 
     parser.add_argument("summary_json")
     parser.add_argument(
-        "--plot", choices=["heatmap", "bars", "count-disparity"], required=True
+        "--plot",
+        choices=["heatmap", "bars", "count-disparity", "model-summary"],
+        required=True,
     )
     parser.add_argument(
         "--heatmap-mode",
@@ -299,21 +411,32 @@ def main():
     models = [args.model] if args.model else sorted(df.model.unique())
     languages = [args.language] if args.language else sorted(df.language.unique())
 
-    for model in models:
+    if args.plot == "model-summary":
         for language in languages:
-            if args.plot == "heatmap":
-                fig = plot_heatmap(df, args, model, language)
-            elif args.plot == "bars":
-                fig = plot_alignment_bars(df, args, model, language)
-            else:
-                fig = plot_count_disparity(df, args, model, language)
+            fig = plot_model_summary(df, args, language)
 
             path = None
             if args.save:
-                fname = filename_from_args(args, model, language)
+                fname = f"model_summary_{args.metric}_{language}.png"
                 path = args.save / fname
 
             save_or_show(fig, path)
+    else:
+        for model in models:
+            for language in languages:
+                if args.plot == "heatmap":
+                    fig = plot_heatmap(df, args, model, language)
+                elif args.plot == "bars":
+                    fig = plot_alignment_bars(df, args, model, language)
+                else:
+                    fig = plot_count_disparity(df, args, model, language)
+
+                path = None
+                if args.save:
+                    fname = filename_from_args(args, model, language)
+                    path = args.save / fname
+
+                save_or_show(fig, path)
 
 
 if __name__ == "__main__":
