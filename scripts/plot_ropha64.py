@@ -71,6 +71,10 @@ def assign_subtheme_roles(df):
 
 
 def summarize_themes(df, metric, threshold, tau=0.25):
+    print(
+        "⚠️ Warning: computing the mean alignment per theme may produce misleading results."
+    )
+
     records = []
 
     for (model, language, theme), group in df.groupby(["model", "language", "theme"]):
@@ -335,39 +339,77 @@ def plot_count_disparity(df, args, model, language):
 
 
 def plot_model_summary(df, args, language):
-    summary = summarize_themes(df, args.metric, args.threshold)
+    sub = df[df.language == language].copy()
 
-    sub = summary[summary.language == language]
+    sub["observed"] = sub.apply(
+        observed_bias, axis=1, metric=args.metric, threshold=args.threshold
+    )
+    sub["category"] = sub.apply(
+        lambda r: classify_alignment(r.expected, r.observed), axis=1
+    )
 
-    fig, axes = plt.subplots(1, 2, figsize=(16, 6), sharey=True)
+    fig, axes = plt.subplots(1, 2, figsize=(16, 6), sharey=False)
 
-    for ax, t, title in zip(
-        axes,
-        ["expected", "neutral"],
-        ["Non-neutral expectations", "Neutral expectations"],
-    ):
-        pivot = (
-            sub[sub.type == t]
+    if args.summary_level == "theme":
+        records = []
+
+        for (model, theme), group in sub[sub.expected.isin(["male", "female"])].groupby(
+            ["model", "theme"]
+        ):
+            alignments = group["category"].map(ALIGNMENT_MAP)
+            mean_alignment = alignments.mean()
+
+            if mean_alignment > 0.25:
+                category = "stereotypical"
+            elif mean_alignment < -0.25:
+                category = "counter"
+            else:
+                category = "neutral"
+
+            records.append({"model": model, "category": category})
+
+        exp_counts = (
+            pd.DataFrame(records)
             .groupby(["model", "category"])
             .size()
             .unstack(fill_value=0)
         )
+    else:  # subtheme-level
+        exp = sub[sub.expected.isin(["male", "female"])]
 
-        pivot = pivot.reindex(columns=CATEGORY_ORDER, fill_value=0)
-        active_categories = [c for c in pivot.columns if pivot[c].sum() > 0]
+        exp_counts = exp.groupby(["model", "category"]).size().unstack(fill_value=0)
 
-        pivot[active_categories].plot(
-            kind="bar",
-            stacked=args.model_summary_mode == "stacked",
-            ax=ax,
-            color=[CATEGORY_COLORS[c] for c in active_categories],
-        )
+    exp_counts.plot(
+        kind="bar",
+        stacked=args.model_summary_mode == "stacked",
+        ax=axes[0],
+        color=[CATEGORY_COLORS[c] for c in exp_counts.columns],
+        width=0.8,
+    )
 
-        ax.set_title(title)
-        ax.tick_params(axis="x", rotation=45)
+    axes[0].set_title(f"Non-neutral expectations ({args.summary_level}-level)")
+    axes[0].set_xlabel("Model")
+    axes[0].set_ylabel(
+        "Number of themes" if args.summary_level == "theme" else "Number of subthemes"
+    )
+    axes[0].tick_params(axis="x", rotation=45)
 
-    fig.suptitle(f"Model comparison | {language} | metric={args.metric}")
-    plt.tight_layout()
+    neu = sub[sub.expected == "neutral"]
+
+    neu_counts = neu.groupby(["model", "category"]).size().unstack(fill_value=0)
+
+    neu_counts.plot(
+        kind="bar",
+        stacked=args.model_summary_mode == "stacked",
+        ax=axes[1],
+        color=[CATEGORY_COLORS[c] for c in neu_counts.columns],
+        width=0.8,
+    )
+
+    axes[1].set_title("Neutral expectations (subtheme-level)")
+    axes[1].set_xlabel("Model")
+    axes[1].tick_params(axis="x", rotation=45)
+
     return fig
 
 
@@ -394,8 +436,14 @@ def main():
     parser.add_argument(
         "--model-summary-mode",
         choices=["stacked", "grouped"],
-        default="stacked",
+        default="grouped",
         help="Model summary bar plot mode",
+    )
+    parser.add_argument(
+        "--summary-level",
+        choices=["theme", "subtheme"],
+        default="subtheme",
+        help="Aggregation level for model-summary plots",
     )
     parser.add_argument(
         "--metric",
