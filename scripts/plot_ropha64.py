@@ -189,7 +189,30 @@ def plot_heatmap(df, args, model, language):
         annotations = None
 
     fig = plt.figure(figsize=(14, 8))
-    sns.heatmap(pivot, cmap="RdBu", center=0, annot=annotations, fmt="", linewidths=0.5)
+    cmap = sns.color_palette("RdBu", n_colors=len(ALIGNMENT_MAP))
+    sns.heatmap(
+        pivot,
+        cmap=cmap,
+        center=0,
+        annot=annotations,
+        fmt="",
+        linewidths=0.5,
+        cbar=False,  # Disable the gradient color bar
+    )
+
+    # Add a discrete color legend
+    legend_labels = list(ALIGNMENT_MAP.keys())
+    legend_colors = [cmap[i] for i in range(len(legend_labels))]
+    plt.legend(
+        handles=[
+            plt.Line2D([0], [0], marker="o", color=color, markersize=10, linestyle="")
+            for color in legend_colors
+        ],
+        labels=legend_labels,
+        title="Category",
+        loc="upper right",
+        bbox_to_anchor=(1.2, 1),
+    )
 
     mode_label = "roles" if args.heatmap_mode == "roles" else "subthemes"
     plt.title(
