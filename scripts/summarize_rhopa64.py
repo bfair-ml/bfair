@@ -5,6 +5,10 @@ import sys
 
 csv.field_size_limit(sys.maxsize)
 
+SUFFIX_TO_STRIP = "_databias_generated"
+def normalize_model_name(name: str) -> str:
+    return name[:-len(SUFFIX_TO_STRIP)] if name.endswith(SUFFIX_TO_STRIP) else name
+
 def load_json(path):
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
@@ -97,11 +101,12 @@ def build_summary(root_dir, mapping_dir):
         if len(parts) < 5:
             continue
 
-        model, language, theme_id, subtheme_id = parts[:4]
+        raw_model, language, theme_id, subtheme_id = parts[:4]
+        model = normalize_model_name(raw_model)
 
-        # Load TSV mapping once per model
+        # Load TSV mapping once per model (using normalized model name)
         if model not in model_mappings:
-            tsv_path = mapping_dir / f"{model}.tsv"
+            tsv_path = mapping_dir / f"{raw_model}.tsv"
             if tsv_path.exists():
                 model_mappings[model] = load_tsv_mapping(tsv_path)
             else:
