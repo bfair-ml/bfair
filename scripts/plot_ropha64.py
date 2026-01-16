@@ -358,7 +358,7 @@ def plot_model_summary(df, args, language):
 
         pivot[active_categories].plot(
             kind="bar",
-            stacked=True,
+            stacked=args.model_summary_mode == "stacked",
             ax=ax,
             color=[CATEGORY_COLORS[c] for c in active_categories],
         )
@@ -390,6 +390,12 @@ def main():
         choices=["subthemes", "roles"],
         default="subthemes",
         help="Heatmap columns: raw subthemes or semantic roles",
+    )
+    parser.add_argument(
+        "--model-summary-mode",
+        choices=["stacked", "grouped"],
+        default="stacked",
+        help="Model summary bar plot mode",
     )
     parser.add_argument(
         "--metric",
