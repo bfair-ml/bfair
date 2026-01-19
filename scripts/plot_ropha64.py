@@ -348,7 +348,7 @@ def plot_model_summary(df, args, language):
         lambda r: classify_alignment(r.expected, r.observed), axis=1
     )
 
-    fig, axes = plt.subplots(1, 2, figsize=(16, 6), sharey=False)
+    fig, axes = plt.subplots(1, 2, figsize=(16, 8), sharey=False)
 
     if args.summary_level == "theme":
         records = []
@@ -392,7 +392,9 @@ def plot_model_summary(df, args, language):
     axes[0].set_ylabel(
         "Number of themes" if args.summary_level == "theme" else "Number of subthemes"
     )
-    axes[0].tick_params(axis="x", rotation=45)
+    axes[0].tick_params(axis="x", rotation=60)
+    axes[0].set_xticklabels(axes[0].get_xticklabels(), ha="right")
+    axes[0].set_ylim(0, 100)
 
     neu = sub[sub.expected == "neutral"]
 
@@ -408,7 +410,13 @@ def plot_model_summary(df, args, language):
 
     axes[1].set_title("Neutral expectations (subtheme-level)")
     axes[1].set_xlabel("Model")
-    axes[1].tick_params(axis="x", rotation=45)
+    axes[1].tick_params(axis="x", rotation=60)
+    axes[1].set_xticklabels(axes[1].get_xticklabels(), ha="right")
+    axes[1].set_ylabel("Number of themes")
+    axes[1].set_ylim(0, 25)
+
+    # Add bottom padding to prevent clipping of x-axis labels/legend
+    fig.subplots_adjust(bottom=0.25)
 
     return fig
 
