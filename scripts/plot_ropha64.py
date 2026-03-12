@@ -217,6 +217,76 @@ def filename_from_args(args, model, language):
 
 ROLE_ORDER = ["female-1", "female-2", "male-1", "male-2"]
 
+def _render_roles_heatmap_axis(df, args, model, language, ax, *, annotate=True, show_axis_texts=True, show_title=True):
+    sub = df[df.model == model]
+    if language:
+        sub = sub[sub.language == language]
+    if args.expected:
+        sub = sub[sub.expected.isin(args.expected)]
+
+    sub = sub.copy()
+    sub["observed"] = sub.apply(
+        observed_bias, axis=1, metric=args.metric, threshold=args.threshold
+    )
+    sub["category"] = sub.apply(
+        lambda r: classify_alignment(r.expected, r.observed), axis=1
+    )
+
+    # Exclude neutral expectations
+    sub = sub[sub.role.notna()]
+
+    # Build annotation labels only if requested (single chart); grid will suppress
+    if annotate:
+        sub["label"] = (
+            sub["subtheme"]
+            .apply(
+                lambda subtheme: subtheme[subtheme.find("[") + 1 : subtheme.find("]")]
+                if "[" in subtheme and "]" in subtheme
+                else ""
+            )
+            .apply(lambda label: f"{label[:15]}..." if len(label) > 18 else label)
+        )
+        sub["label"] = (
+            sub["category"].apply(lambda category: f"[{category[0].upper()}]")
+            + " "
+            + sub["label"]
+        )
+
+    pivot = (
+        sub.pivot(index="theme", columns="role", values="category")
+        .reindex(
+            columns=ROLE_ORDER
+            + ([] if "neutral" not in sub.role.unique() else ["neutral"])
+        )
+        .replace(ALIGNMENT_MAP)
+    )
+    annotations = sub.pivot(index="theme", columns="role", values="label") if annotate else None
+
+    cmap = ListedColormap([CATEGORY_COLORS[c] for c in CATEGORY_ORDER])
+    sns.heatmap(
+        pivot,
+        cmap=cmap,
+        center=0,
+        annot=annotations,
+        fmt="",
+        linewidths=0.5,
+        cbar=False,
+        ax=ax,
+    )
+
+    if show_title:
+        ax.set_title(f"{model} | {language or 'all'}", fontsize=9)
+    else:
+        ax.set_title("")
+
+    if show_axis_texts:
+        ax.tick_params(axis="x", labelrotation=45)
+        ax.tick_params(axis="y", labelrotation=0)
+    else:
+        # No axis labels/ticks inside subcharts
+        ax.set_xticks([])
+        ax.set_yticks([])
+
 
 def plot_heatmap(df, args, model, language):
     sub = df[df.model == model]
@@ -338,6 +408,52 @@ def plot_count_disparity(df, args, model, language):
     return fig
 
 
+def plot_heatmap_grid(df, args, models, languages):
+    if args.heatmap_mode != "roles":
+        print("⚠️ For heatmap-grid, forcing heatmap-mode=roles.")
+        args.heatmap_mode = "roles"
+
+    rows, cols = len(languages), len(models)
+    fig, axes = plt.subplots(rows, cols, figsize=(4 * cols + 2, 3 * rows + 2), squeeze=False)
+
+    # Render each cell: no annotations, no axis texts, no per-cell titles
+    for r, language in enumerate(languages):
+        for c, model in enumerate(models):
+            ax = axes[r][c]
+            _render_roles_heatmap_axis(
+                df, args, model, language, ax,
+                annotate=False,
+                show_axis_texts=False,
+                show_title=False
+            )
+
+    # Add row/column indicators
+    # Left-side language labels
+    for r, language in enumerate(languages):
+        axes[r][0].set_ylabel(language, fontsize=10, rotation=0, labelpad=30, va="center")
+
+    # Bottom model labels
+    for c, model in enumerate(models):
+        axes[-1][c].set_xlabel(model, fontsize=10, labelpad=15)
+
+    # Shared legend (same as single heatmap)
+    handles = [
+        plt.Line2D([0], [0], marker="s", linestyle="", color=CATEGORY_COLORS[c])
+        for c in CATEGORY_ORDER
+    ]
+    fig.legend(
+        handles,
+        CATEGORY_ORDER,
+        title="Category",
+        bbox_to_anchor=(1.02, 0.98),
+        loc="upper left",
+    )
+
+    fig.suptitle(f"Heatmap grid (roles) | metric={args.metric}", y=0.995)
+    fig.tight_layout(rect=[0, 0, 0.98, 0.97])
+    return fig
+
+
 def plot_model_summary(df, args, language):
     sub = df[df.language == language].copy()
 
@@ -432,7 +548,7 @@ def main():
     parser.add_argument("summary_json")
     parser.add_argument(
         "--plot",
-        choices=["heatmap", "bars", "count-disparity", "model-summary"],
+        choices=["heatmap", "bars", "count-disparity", "model-summary", "heatmap-grid"],
         required=True,
     )
     parser.add_argument(
@@ -473,7 +589,15 @@ def main():
     models = [args.model] if args.model else sorted(df.model.unique())
     languages = [args.language] if args.language else sorted(df.language.unique())
 
-    if args.plot == "model-summary":
+    if args.plot == "heatmap-grid":
+        fig = plot_heatmap_grid(df, args, models, languages)
+        path = None
+        if args.save:
+            fname = f"heatmap_grid_{args.metric}.png"
+            path = args.save / fname
+        save_or_show(fig, path)
+        
+    elif args.plot == "model-summary":
         for language in languages:
             fig = plot_model_summary(df, args, language)
 
