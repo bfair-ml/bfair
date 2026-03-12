@@ -524,7 +524,7 @@ def plot_model_summary(df, args, language):
         width=0.8,
     )
 
-    axes[1].set_title("Neutral expectations (subtheme-level)")
+    axes[1].set_title("Neutral expectations (theme-level)")
     axes[1].set_xlabel("Model")
     axes[1].tick_params(axis="x", rotation=60)
     axes[1].set_xticklabels(axes[1].get_xticklabels(), ha="right")
