@@ -193,6 +193,12 @@ CATEGORY_ORDER = [
     "stereotypical",
 ]
 
+GENDER_COLORS = {
+    "female": "#CC79A7",  # purple
+    "neutral": "#B0B0B0",  # gray
+    "male": "#56B4E9",  # light blue
+}
+
 
 def save_or_show(fig, path=None):
     if path:
@@ -408,6 +414,48 @@ def plot_count_disparity(df, args, model, language):
     return fig
 
 
+def plot_genre_per_topic(df, args, language):
+    """
+    For a given language, show counts of neutral-expectation items per theme
+    by alignment category (similar style to the second panel in plot_model_summary,
+    but aggregated on themes across all models and subthemes).
+    """
+    sub = df[df.language == language].copy()
+
+    # Same preprocessing as model summary
+    sub["observed"] = sub.apply(
+        observed_bias, axis=1, metric=args.metric, threshold=args.threshold
+    )
+
+    # Neutral expectations only
+    neu = sub #[sub.expected == "neutral"]
+
+    # Aggregate counts by theme and alignment category (across all models/subthemes)
+    theme_counts = neu.groupby(["theme", "observed"]).size().unstack(fill_value=0)
+
+    fig = plt.figure(figsize=(14, 6))
+    ax = fig.add_subplot(111)
+
+    # Matplotlib bar plot to support stacked/grouped, mirroring model_summary
+    theme_counts.plot(
+        kind="bar",
+        stacked=args.model_summary_mode == "stacked",
+        ax=ax,
+        color=[GENDER_COLORS[c] for c in theme_counts.columns],
+        width=0.8,
+    )
+
+    ax.set_title(f"{language} | Gender per theme")
+    ax.set_xlabel("Theme")
+    ax.set_ylabel("Number of items")
+    ax.tick_params(axis="x", rotation=45)
+    ax.set_xticklabels(ax.get_xticklabels(), ha="right")
+    ax.set_ylim(0, 40)
+
+    fig.tight_layout()
+    return fig
+
+
 def plot_heatmap_grid(df, args, models, languages):
     if args.heatmap_mode != "roles":
         print("⚠️ For heatmap-grid, forcing heatmap-mode=roles.")
@@ -548,7 +596,14 @@ def main():
     parser.add_argument("summary_json")
     parser.add_argument(
         "--plot",
-        choices=["heatmap", "bars", "count-disparity", "model-summary", "heatmap-grid"],
+        choices=[
+            "heatmap",
+            "bars",
+            "count-disparity",
+            "model-summary",
+            "heatmap-grid",
+            "genre-per-topic",
+        ],
         required=True,
     )
     parser.add_argument(
@@ -607,6 +662,18 @@ def main():
                 path = args.save / fname
 
             save_or_show(fig, path)
+
+    elif args.plot == "genre-per-topic":
+        for language in languages:
+            fig = plot_genre_per_topic(df, args, language)
+
+            path = None
+            if args.save:
+                fname = f"genre_per_topic_{language}.png"
+                path = args.save / fname
+
+            save_or_show(fig, path)
+
     else:
         for model in models:
             for language in languages:
