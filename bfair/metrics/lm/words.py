@@ -81,7 +81,7 @@ class GroupWords(IGroupWords):
         if pos_list is None:
             pos_list = self.all_available_pos
         return {
-            word for pos in pos_list for word in self.words_with_pos_for(group, pos)
+            word for pos in pos_list for word in self.get_words_with_pos_for(group, pos)
         }
 
     def get_words_with_pos_for(self, group, pos):
