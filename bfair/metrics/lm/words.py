@@ -311,11 +311,15 @@ WIKI_GENDER_PAIRS = [
     ("NOUN", "king", "queen"),
 ]
 
+POS_EXTENSION = [
+    ("ADJ", "male", "female"),
+]
+
 
 class EnglishGenderedWords:
     def __init__(
         self,
-        sources=(DM_GENDER_PAIRS, PENN_GENDER_PAIRS, WIKI_GENDER_PAIRS),
+        sources=(DM_GENDER_PAIRS, PENN_GENDER_PAIRS, WIKI_GENDER_PAIRS, POS_EXTENSION),
         order=GERDER_PAIR_ORDER,
     ):
         self.sources = sources
