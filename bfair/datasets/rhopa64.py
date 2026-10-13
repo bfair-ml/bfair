@@ -129,7 +129,11 @@ class RhoPa64(Dataset):
         annotated=True,
         split_seed=None,
         stratify_by=None,
+        enforce_npairs=None,
     ):
+        if enforce_npairs is not None:
+            enforce_npairs = int(enforce_npairs)
+
         random.seed(SEED)
         annotated = annotated in ["yes", "True", True]
 
@@ -154,15 +158,21 @@ class RhoPa64(Dataset):
             def sample_annotations_and_outputs(row):
                 assert len(row[ANNOTATIONS]) == len(row[OUTPUT])
                 pairs = [ (ann, out) for ann, out in zip(row[ANNOTATIONS], row[OUTPUT]) if len(ann) > 0 ]
-                if len(pairs) > 2:
-                    pairs = random.sample(pairs, 2)
-                elif len(pairs) < 2:
-                    print(f"🔴 Not enough annotation sets: {row}")
-                row[ANNOTATIONS] = [ ann for ann, _ in pairs ]
-                row[OUTPUT] = [ out for _, out in pairs ]
+                if enforce_npairs is None:
+                    if len(pairs) > 2:
+                        pairs = random.sample(pairs, 2)
+                    elif len(pairs) < 2:
+                        print(f"🔴 Not enough annotation sets: {row}")
+                    row[ANNOTATIONS] = [ ann for ann, _ in pairs ]
+                    row[OUTPUT] = [ out for _, out in pairs ]
+                elif len(pairs) < enforce_npairs:
+                    print(f"🔴 Skipped row with not enough annotation sets: {row}")
+                    row[ANNOTATIONS] = None
+                    row[OUTPUT] = None
                 return row
 
             data = data.apply(sample_annotations_and_outputs, axis=1)
+            data = data.dropna(subset=[ANNOTATIONS, OUTPUT])
         
         return RhoPa64(
             data=data,
