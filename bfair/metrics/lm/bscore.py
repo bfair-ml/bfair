@@ -6,7 +6,7 @@ import pandas as pd
 from abc import ABC, abstractmethod
 from typing import Sequence, Callable
 from collections import defaultdict
-from itertools import repeat
+from itertools import repeat, chain
 from functools import partial
 from statistics import mean, stdev
 from tqdm import tqdm
@@ -27,10 +27,46 @@ from bfair.metrics.lm.endings import (
     CatalanGenderPreprocessor,
 )
 
+CONTEXT_TEST_EN = [
+    ("the", "DET", "t0"),
+    ("black", "ADJ", "t1"),
+    ("cat", "NOUN", "t2"),
+    ("sleeps", "VERB", "t3"),
+    (",", "PUNCT", "t3.1"),
+    ("peacefully", "ADV", "t3.2"),
+    (",", "PUNCT", "t3.3"),
+    ("on", "ADP", "t4"),
+    ("the", "DET", "t5"),
+    ("sofa", "NOUN", "t6"),
+    (".", "PUNCT", "t7"),
+    ("The", "DET", "t8"),
+    ("dog", "NOUN", "t9"),
+    ("doesn't", "AUX", "t10"),
+    (".", "PUNCT", "t11")
+]
+
+CONTEXT_TEST_ES = [
+    ("el", "DET", "t0"),
+    ("gato", "NOUN", "t1"),
+    ("negro", "ADJ", "t2"),
+    ("duerme", "VERB", "t3"),
+    (",", "PUNCT", "t3.1"),
+    ("tranquilamente", "ADV", "t3.2"),
+    (",", "PUNCT", "t3.3"),
+    ("en", "ADP", "t4"),
+    ("el", "DET", "t5"),
+    ("sofá", "NOUN", "t6"),
+    (".", "PUNCT", "t7"),
+    ("El", "DET", "t8"),
+    ("perro", "NOUN", "t9"),
+    ("no", "ADV", "t10"),
+    (".", "PUNCT", "t11")
+]
 
 class FixedContext:
-    def __init__(self, window_size=10):
+    def __init__(self, window_size=10, max_multiword=2):
         self.window_size = window_size
+        self.max_multiword = max_multiword
 
     def __call__(self, tokens):
         for window in ngrams(
@@ -45,29 +81,58 @@ class FixedContext:
             if center is None:
                 continue
 
-            get_context = partial(self.weighted, window, middle)
-            yield center, get_context
+            for size in range(1, self.max_multiword + 1):
+                center_tokens = window[middle : middle + size]
 
-    def weighted(self, window, middle):
-        window = (word for word in window if word is not None)
+                if any(token is None or token[1] in ("PUNCT",) for token in center_tokens):
+                    break
+                
+                center = self.build_multiword_center(center_tokens)
+                get_context = partial(self.weighted, window, middle, middle + size)
+                yield center, get_context
+
+    def weighted(self, window, center_start, center_ended):
+        left_window = self.wrap_singleword_tokens(window[:center_start])
+        center = self.build_multiword_center(window[center_start : center_ended])
+        right_window = self.wrap_singleword_tokens(window[center_ended:])
+        window = (token for token in chain(left_window, [center], right_window) if token is not None)
         return zip(window, repeat(1))
+    
+    @classmethod
+    def build_multiword_center(cls, center_tokens):
+        center_word = " ".join(token[0] for token in center_tokens)
+        center_pos = center_tokens[0][1] if len(center_tokens) == 1 else None  # Disables POS check for multiword tokens
+        center_left_token = center_tokens[0][2]
+        center_right_token = center_tokens[-1][2]
+        return (center_word, center_pos, center_left_token, center_right_token)
+    
+    @classmethod
+    def wrap_singleword_tokens(cls, tokens):
+        return (cls.wrap_singleword_token(token) for token in tokens if token is not None)
+    
+    @classmethod
+    def wrap_singleword_token(cls, token):
+        if token is None:
+            return None
+        return (token[0], token[1], token[2], token[2])
 
 
 class InfiniteContext(FixedContext):
-    def __init__(self, step=0.95):
-        super().__init__(window_size=200)
+    def __init__(self, step=0.95, max_multiword=3):
+        super().__init__(window_size=200, max_multiword=max_multiword)
         self.step = step
 
-    def weighted(self, window, middle):
-        for i, word in enumerate(window):
-            if word is None:
+    def weighted(self, window, center_start, center_ended):
+        for i, token in enumerate(window):
+            if token is None or (i > center_start and i < center_ended):
                 continue
-            if i == middle:  # to achieve (..., 0.95, 1, 1, 1, 0.95, ...)
-                yield word, 1
+            if i == center_start: # to achieve (..., 0.95, 1, 1, 1, 0.95, ...)
+                center = self.build_multiword_center(window[center_start:center_ended])
+                yield center, 1
             else:
-                distance = abs(middle - i)
+                distance = min(abs(center_start - i), abs(center_ended - 1 - i))
                 weight = pow(self.step, distance - 1)
-                yield word, weight
+                yield self.wrap_singleword_token(token), weight
 
 
 class ContinualContext(InfiniteContext):
@@ -83,25 +148,27 @@ class ContinualContext(InfiniteContext):
         for punct in symbols
     }
 
-    def __init__(self, step=0.95, disruption_penalization=None):
-        super().__init__(step)
+    def __init__(self, step=0.95, disruption_penalization=None, max_multiword=3):
+        super().__init__(step, max_multiword)
         self.disruption_penalization = (
             self.DISRUPTION_PENALIZATION
             if disruption_penalization is None
             else disruption_penalization
         )
 
-    def weighted(self, window, middle):
-        yield from self._sequential_weighting(reversed(window[:middle]))
-        yield from self._sequential_weighting(window[middle:])
+    def weighted(self, window, center_start, center_ended):
+        yield from self._sequential_weighting(reversed(window[:center_start]))
+        yield (self.build_multiword_center(window[center_start:center_ended]), 1)
+        yield from self._sequential_weighting(window[center_ended:])
 
     def _sequential_weighting(self, sequence):
         weight = 1
-        for word in sequence:
-            if word is None:
+        for token in sequence:
+            if token is None:
                 break
-            yield word, weight
+            yield self.wrap_singleword_token(token), weight
             try:
+                word = token[0]
                 weight *= self.disruption_penalization[word]
             except KeyError:
                 weight *= self.step
@@ -455,19 +522,19 @@ class BiasScore:
         group2counts = defaultdict(int)
 
         tokens = tokenizer(text)
-        for (center, center_pos, center_token), get_context in context(tokens):
+        for (center, center_pos, center_left_token, center_right_token), get_context in context(tokens):
             word2occurrence[center, center_pos] += 1
             for group, words in group_words.items():
                 if not words.includes(
                     center, center_pos
-                ) or not person_checker.check_token(center_token):
+                ) or (center_left_token == center_right_token and not person_checker.check_token(center_left_token)):
                     continue
 
                 group2counts[group] += 1
 
-                if morph_analyzer is not None and center_token.i > 0:
+                if morph_analyzer is not None and center_left_token.i > 0:
 
-                    pivot = center_token.nbor(-1)
+                    pivot = center_left_token.nbor(-1)
                     pivot_group = None
                     while morph_analyzer.chains_to_the_left(pivot):
                         pivot_group = morph_analyzer.get_morphological_group(pivot)
@@ -481,7 +548,7 @@ class BiasScore:
                     if pivot_group is not None and pivot_group != group:
                         continue
 
-                for (word, word_pos, word_token), weight in get_context():
+                for (word, word_pos, word_left_token, word_right_token), weight in get_context():
                     if word_pos in ("PUNCT", "NUM", "SYM") or word.isdigit():
                         continue
 
@@ -491,16 +558,20 @@ class BiasScore:
                         word2discrete[word, word_pos][group] += 1
 
                         offset = 3
-                        min_token = min(center_token, word_token, key=lambda x: x.i)
-                        max_token = max(center_token, word_token, key=lambda x: x.i)
+                        min_token = min(center_left_token, word_left_token, key=lambda x: x.i)
+                        max_token = max(center_right_token, word_right_token, key=lambda x: x.i)
                         min_word, max_word = (
                             (center, word)
-                            if center_token == min_token
+                            if center_left_token == min_token
                             else (word, center)
                         )
 
-                        if center_token.i == word_token.i:
-                            core = f"«{center_token.text}->{center}:{center_pos}»"
+                        if center_left_token.i == word_left_token.i:
+                            core = (
+                                f"«{center_left_token.text}->{center}:{center_pos}»"
+                                if center_left_token == center_right_token
+                                else f"«{center_left_token.text}...{center_right_token.text}->{center}:{center_pos}»"
+                            )
                         else:
                             core = "[[{}->{}:{}]] {} [[{}->{}:{}]]".format(
                                 # WORD or CENTER

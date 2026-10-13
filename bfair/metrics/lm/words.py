@@ -189,8 +189,12 @@ class DynamicGroupWords(IGroupWords):
                 if not include:
                     continue
                 if " " in word:
+                    # print(
+                    #     f"⚠️ Word contains space but current tokenization strategies do not support multi-word tokens."
+                    # )
                     print(
-                        f"⚠️ Word contains space but current tokenization strategies do not support multi-word tokens."
+                        
+                        f"🆕 Multi-word seed support has been implemented recently! Please, double check it is working "
                     )
                 group_words[group].add(word)
             list_of_group_words.append(group_words)
