@@ -65,6 +65,8 @@ CONTEXT_TEST_ES = [
 
 class FixedContext:
     def __init__(self, window_size=10, max_multiword=2):
+        if max_multiword is None or max_multiword < 1:
+            raise ValueError("max_multiword must be a positive integer")
         self.window_size = window_size
         self.max_multiword = max_multiword
 
@@ -311,7 +313,11 @@ class BiasScore:
             if semantic_check
             else DummyChecker()
         )
-        self.lemmatizer = lambda word: nlp(word)[0].lemma_
+        self.lemmatizer = lambda word: (
+            " ".join(
+                nlp(word)[i].lemma_ for i in range(len(nlp(word)))
+            )  # For multi-word tokens, lemmatize each token and join them with a space
+        )
 
         self.stopwords = stopwords.words(language) if remove_stopwords else None
         self.group_words_to_inspect = group_words_to_inspect
