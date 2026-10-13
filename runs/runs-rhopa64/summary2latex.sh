@@ -1,0 +1,1 @@
+python scripts/summary_to_latex.py runs/runs-rhopa64/summary.json runs/runs-rhopa64/summary_table_latest.tex --just-global
