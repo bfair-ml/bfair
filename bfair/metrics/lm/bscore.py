@@ -64,8 +64,8 @@ CONTEXT_TEST_ES = [
 ]
 
 class FixedContext:
-    def __init__(self, window_size=10, max_multiword=2):
-        if max_multiword is None or max_multiword < 1:
+    def __init__(self, window_size=10, max_multiword=3):
+        if max_multiword is None or not isinstance(max_multiword, int) or max_multiword < 1:
             raise ValueError("max_multiword must be a positive integer")
         self.window_size = window_size
         self.max_multiword = max_multiword
