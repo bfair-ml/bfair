@@ -12,6 +12,7 @@ class Dataset:
         split_seed=None,
         stratify_by=None,
     ):
+        self.annotated = False
         self.data, self.test = (
             (data, test)
             if test is not None
