@@ -601,45 +601,75 @@ class BiasScore:
                     if weight > cls.DISCRETE:
                         word2discrete[word, word_pos][group] += 1
 
+                        word_text = word_left_token.text
+                        center_text = (
+                            center_right_token.text
+                            if center_left_token == center_right_token
+                            else f"{center_left_token.text}..{center_right_token.text}"
+                        )
+
                         offset = 3
                         min_token = min(
                             center_left_token, word_left_token, key=lambda x: x.i
                         )
                         max_token = max(
-                            center_right_token, word_right_token, key=lambda x: x.i
+                            center_left_token, word_left_token, key=lambda x: x.i
                         )
-                        min_word, max_word = (
-                            (center, word)
+                        (
+                            min_word,
+                            max_word,
+                            min_text,
+                            max_text,
+                            min_pos,
+                            max_pos,
+                            min_right,
+                            max_right,
+                        ) = (
+                            (
+                                center,
+                                word,
+                                center_text,
+                                word_text,
+                                center_pos,
+                                word_pos,
+                                center_right_token,
+                                word_right_token,
+                            )
                             if center_left_token == min_token
-                            else (word, center)
+                            else (
+                                word,
+                                center,
+                                word_text,
+                                center_text,
+                                word_pos,
+                                center_pos,
+                                word_right_token,
+                                center_right_token,
+                            )
                         )
 
                         if center_left_token.i == word_left_token.i:
-                            core = (
-                                f"«{center_left_token.text}->{center}:{center_pos}»"
-                                if center_left_token == center_right_token
-                                else f"«{center_left_token.text}...{center_right_token.text}->{center}:{center_pos}»"
-                            )
+                            core = f"«{center_text}->{center}:{center_pos}»"
                         else:
                             core = "[[{}->{}:{}]] {} [[{}->{}:{}]]".format(
                                 # WORD or CENTER
-                                min_token.text,
+                                min_text,
                                 # LEX
                                 min_word,
                                 # POS
-                                min_token.pos_,
+                                min_pos,
                                 # MIDDLE
                                 (
-                                    min_token.doc[min_token.i + 1 : max_token.i]
-                                    if max_token.i > min_token.i + 1
+                                    min_token.doc[min_right.i + 1 : max_token.i]
+                                    if max_token.i > min_right.i + 1
                                     else ""
                                 ),
                                 # WORD or CENTER
-                                max_token.text,
+                                max_text,
                                 # LEX
                                 max_word,
                                 # POS
-                                max_token.pos_,
+                                max_pos,
                             )
 
                         highlighted = "{}{} {} {}{}".format(
@@ -657,12 +687,12 @@ class BiasScore:
                             core,
                             # POST
                             (
-                                max_token.doc[max_token.i + 1 : max_token.i + offset]
-                                if len(max_token.doc) > max_token.i + 1
+                                max_token.doc[max_right.i + 1 : max_right.i + offset]
+                                if len(max_token.doc) > max_right.i + 1
                                 else ""
                             ),
                             # END
-                            " ..." if max_token.i + offset < len(max_token.doc) else "",
+                            " ..." if max_right.i + offset < len(max_token.doc) else "",
                         )
 
                         word2matches[word, word_pos][group].add(highlighted)
