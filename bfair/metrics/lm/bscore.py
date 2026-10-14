@@ -113,7 +113,11 @@ class FixedContext:
 
     @classmethod
     def build_multiword_center(cls, center_tokens):
-        center_word = " ".join(token[0] for token in center_tokens)
+        center_word = (
+            " ".join(token[2].text for token in center_tokens)
+            if len(center_tokens) > 1
+            else center_tokens[0][0]
+        )  # For multi-word tokens, original text is used as the center word, not the lemmatized form
         center_pos = (
             center_tokens[0][1] if len(center_tokens) == 1 else None
         )  # Disables POS check for multiword tokens

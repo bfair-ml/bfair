@@ -126,7 +126,7 @@ def main(args):
             raise ValueError(args.dataset)
         _, model, mode = info
         dataset = load_victoria(model=model, leading=mode == "leading")
-        texts = dataset.data[OUTPUT].str.lower()
+        texts = dataset.data[OUTPUT]
         language = dataset.language()
     elif args.dataset.startswith(ILENIA):
         _, *params = args.dataset.split("|")
