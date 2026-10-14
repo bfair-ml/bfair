@@ -42,7 +42,7 @@ CONTEXT_TEST_EN = [
     ("The", "DET", "t8"),
     ("dog", "NOUN", "t9"),
     ("doesn't", "AUX", "t10"),
-    (".", "PUNCT", "t11")
+    (".", "PUNCT", "t11"),
 ]
 
 CONTEXT_TEST_ES = [
@@ -60,12 +60,17 @@ CONTEXT_TEST_ES = [
     ("El", "DET", "t8"),
     ("perro", "NOUN", "t9"),
     ("no", "ADV", "t10"),
-    (".", "PUNCT", "t11")
+    (".", "PUNCT", "t11"),
 ]
+
 
 class FixedContext:
     def __init__(self, window_size=10, max_multiword=3):
-        if max_multiword is None or not isinstance(max_multiword, int) or max_multiword < 1:
+        if (
+            max_multiword is None
+            or not isinstance(max_multiword, int)
+            or max_multiword < 1
+        ):
             raise ValueError("max_multiword must be a positive integer")
         self.window_size = window_size
         self.max_multiword = max_multiword
@@ -86,32 +91,42 @@ class FixedContext:
             for size in range(1, self.max_multiword + 1):
                 center_tokens = window[middle : middle + size]
 
-                if any(token is None or token[1] in ("PUNCT",) for token in center_tokens):
+                if any(
+                    token is None or token[1] in ("PUNCT",) for token in center_tokens
+                ):
                     break
-                
+
                 center = self.build_multiword_center(center_tokens)
                 get_context = partial(self.weighted, window, middle, middle + size)
                 yield center, get_context
 
     def weighted(self, window, center_start, center_ended):
         left_window = self.wrap_singleword_tokens(window[:center_start])
-        center = self.build_multiword_center(window[center_start : center_ended])
+        center = self.build_multiword_center(window[center_start:center_ended])
         right_window = self.wrap_singleword_tokens(window[center_ended:])
-        window = (token for token in chain(left_window, [center], right_window) if token is not None)
+        window = (
+            token
+            for token in chain(left_window, [center], right_window)
+            if token is not None
+        )
         return zip(window, repeat(1))
-    
+
     @classmethod
     def build_multiword_center(cls, center_tokens):
         center_word = " ".join(token[0] for token in center_tokens)
-        center_pos = center_tokens[0][1] if len(center_tokens) == 1 else None  # Disables POS check for multiword tokens
+        center_pos = (
+            center_tokens[0][1] if len(center_tokens) == 1 else None
+        )  # Disables POS check for multiword tokens
         center_left_token = center_tokens[0][2]
         center_right_token = center_tokens[-1][2]
         return (center_word, center_pos, center_left_token, center_right_token)
-    
+
     @classmethod
     def wrap_singleword_tokens(cls, tokens):
-        return (cls.wrap_singleword_token(token) for token in tokens if token is not None)
-    
+        return (
+            cls.wrap_singleword_token(token) for token in tokens if token is not None
+        )
+
     @classmethod
     def wrap_singleword_token(cls, token):
         if token is None:
@@ -128,7 +143,7 @@ class InfiniteContext(FixedContext):
         for i, token in enumerate(window):
             if token is None or (i > center_start and i < center_ended):
                 continue
-            if i == center_start: # to achieve (..., 0.95, 1, 1, 1, 0.95, ...)
+            if i == center_start:  # to achieve (..., 0.95, 1, 1, 1, 0.95, ...)
                 center = self.build_multiword_center(window[center_start:center_ended])
                 yield center, 1
             else:
@@ -378,19 +393,25 @@ class BiasScore:
             return [
                 (
                     # TEXT
-                    token.text
-                    if (
-                        group_words.includes(token.text, token.pos_)
-                        or (token.pos_ == "PROPN" and not lower_proper_nouns)
-                    )
-                    else token.lower_
-                    if (
-                        not use_root
-                        or token.pos_ in ("PRON", "DET")
-                        or group_words.includes(token.lower_, token.pos_)
-                        or group_words.includes(token.lemma_.lower(), token.pos_)
-                    )
-                    else token.lemma_.lower(),
+                    (
+                        token.text
+                        if (
+                            group_words.includes(token.text, token.pos_)
+                            or (token.pos_ == "PROPN" and not lower_proper_nouns)
+                        )
+                        else (
+                            token.lower_
+                            if (
+                                not use_root
+                                or token.pos_ in ("PRON", "DET")
+                                or group_words.includes(token.lower_, token.pos_)
+                                or group_words.includes(
+                                    token.lemma_.lower(), token.pos_
+                                )
+                            )
+                            else token.lemma_.lower()
+                        )
+                    ),
                     # POS
                     token.pos_,
                     # TOKEN
@@ -442,7 +463,13 @@ class BiasScore:
         if not group2counts:
             print("[BFAIR ⚠️] Warning: No groups found in the input text.")
             return {
-                scoring_mode: (0, 0, pd.DataFrame(columns=["words", "pos", scoring_mode]).set_index(["words", "pos"]))
+                scoring_mode: (
+                    0,
+                    0,
+                    pd.DataFrame(columns=["words", "pos", scoring_mode]).set_index(
+                        ["words", "pos"]
+                    ),
+                )
                 for scoring_mode in self.scoring_modes
             }, [(group, 0) for group in self.group_words.groups()]
 
@@ -528,12 +555,18 @@ class BiasScore:
         group2counts = defaultdict(int)
 
         tokens = tokenizer(text)
-        for (center, center_pos, center_left_token, center_right_token), get_context in context(tokens):
+        for (
+            center,
+            center_pos,
+            center_left_token,
+            center_right_token,
+        ), get_context in context(tokens):
             word2occurrence[center, center_pos] += 1
             for group, words in group_words.items():
-                if not words.includes(
-                    center, center_pos
-                ) or (center_left_token == center_right_token and not person_checker.check_token(center_left_token)):
+                if not words.includes(center, center_pos) or (
+                    center_left_token == center_right_token
+                    and not person_checker.check_token(center_left_token)
+                ):  # Multi-word centers appearing in the seed collection will be counted as seeds without semantic checking.
                     continue
 
                 group2counts[group] += 1
@@ -554,7 +587,12 @@ class BiasScore:
                     if pivot_group is not None and pivot_group != group:
                         continue
 
-                for (word, word_pos, word_left_token, word_right_token), weight in get_context():
+                for (
+                    word,
+                    word_pos,
+                    word_left_token,
+                    word_right_token,
+                ), weight in get_context():
                     if word_pos in ("PUNCT", "NUM", "SYM") or word.isdigit():
                         continue
 
@@ -564,8 +602,12 @@ class BiasScore:
                         word2discrete[word, word_pos][group] += 1
 
                         offset = 3
-                        min_token = min(center_left_token, word_left_token, key=lambda x: x.i)
-                        max_token = max(center_right_token, word_right_token, key=lambda x: x.i)
+                        min_token = min(
+                            center_left_token, word_left_token, key=lambda x: x.i
+                        )
+                        max_token = max(
+                            center_right_token, word_right_token, key=lambda x: x.i
+                        )
                         min_word, max_word = (
                             (center, word)
                             if center_left_token == min_token
@@ -587,9 +629,11 @@ class BiasScore:
                                 # POS
                                 min_token.pos_,
                                 # MIDDLE
-                                min_token.doc[min_token.i + 1 : max_token.i]
-                                if max_token.i > min_token.i + 1
-                                else "",
+                                (
+                                    min_token.doc[min_token.i + 1 : max_token.i]
+                                    if max_token.i > min_token.i + 1
+                                    else ""
+                                ),
                                 # WORD or CENTER
                                 max_token.text,
                                 # LEX
@@ -602,15 +646,21 @@ class BiasScore:
                             # START
                             "... " if min_token.i - offset > 0 else "",
                             # PRE
-                            min_token.doc[max(min_token.i - offset, 0) : min_token.i]
-                            if min_token.i > 0
-                            else "",
+                            (
+                                min_token.doc[
+                                    max(min_token.i - offset, 0) : min_token.i
+                                ]
+                                if min_token.i > 0
+                                else ""
+                            ),
                             # CORE
                             core,
                             # POST
-                            max_token.doc[max_token.i + 1 : max_token.i + offset]
-                            if len(max_token.doc) > max_token.i + 1
-                            else "",
+                            (
+                                max_token.doc[max_token.i + 1 : max_token.i + offset]
+                                if len(max_token.doc) > max_token.i + 1
+                                else ""
+                            ),
                             # END
                             " ..." if max_token.i + offset < len(max_token.doc) else "",
                         )
@@ -661,7 +711,7 @@ class BiasScore:
         merged_word2matches = defaultdict(lambda: defaultdict(set))
         merged_word2occurrence = defaultdict(int)
 
-        for (word, pos) in word2counts:
+        for word, pos in word2counts:
             if not group_words_to_inspect.includes(word, pos):
                 merged_word2counts[word, pos] = word2counts[word, pos]
                 merged_word2discrete[word, pos] = word2discrete[word, pos]
