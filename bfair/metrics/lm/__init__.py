@@ -5,5 +5,6 @@ from .words import (
     DynamicGroupWords,
     EnglishGenderedWords,
     SpanishGenderedWords,
+    ValencianGenderedWords,
     GERDER_PAIR_ORDER,
 )

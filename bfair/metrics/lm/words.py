@@ -4,6 +4,9 @@ from typing import Sequence, Tuple, Set, Union, Dict
 from collections import defaultdict
 from abc import ABC, abstractmethod
 
+DEFAULT_SPANISH_SEEDS_PATH = Path("datasets/victoria/Seeds")
+DEFAULT_VALENCIAN_SEEDS_PATH = Path("datasets/auto-valencian-seeds")
+
 
 class IGroupWords(ABC):
     @abstractmethod
@@ -193,7 +196,6 @@ class DynamicGroupWords(IGroupWords):
                     #     f"⚠️ Word contains space but current tokenization strategies do not support multi-word tokens."
                     # )
                     print(
-                        
                         f"🆕 Multi-word seed support has been implemented recently! Please, double check it is working "
                     )
                 group_words[group].add(word)
@@ -338,13 +340,13 @@ class EnglishGenderedWords:
         return group_words
 
 
-class SpanishGenderedWords:
+class FromCSVsGenderedWords:
     MALE = 0
     FEMALE = 1
 
     def __init__(
         self,
-        path=Path("datasets/victoria/Seeds"),
+        path,
         male_dir="Masculine",
         female_dir="Feminine",
         male_suffix="masc",
@@ -470,3 +472,89 @@ class SpanishGenderedWords:
         data = pd.read_csv(path, names=["words"], header=None)
         words = data["words"].str.strip()
         return set(words) - to_ignore
+
+
+class SpanishGenderedWords(FromCSVsGenderedWords):
+    def __init__(
+        self,
+        path=DEFAULT_SPANISH_SEEDS_PATH,
+        male_dir="Masculine",
+        female_dir="Feminine",
+        male_suffix="masc",
+        female_suffix="fem",
+        ignore="00_Ignore",
+        pronouns="01_Pron",
+        nouns="02_Sust",
+        professions="03_Professions_list",
+        names="04_Nombres",
+        heteronyms="05_Heteronimos",
+        adjectives="06_Heteronimos_adj",
+        abbreviations="07_Abreviaturas",
+        singular_suffix="",
+        plural_suffix="_pl",
+        *,
+        include_professions=True,
+        include_plurals=False,
+    ):
+        super().__init__(
+            path=path,
+            male_dir=male_dir,
+            female_dir=female_dir,
+            male_suffix=male_suffix,
+            female_suffix=female_suffix,
+            ignore=ignore,
+            pronouns=pronouns,
+            nouns=nouns,
+            professions=professions,
+            names=names,
+            heteronyms=heteronyms,
+            adjectives=adjectives,
+            abbreviations=abbreviations,
+            singular_suffix=singular_suffix,
+            plural_suffix=plural_suffix,
+            include_professions=include_professions,
+            include_plurals=include_plurals,
+        )
+
+
+class ValencianGenderedWords(FromCSVsGenderedWords):
+    def __init__(
+        self,
+        path=DEFAULT_VALENCIAN_SEEDS_PATH,
+        male_dir="Masculine",
+        female_dir="Feminine",
+        male_suffix="masc",
+        female_suffix="fem",
+        ignore="00_Ignore",
+        pronouns="01_Pron",
+        nouns="02_Sust",
+        professions="03_Professions_list",
+        names="04_Nombres",
+        heteronyms="05_Heteronimos",
+        adjectives="06_Heteronimos_adj",
+        abbreviations="07_Abreviaturas",
+        singular_suffix="",
+        plural_suffix="_pl",
+        *,
+        include_professions=True,
+        include_plurals=False,
+    ):
+        super().__init__(
+            path=path,
+            male_dir=male_dir,
+            female_dir=female_dir,
+            male_suffix=male_suffix,
+            female_suffix=female_suffix,
+            ignore=ignore,
+            pronouns=pronouns,
+            nouns=nouns,
+            professions=professions,
+            names=names,
+            heteronyms=heteronyms,
+            adjectives=adjectives,
+            abbreviations=abbreviations,
+            singular_suffix=singular_suffix,
+            plural_suffix=plural_suffix,
+            include_professions=include_professions,
+            include_plurals=include_plurals,
+        )

@@ -5,13 +5,15 @@ from autogoal.kb import SemanticType, Text
 from bfair.sensors.base import Sensor, P_GENDER
 from bfair.sensors.text.base import IPosTokenizer, SpacyPosTokenizer
 from bfair.sensors.text.embedding.aggregators import Aggregator, UnionAggregator
-from bfair.metrics.lm.words import EnglishGenderedWords, SpanishGenderedWords
+from bfair.metrics.lm.words import EnglishGenderedWords, SpanishGenderedWords, ValencianGenderedWords
 
 
 class StaticWordsSensor(Sensor):
     FEATURES2WORDS = {
         (P_GENDER, "english"): lambda: EnglishGenderedWords().get_group_words(),
         (P_GENDER, "spanish"): lambda: SpanishGenderedWords().get_group_words(),
+        (P_GENDER, "valencian"): lambda: ValencianGenderedWords().get_group_words(),
+        (P_GENDER, "catalan"): lambda: ValencianGenderedWords().get_group_words(),
     }
 
     def __init__(
