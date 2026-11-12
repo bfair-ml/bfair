@@ -48,6 +48,8 @@ CATALAN_TEST = """
 
 
 class CatalanGenderPreprocessor:
+    WARNED = False
+
     # Rule: -or/a → or o ora (e.g., director/a)
     PATTERN_OR_A = re.compile(r"(\b\w+?)or/a(\b|\s*[\.,;:\?!])")
     REPLACEMENT_OR_A = r"\1or o \1ora\2"
@@ -75,9 +77,11 @@ class CatalanGenderPreprocessor:
     # Function to apply all patterns
     @classmethod
     def split_gender_endings(cls, text: str) -> str:
-        print(
-            "⚠️ Warning: Catalan version is not well tuned and may produce inaccurate results."
-        )
+        if not cls.WARNED:
+            print(
+                "⚠️ Warning: Catalan version is not well tuned and may produce inaccurate results."
+            )
+            cls.WARNED = True
         text = cls.PATTERN_OR_A.sub(cls.REPLACEMENT_OR_A, text)
         text = cls.PATTERN_R_A.sub(cls.REPLACEMENT_R_A, text)
         text = cls.PATTERN_E_A.sub(cls.REPLACEMENT_E_A, text)

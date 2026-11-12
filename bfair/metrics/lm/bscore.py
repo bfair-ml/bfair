@@ -432,7 +432,7 @@ class BiasScore:
             texts = [texts]
 
         if not self.merge_paragraphs:
-            texts = [paragraph for text in texts for paragraph in text.splitlines()]
+            texts = (paragraph for text in texts for paragraph in text.splitlines())
 
         word2counts = defaultdict(lambda: defaultdict(int))
         word2discrete = defaultdict(lambda: defaultdict(int))
